@@ -3,9 +3,9 @@
   "description": "Salesforce CLI plugin for mobile extensions to Local Development",
   "version": "1.0.0",
   "author": {
-    "name": "Raj Rao",
-    "email": "rao.r@salesforce.com",
-    "url": "https://github.com/trooper2013"
+    "name": "Meisam Seyed Aliroteh",
+    "email": "maliroteh@salesforce.com",
+    "url": "https://github.com/maliroteh-sf"
   },
   "contributors": [
     {
@@ -55,7 +55,7 @@
     "typescript": "^3.5.3"
   },
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=12.0.0"
   },
   "files": [
     "/lib",
