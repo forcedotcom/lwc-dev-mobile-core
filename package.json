@@ -1,0 +1,108 @@
+{
+  "name": "@salesforce/lwc-dev-mobile-core",
+  "description": "Salesforce CLI plugin for mobile extensions to Local Development",
+  "version": "1.0.0",
+  "author": {
+    "name": "Meisam Seyed Aliroteh",
+    "email": "maliroteh@salesforce.com",
+    "url": "https://github.com/maliroteh-sf"
+  },
+  "contributors": [
+    {
+      "name": "Kevin Hawkins",
+      "email": "khawkins@salesforce.com",
+      "url": "https://github.com/khawkins"
+    },
+    {
+      "name": "Meisam Seyed Aliroteh",
+      "email": "maliroteh@salesforce.com",
+      "url": "https://github.com/maliroteh-sf"
+    },
+    {
+      "name": "Takashi Arai",
+      "email": "t.arai@salesforce.com",
+      "url": "https://github.com/sfdctaka"
+    }
+  ],
+  "bugs": "https://github.com/forcedotcom/lwc-dev-mobile-core/issues",
+  "dependencies": {
+    "@oclif/config": "^1.13.1",
+    "@salesforce/command": "^2.0.0",
+    "@salesforce/core": "^2.0.1",
+    "ajv": "^6.12.4",
+    "chalk": "^4.0.0",
+    "cli-ux": "^5.4.5"
+  },
+  "devDependencies": {
+    "@oclif/dev-cli": "^1.22.0",
+    "@types/jest": "^24.0.15",
+    "@types/node": "^10",
+    "@typescript-eslint/eslint-plugin": "^2.27.0",
+    "@typescript-eslint/parser": "^2.27.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-prettier": "^3.1.2",
+    "husky": "^3.0.0",
+    "jest": "^24.8.0",
+    "jest-chain": "^1.1.5",
+    "jest-extended": "^0.11.5",
+    "jest-junit": "^6.4.0",
+    "lint-staged": "^9.2.0",
+    "prettier": "^2.0.4",
+    "ts-jest": "^24.0.2",
+    "tslint": "^5.18.0",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.5.3"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "files": [
+    "/lib",
+    "/messages",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json",
+    "!**/__tests__/",
+    "!**/__mocks__/",
+    "!**/*.test.*",
+    "!**/.DS_Store"
+  ],
+  "homepage": "https://github.com/forcedotcom/lwc-dev-mobile-core",
+  "keywords": [
+    "sfdx-plugin"
+  ],
+  "license": "MIT",
+  "oclif": {
+    "commands": "./lib/cli/commands",
+    "bin": "lwc-dev-mobile-core",
+    "topics": {
+      "hello": {
+        "description": "Sfdx Lightning local development for mobile platforms."
+      }
+    },
+    "plugins": [],
+    "devPlugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-update"
+    ]
+  },
+  "repository": "https://github.com/forcedotcom/lwc-dev-mobile-core",
+  "scripts": {
+    "clean": "yarn rimraf dist reports coverage errorShots oclif.manifest.json",
+    "build": "yarn clean && tsc",
+    "lint": "yarn eslint src --ext js,ts",
+    "postpack": "rm -f oclif.manifest.json",
+    "posttest": "tslint -p . -t stylish",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "test": "yarn jest --coverage",
+    "test:watch": "yarn test --watch",
+    "test:debug": "node --inspect node_modules/.bin/jest src --runInBand",
+    "version": "oclif-dev readme && git add README.md"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint-staged",
+      "pre-push": "yarn lint"
+    }
+  }
+}
