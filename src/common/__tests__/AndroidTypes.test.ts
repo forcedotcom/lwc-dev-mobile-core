@@ -37,7 +37,7 @@ describe('Android types tests', () => {
         expect(
             packages.platforms.length + packages.systemImages.length ===
                 AndroidMockData.mockRawStringPackageLength
-        ).toBeTrue();
+        ).toBe(true);
     });
 
     test('Android Package class should correctly parse a raw string initialize members', async () => {
@@ -58,13 +58,13 @@ describe('Android types tests', () => {
                 sysImagePkg &&
                 sysImagePkg.path !== null &&
                 sysImagePkg.description != null
-        ).toBeTrue();
+        ).toBe(true);
     });
 
     test('Android Package class should return and empty list for a bad string', async () => {
         const packages = AndroidPackages.parseRawPackagesString(
             AndroidMockData.badMockRawPackagesString
         );
-        expect(packages.isEmpty()).toBeTrue();
+        expect(packages.isEmpty()).toBe(true);
     });
 });

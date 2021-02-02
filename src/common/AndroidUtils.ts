@@ -295,9 +295,9 @@ export class AndroidSDKUtils {
         return new Promise((resolve, reject) => {
             try {
                 const child = AndroidSDKUtils.spawnChild(createAvdCommand);
-                child.stdin.setDefaultEncoding('utf8');
-                child.stdin.write('no');
                 if (child) {
+                    child.stdin.setDefaultEncoding('utf8');
+                    child.stdin.write('no');
                     child.stdout.on('data', () => {
                         setTimeout(() => {
                             resolve(true);
@@ -800,7 +800,9 @@ export class AndroidSDKUtils {
 
     // NOTE: detaching a process in windows seems to detach the streams. Prevent spawn from detaching when
     // used in Windows OS for special handling of some commands (adb).
-    private static spawnChild(command: string): childProcess.ChildProcess {
+    private static spawnChild(
+        command: string
+    ): childProcess.ChildProcessWithoutNullStreams {
         if (process.platform === WINDOWS_OS) {
             const child = spawn(command, { shell: true });
             return child;

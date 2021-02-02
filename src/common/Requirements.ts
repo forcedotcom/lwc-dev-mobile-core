@@ -123,7 +123,7 @@ export abstract class BaseSetup implements RequirementList {
     }
 
     public async executeSetup(): Promise<SetupTestResult> {
-        const allPromises: Array<Promise<any>> = [];
+        const allPromises: Promise<any>[] = [];
         this.requirements.forEach((requirement) =>
             allPromises.push(WrappedPromise(requirement))
         );
