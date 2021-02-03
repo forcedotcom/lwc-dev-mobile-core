@@ -162,7 +162,7 @@ describe('Android utils', () => {
         expect(
             packages.platforms.length + packages.systemImages.length ===
                 AndroidMockData.mockRawStringPackageLength
-        ).toBeTrue();
+        ).toBe(true);
     });
 
     test('Should attempt to invoke the sdkmanager and retrieve an empty list for a bad sdkmanager list', async () => {
@@ -170,7 +170,7 @@ describe('Android utils', () => {
             badBlockMock
         );
         const packages = await AndroidSDKUtils.fetchInstalledPackages();
-        expect(packages.isEmpty()).toBeTrue();
+        expect(packages.isEmpty()).toBe(true);
     });
 
     test('Should have no cache before first list packages call', async () => {
@@ -222,9 +222,9 @@ describe('Android utils', () => {
             myCommandBlockMock
         );
         const apiPackage = await AndroidSDKUtils.findRequiredAndroidAPIPackage();
-        expect(
-            apiPackage !== null && apiPackage.description !== null
-        ).toBeTrue();
+        expect(apiPackage !== null && apiPackage.description !== null).toBe(
+            true
+        );
     });
 
     test('Should not find a preferred Android package', async () => {
@@ -241,9 +241,9 @@ describe('Android utils', () => {
             myCommandBlockMock
         );
         const apiPackage = await AndroidSDKUtils.findRequiredEmulatorImages();
-        expect(
-            apiPackage !== null && apiPackage.description !== null
-        ).toBeTrue();
+        expect(apiPackage !== null && apiPackage.description !== null).toBe(
+            true
+        );
     });
 
     test('Should not find a preferred Android build tools package', async () => {

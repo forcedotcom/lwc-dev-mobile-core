@@ -17,8 +17,8 @@ describe('Preview utils tests', () => {
     });
 
     test('Checks for targetting browser or app', async () => {
-        expect(PreviewUtils.isTargetingBrowser('browser')).toBeTrue();
-        expect(PreviewUtils.isTargetingBrowser('com.mock.app')).toBeFalse();
+        expect(PreviewUtils.isTargetingBrowser('browser')).toBe(true);
+        expect(PreviewUtils.isTargetingBrowser('com.mock.app')).toBe(false);
     });
 
     test('Config validation fails when app id is not defined', async () => {
@@ -33,9 +33,9 @@ describe('Preview utils tests', () => {
             configSchema
         );
 
-        expect(validationResult.passed).toBeFalse();
+        expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data.apps.ios[0] should have required property 'id'"
+            "data/apps/ios/0 should have required property 'id'"
         );
     });
 
@@ -51,9 +51,9 @@ describe('Preview utils tests', () => {
             configSchema
         );
 
-        expect(validationResult.passed).toBeFalse();
+        expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data.apps.ios[0] should have required property 'name'"
+            "data/apps/ios/0 should have required property 'name'"
         );
     });
 
@@ -83,9 +83,9 @@ describe('Preview utils tests', () => {
             configSchema
         );
 
-        expect(validationResult.passed).toBeFalse();
+        expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data.apps.ios[0].launch_arguments[1] should have required property 'value'"
+            "data/apps/ios/0/launch_arguments/1 should have required property 'value'"
         );
     });
 
@@ -111,9 +111,9 @@ describe('Preview utils tests', () => {
             configSchema
         );
 
-        expect(validationResult.passed).toBeFalse();
+        expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data.apps.android[0] should have required property 'activity'"
+            "data/apps/android/0 should have required property 'activity'"
         );
     });
 
