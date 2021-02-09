@@ -6,6 +6,7 @@
  */
 import { Logger } from '@salesforce/core';
 import * as childProcess from 'child_process';
+import { ActionBase } from 'cli-ux';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -21,6 +22,16 @@ export class CommonUtils {
 
     public static async delay(ms: number): Promise<void> {
         return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    public static logSpinnerAction(
+        action: string,
+        status?: string,
+        spinner?: ActionBase
+    ) {
+        if (spinner) {
+            spinner.start(action, status, { stdout: true });
+        }
     }
 
     public static resolveUserHomePath(inputPath: string): string {

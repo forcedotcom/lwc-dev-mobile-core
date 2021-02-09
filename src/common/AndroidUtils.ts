@@ -404,13 +404,13 @@ export class AndroidSDKUtils {
     public static async launchURLIntent(
         url: string,
         emulatorPort: number,
-        spinner?: ActionBase | undefined
+        spinner?: ActionBase
     ): Promise<void> {
         const openUrlCommand = `${AndroidSDKUtils.getAdbShellCommand()} -s emulator-${emulatorPort} shell am start -a android.intent.action.VIEW -d ${url}`;
-        AndroidSDKUtils.updateSpinner(
-            spinner,
+        CommonUtils.logSpinnerAction(
             'Launching',
-            `Opening browser with url ${url}`
+            `Opening browser with url ${url}`,
+            spinner
         );
         return CommonUtils.executeCommandAsync(openUrlCommand).then(() =>
             Promise.resolve()
@@ -427,13 +427,13 @@ export class AndroidSDKUtils {
         emulatorPort: number,
         serverAddress: string | undefined,
         serverPort: string | undefined,
-        spinner?: ActionBase | undefined
+        spinner?: ActionBase
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = `Installing app ${appBundlePath.trim()} to emulator`;
             AndroidSDKUtils.logger.info(installMsg);
-            AndroidSDKUtils.updateSpinner(spinner, 'Launching', installMsg);
+            CommonUtils.logSpinnerAction('Launching', installMsg, spinner);
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
             const installCommand = `${AndroidSDKUtils.getAdbShellCommand()} -s emulator-${emulatorPort} install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
@@ -468,7 +468,7 @@ export class AndroidSDKUtils {
 
                 const launchMsg = `Launching app ${targetApp} in emulator`;
                 AndroidSDKUtils.logger.info(launchMsg);
-                AndroidSDKUtils.updateSpinner(spinner, 'Launching', launchMsg);
+                CommonUtils.logSpinnerAction('Launching', launchMsg, spinner);
 
                 return CommonUtils.executeCommandAsync(launchCommand);
             })
@@ -909,16 +909,6 @@ export class AndroidSDKUtils {
             AndroidSDKUtils.logger.warn(
                 'Unable to write emulator config at: ' + filePath
             );
-        }
-    }
-
-    private static updateSpinner(
-        spinner: ActionBase | undefined,
-        action: string,
-        status?: string | undefined
-    ) {
-        if (spinner) {
-            spinner.start(action, status, { stdout: true });
         }
     }
 }

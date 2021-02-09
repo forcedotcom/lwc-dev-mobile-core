@@ -239,13 +239,13 @@ export class IOSUtils {
     public static async launchURLInBootedSimulator(
         udid: string,
         url: string,
-        spinner?: ActionBase | undefined
+        spinner?: ActionBase
     ): Promise<void> {
         const command = `${XCRUN_CMD} simctl openurl "${udid}" ${url}`;
-        IOSUtils.updateSpinner(
-            spinner,
+        CommonUtils.logSpinnerAction(
             'Launching',
-            `Opening browser with url ${url}`
+            `Opening browser with url ${url}`,
+            spinner
         );
         return CommonUtils.executeCommandAsync(command)
             .then(() => Promise.resolve())
@@ -267,13 +267,13 @@ export class IOSUtils {
         targetAppArguments: LaunchArgument[],
         serverAddress: string | undefined,
         serverPort: string | undefined,
-        spinner?: ActionBase | undefined
+        spinner?: ActionBase
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = `Installing app ${appBundlePath.trim()} to simulator`;
             IOSUtils.logger.info(installMsg);
-            IOSUtils.updateSpinner(spinner, 'Launching', installMsg);
+            CommonUtils.logSpinnerAction('Launching', installMsg, spinner);
             const installCommand = `${XCRUN_CMD} simctl install ${udid} '${appBundlePath.trim()}'`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
         } else {
@@ -306,7 +306,11 @@ export class IOSUtils {
                 try {
                     const terminateMsg = `Terminating app ${targetApp} in simulator`;
                     IOSUtils.logger.info(terminateMsg);
-                    IOSUtils.updateSpinner(spinner, 'Launching', terminateMsg);
+                    CommonUtils.logSpinnerAction(
+                        'Launching',
+                        terminateMsg,
+                        spinner
+                    );
                     await CommonUtils.executeCommandAsync(terminateCommand);
                 } catch {
                     // ignore and continue
@@ -314,7 +318,7 @@ export class IOSUtils {
 
                 const launchMsg = `Launching app ${targetApp} in simulator`;
                 IOSUtils.logger.info(launchMsg);
-                IOSUtils.updateSpinner(spinner, 'Launching', launchMsg);
+                CommonUtils.logSpinnerAction('Launching', launchMsg, spinner);
                 return CommonUtils.executeCommandAsync(launchCommand);
             })
             .then(() => Promise.resolve());
@@ -326,15 +330,5 @@ export class IOSUtils {
         return error.message
             ? error.message.toLowerCase().match('state: booted') !== null
             : false;
-    }
-
-    private static updateSpinner(
-        spinner: ActionBase | undefined,
-        action: string,
-        status?: string | undefined
-    ) {
-        if (spinner) {
-            spinner.start(action, status, { stdout: true });
-        }
     }
 }
