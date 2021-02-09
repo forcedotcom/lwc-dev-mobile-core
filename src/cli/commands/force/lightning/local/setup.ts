@@ -27,7 +27,7 @@ const messages = Messages.loadMessages(
     'setup'
 );
 
-export default class Setup extends SfdxCommand {
+export class Setup extends SfdxCommand {
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
