@@ -5,7 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger } from '@salesforce/core';
-import { ActionBase } from 'cli-ux';
 import { Version } from '../common/Common';
 import iOSConfig from '../config/iosconfig.json';
 import { CommonUtils } from './CommonUtils';
@@ -238,14 +237,12 @@ export class IOSUtils {
 
     public static async launchURLInBootedSimulator(
         udid: string,
-        url: string,
-        spinner?: ActionBase
+        url: string
     ): Promise<void> {
         const command = `${XCRUN_CMD} simctl openurl "${udid}" ${url}`;
-        CommonUtils.logSpinnerAction(
+        CommonUtils.startCliAction(
             'Launching',
-            `Opening browser with url ${url}`,
-            spinner
+            `Opening browser with url ${url}`
         );
         return CommonUtils.executeCommandAsync(command)
             .then(() => Promise.resolve())
@@ -266,14 +263,13 @@ export class IOSUtils {
         targetApp: string,
         targetAppArguments: LaunchArgument[],
         serverAddress: string | undefined,
-        serverPort: string | undefined,
-        spinner?: ActionBase
+        serverPort: string | undefined
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = `Installing app ${appBundlePath.trim()} to simulator`;
             IOSUtils.logger.info(installMsg);
-            CommonUtils.logSpinnerAction('Launching', installMsg, spinner);
+            CommonUtils.startCliAction('Launching', installMsg);
             const installCommand = `${XCRUN_CMD} simctl install ${udid} '${appBundlePath.trim()}'`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
         } else {
@@ -306,11 +302,7 @@ export class IOSUtils {
                 try {
                     const terminateMsg = `Terminating app ${targetApp} in simulator`;
                     IOSUtils.logger.info(terminateMsg);
-                    CommonUtils.logSpinnerAction(
-                        'Launching',
-                        terminateMsg,
-                        spinner
-                    );
+                    CommonUtils.startCliAction('Launching', terminateMsg);
                     await CommonUtils.executeCommandAsync(terminateCommand);
                 } catch {
                     // ignore and continue
@@ -318,7 +310,7 @@ export class IOSUtils {
 
                 const launchMsg = `Launching app ${targetApp} in simulator`;
                 IOSUtils.logger.info(launchMsg);
-                CommonUtils.logSpinnerAction('Launching', launchMsg, spinner);
+                CommonUtils.startCliAction('Launching', launchMsg);
                 return CommonUtils.executeCommandAsync(launchCommand);
             })
             .then(() => Promise.resolve());

@@ -7,7 +7,6 @@
 import { Logger, Messages } from '@salesforce/core';
 import chalk from 'chalk';
 import { Listr } from 'listr2';
-import { wrap } from 'module';
 import { performance, PerformanceObserver } from 'perf_hooks';
 import { CommonUtils } from './CommonUtils';
 import { PerformanceMarkers } from './PerformanceMarkers';

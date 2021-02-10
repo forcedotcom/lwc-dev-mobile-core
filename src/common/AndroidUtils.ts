@@ -6,7 +6,6 @@
  */
 import { Logger } from '@salesforce/core';
 import * as childProcess from 'child_process';
-import { ActionBase } from 'cli-ux';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -403,14 +402,12 @@ export class AndroidSDKUtils {
 
     public static async launchURLIntent(
         url: string,
-        emulatorPort: number,
-        spinner?: ActionBase
+        emulatorPort: number
     ): Promise<void> {
         const openUrlCommand = `${AndroidSDKUtils.getAdbShellCommand()} -s emulator-${emulatorPort} shell am start -a android.intent.action.VIEW -d ${url}`;
-        CommonUtils.logSpinnerAction(
+        CommonUtils.startCliAction(
             'Launching',
-            `Opening browser with url ${url}`,
-            spinner
+            `Opening browser with url ${url}`
         );
         return CommonUtils.executeCommandAsync(openUrlCommand).then(() =>
             Promise.resolve()
@@ -426,14 +423,13 @@ export class AndroidSDKUtils {
         launchActivity: string,
         emulatorPort: number,
         serverAddress: string | undefined,
-        serverPort: string | undefined,
-        spinner?: ActionBase
+        serverPort: string | undefined
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = `Installing app ${appBundlePath.trim()} to emulator`;
             AndroidSDKUtils.logger.info(installMsg);
-            CommonUtils.logSpinnerAction('Launching', installMsg, spinner);
+            CommonUtils.startCliAction('Launching', installMsg);
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
             const installCommand = `${AndroidSDKUtils.getAdbShellCommand()} -s emulator-${emulatorPort} install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
@@ -468,7 +464,7 @@ export class AndroidSDKUtils {
 
                 const launchMsg = `Launching app ${targetApp} in emulator`;
                 AndroidSDKUtils.logger.info(launchMsg);
-                CommonUtils.logSpinnerAction('Launching', launchMsg, spinner);
+                CommonUtils.startCliAction('Launching', launchMsg);
 
                 return CommonUtils.executeCommandAsync(launchCommand);
             })
