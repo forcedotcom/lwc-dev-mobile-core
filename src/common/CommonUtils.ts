@@ -6,6 +6,7 @@
  */
 import { Logger } from '@salesforce/core';
 import * as childProcess from 'child_process';
+import { cli } from 'cli-ux';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -19,8 +20,16 @@ export class CommonUtils {
         return Promise.resolve();
     }
 
-    public static delay(ms: number): Promise<void> {
+    public static async delay(ms: number): Promise<void> {
         return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    public static startCliAction(action: string, status?: string) {
+        cli.action.start(action, status, { stdout: true });
+    }
+
+    public static stopCliAction(message?: string) {
+        cli.action.stop(message);
     }
 
     public static resolveUserHomePath(inputPath: string): string {

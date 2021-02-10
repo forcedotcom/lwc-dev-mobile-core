@@ -68,6 +68,8 @@ let writeFileSpy: jest.SpyInstance<any>;
 
 describe('Android utils', () => {
     beforeEach(() => {
+        // tslint:disable-next-line: no-empty
+        jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
         jest.spyOn(AndroidSDKUtils, 'getAndroidSdkRoot').mockImplementation(
             () => {
                 return {

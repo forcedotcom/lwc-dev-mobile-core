@@ -240,6 +240,10 @@ export class IOSUtils {
         url: string
     ): Promise<void> {
         const command = `${XCRUN_CMD} simctl openurl "${udid}" ${url}`;
+        CommonUtils.startCliAction(
+            'Launching',
+            `Opening browser with url ${url}`
+        );
         return CommonUtils.executeCommandAsync(command)
             .then(() => Promise.resolve())
             .catch((error) =>
@@ -263,9 +267,9 @@ export class IOSUtils {
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
-            IOSUtils.logger.info(
-                `Installing app ${appBundlePath.trim()} to simulator`
-            );
+            const installMsg = `Installing app ${appBundlePath.trim()} to simulator`;
+            IOSUtils.logger.info(installMsg);
+            CommonUtils.startCliAction('Launching', installMsg);
             const installCommand = `${XCRUN_CMD} simctl install ${udid} '${appBundlePath.trim()}'`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
         } else {
@@ -296,15 +300,17 @@ export class IOSUtils {
                 // attempt at terminating the app first (in case it is already running) and then try to launch it again with new arguments.
                 // if we hit issues with terminating, just ignore and continue.
                 try {
-                    IOSUtils.logger.info(
-                        `Terminating app ${targetApp} in simulator`
-                    );
+                    const terminateMsg = `Terminating app ${targetApp} in simulator`;
+                    IOSUtils.logger.info(terminateMsg);
+                    CommonUtils.startCliAction('Launching', terminateMsg);
                     await CommonUtils.executeCommandAsync(terminateCommand);
                 } catch {
                     // ignore and continue
                 }
 
-                IOSUtils.logger.info(`Launching app ${targetApp} in simulator`);
+                const launchMsg = `Launching app ${targetApp} in simulator`;
+                IOSUtils.logger.info(launchMsg);
+                CommonUtils.startCliAction('Launching', launchMsg);
                 return CommonUtils.executeCommandAsync(launchCommand);
             })
             .then(() => Promise.resolve());

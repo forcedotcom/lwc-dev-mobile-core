@@ -405,6 +405,10 @@ export class AndroidSDKUtils {
         emulatorPort: number
     ): Promise<void> {
         const openUrlCommand = `${AndroidSDKUtils.getAdbShellCommand()} -s emulator-${emulatorPort} shell am start -a android.intent.action.VIEW -d ${url}`;
+        CommonUtils.startCliAction(
+            'Launching',
+            `Opening browser with url ${url}`
+        );
         return CommonUtils.executeCommandAsync(openUrlCommand).then(() =>
             Promise.resolve()
         );
@@ -423,9 +427,9 @@ export class AndroidSDKUtils {
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
-            AndroidSDKUtils.logger.info(
-                `Installing app ${appBundlePath.trim()} to emulator`
-            );
+            const installMsg = `Installing app ${appBundlePath.trim()} to emulator`;
+            AndroidSDKUtils.logger.info(installMsg);
+            CommonUtils.startCliAction('Launching', installMsg);
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
             const installCommand = `${AndroidSDKUtils.getAdbShellCommand()} -s emulator-${emulatorPort} install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
@@ -458,9 +462,9 @@ export class AndroidSDKUtils {
                     ' -c android.intent.category.LAUNCHER' +
                     ` ${launchArgs}`;
 
-                AndroidSDKUtils.logger.info(
-                    `Relaunching app ${targetApp} in emulator`
-                );
+                const launchMsg = `Launching app ${targetApp} in emulator`;
+                AndroidSDKUtils.logger.info(launchMsg);
+                CommonUtils.startCliAction('Launching', launchMsg);
 
                 return CommonUtils.executeCommandAsync(launchCommand);
             })

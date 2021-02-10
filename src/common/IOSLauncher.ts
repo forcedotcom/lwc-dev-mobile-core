@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import cli from 'cli-ux';
 import { IOSUtils } from './IOSUtils';
 import { IOSAppPreviewConfig, LaunchArgument } from './PreviewConfigFile';
+import { CommonUtils } from './CommonUtils';
 import { PreviewUtils } from './PreviewUtils';
 
 export class IOSLauncher {
@@ -32,47 +32,44 @@ export class IOSLauncher {
         const currentSimulatorUDID: string | null =
             currentSimulator && currentSimulator.udid;
         let deviceUDID = '';
-        const spinner = cli.action;
-        cli.action.start(`Launching`, `Searching for ${this.simulatorName}`, {
-            stdout: true
-        });
+        CommonUtils.startCliAction(
+            `Launching`,
+            `Searching for ${this.simulatorName}`
+        );
         if (!currentSimulatorUDID || currentSimulatorUDID.length === 0) {
-            spinner.start(
+            CommonUtils.startCliAction(
                 `Launching`,
-                `Creating device ${this.simulatorName}`,
-                {
-                    stdout: true
-                }
+                `Creating device ${this.simulatorName}`
             );
             deviceUDID = await IOSUtils.createNewDevice(
                 this.simulatorName,
                 availableDevices[0],
                 supportedRuntimes[0]
             );
-            spinner.start(`Launching`, `Created device ${this.simulatorName}`, {
-                stdout: true
-            });
+            CommonUtils.startCliAction(
+                `Launching`,
+                `Created device ${this.simulatorName}`
+            );
         } else {
-            spinner.start(`Launching`, `Found device ${this.simulatorName}`, {
-                stdout: true
-            });
+            CommonUtils.startCliAction(
+                `Launching`,
+                `Found device ${this.simulatorName}`
+            );
             deviceUDID = currentSimulatorUDID;
         }
 
         return IOSUtils.launchSimulatorApp()
             .then(() => {
-                spinner.start(`Launching`, `Starting device ${deviceUDID}`, {
-                    stdout: true
-                });
+                CommonUtils.startCliAction(
+                    `Launching`,
+                    `Starting device ${deviceUDID}`
+                );
                 return IOSUtils.bootDevice(deviceUDID);
             })
             .then(() => {
-                spinner.start(
+                CommonUtils.startCliAction(
                     `Launching`,
-                    `Waiting for device ${deviceUDID} to boot`,
-                    {
-                        stdout: true
-                    }
+                    `Waiting for device ${deviceUDID} to boot`
                 );
                 return IOSUtils.waitUntilDeviceIsReady(deviceUDID);
             })
@@ -103,8 +100,12 @@ export class IOSLauncher {
                     );
                 }
             })
+            .then(() => {
+                CommonUtils.stopCliAction();
+                return Promise.resolve();
+            })
             .catch((error) => {
-                spinner.stop('Error encountered during launch');
+                CommonUtils.stopCliAction('Error encountered during launch');
                 throw error;
             });
     }

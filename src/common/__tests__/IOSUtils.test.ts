@@ -5,7 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 // tslint:disable: no-unused-expression
-import { ActionBase } from 'cli-ux';
 import 'jest-chain';
 import 'jest-extended';
 import { CommonUtils } from '../CommonUtils';
@@ -71,14 +70,10 @@ const resolvedBoolPromiseBlock = jest.fn(
     }
 );
 
-// tslint:disable-next-line: class-name
-class mockSpinner extends ActionBase {
-    // tslint:disable-next-line: no-empty
-    public start(): void {}
-}
-
 describe('IOS utils tests', () => {
     beforeEach(() => {
+        // tslint:disable-next-line: no-empty
+        jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
         myCommandRouterBlock.mockClear();
         launchCommandMock.mockClear();
         badBlockMock.mockClear();
