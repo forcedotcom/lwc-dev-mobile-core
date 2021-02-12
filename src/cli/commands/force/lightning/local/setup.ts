@@ -106,21 +106,17 @@ export class Setup extends SfdxCommand {
         return this.setupSteps;
     }
 
-    private _skipBaseRequirements: boolean = false;
     get skipBaseRequirements(): boolean {
-        return this._skipBaseRequirements;
+        return this.setup().skipBaseRequirements;
     }
     set skipBaseRequirements(value: boolean) {
-        this._skipBaseRequirements = value;
         this.setup().skipBaseRequirements = value;
     }
 
-    private _skipAdditionalRequirements: boolean = false;
     get skipAdditionalRequirements(): boolean {
-        return this._skipAdditionalRequirements;
+        return this.setup().skipAdditionalRequirements;
     }
     set skipAdditionalRequirements(value: boolean) {
-        this._skipAdditionalRequirements = value;
         this.setup().skipAdditionalRequirements = value;
     }
 }
