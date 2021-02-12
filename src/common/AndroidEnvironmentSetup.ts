@@ -27,7 +27,7 @@ export class AndroidEnvironmentSetup extends BaseSetup {
             new PlatformAPIPackageRequirement(this.setupMessages, this.logger),
             new EmulatorImagesRequirement(this.setupMessages, this.logger)
         ];
-        super.addRequirements(requirements);
+        super.addBaseRequirements(requirements);
     }
 }
 

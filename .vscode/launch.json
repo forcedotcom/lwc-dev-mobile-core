@@ -10,7 +10,8 @@
                 "force:lightning:local:setup",
                 "-p",
                 "iOS"
-            ]
+            ],
+            "console": "integratedTerminal"
         },
         {
             "type": "node",
@@ -21,7 +22,8 @@
                 "force:lightning:local:setup",
                 "-p",
                 "android"
-            ]
+            ],
+            "console": "integratedTerminal"
         },
         {
             "name": "ts-node",
