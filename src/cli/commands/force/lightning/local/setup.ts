@@ -90,8 +90,8 @@ export class Setup extends SfdxCommand {
         await LoggerSetup.initializePluginLoggers();
     }
 
-    protected addRequirements(reqs: Requirement[]) {
-        this.setup().addRequirements(reqs);
+    protected addAdditionalRequirements(reqs: Requirement[]) {
+        this.setup().addAdditionalRequirements(reqs);
     }
 
     private setup(): BaseSetup {
@@ -99,10 +99,24 @@ export class Setup extends SfdxCommand {
             this.setupSteps = CommandLineUtils.platformFlagIsAndroid(
                 this.flags.platform
             )
-                ? (this.setupSteps = new AndroidEnvironmentSetup(this.logger))
-                : (this.setupSteps = new IOSEnvironmentSetup(this.logger));
+                ? new AndroidEnvironmentSetup(this.logger)
+                : new IOSEnvironmentSetup(this.logger);
         }
 
         return this.setupSteps;
+    }
+
+    get skipBaseRequirements(): boolean {
+        return this.setup().skipBaseRequirements;
+    }
+    set skipBaseRequirements(value: boolean) {
+        this.setup().skipBaseRequirements = value;
+    }
+
+    get skipAdditionalRequirements(): boolean {
+        return this.setup().skipAdditionalRequirements;
+    }
+    set skipAdditionalRequirements(value: boolean) {
+        this.setup().skipAdditionalRequirements = value;
     }
 }

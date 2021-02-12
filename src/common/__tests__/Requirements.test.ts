@@ -40,7 +40,7 @@ class TruthyExtension extends BaseSetup {
                 unfulfilledMessage: 'You must setup ANDROID_HOME.'
             }
         ];
-        super.addRequirements(requirements);
+        super.addBaseRequirements(requirements);
     }
 
     public async testFunctionOne(): Promise<string> {
@@ -88,7 +88,7 @@ class FalsyExtension extends BaseSetup {
                     'Install at least one Android Platform tools package (23 - 30).'
             }
         ];
-        super.addRequirements(requirements);
+        super.addBaseRequirements(requirements);
     }
 
     public async testFunctionOne(): Promise<string> {
@@ -105,6 +105,54 @@ class FalsyExtension extends BaseSetup {
 
     public async testFunctionFour(): Promise<string> {
         return new Promise((resolve, reject) => reject('Failed.'));
+    }
+}
+
+// tslint:disable-next-line: max-classes-per-file
+class AdditionalExtension extends BaseSetup {
+    constructor() {
+        super(logger);
+        const requirements = [
+            {
+                checkFunction: this.testFunctionOne,
+                fulfilledMessage: 'Android SDK was detected.',
+                logger,
+                title: 'SDK Check',
+                unfulfilledMessage:
+                    'You must install Android SDK add it to the path.'
+            },
+            {
+                checkFunction: this.testFunctionTwo,
+                fulfilledMessage: 'ANDROID_HOME has been detected.',
+                logger,
+                title: 'ANDROID_HOME check',
+                unfulfilledMessage: 'You must setup ANDROID_HOME.'
+            }
+        ];
+        super.addBaseRequirements(requirements);
+
+        const additionalRequirements = [
+            {
+                checkFunction: this.testFunctionThree,
+                fulfilledMessage: 'Additional test passed.',
+                logger,
+                title: 'Additional test',
+                unfulfilledMessage: 'Additional test failed.'
+            }
+        ];
+        super.addAdditionalRequirements(additionalRequirements);
+    }
+
+    public async testFunctionOne(): Promise<string> {
+        return new Promise((resolve, reject) => resolve('Done.'));
+    }
+
+    public async testFunctionTwo(): Promise<string> {
+        return new Promise((resolve, reject) => resolve('Done.'));
+    }
+
+    public async testFunctionThree(): Promise<string> {
+        return new Promise((resolve, reject) => resolve('Done.'));
     }
 }
 
@@ -163,6 +211,31 @@ describe('Requirements Processing', () => {
         expect(
             setupResult.tests.length === extension.requirements.length
         ).toBeTruthy();
+    });
+
+    test('Skips all base requirements and only executes all additional requirements', async () => {
+        expect.assertions(1);
+        jest.spyOn(
+            LWCServerPluginInstalledRequirement.prototype,
+            'checkFunction'
+        ).mockImplementation(passedBaseRequirementsMock);
+        const extension = new AdditionalExtension();
+        extension.skipBaseRequirements = true;
+        const setupResult = await extension.executeSetup();
+        expect(setupResult.tests.length === 1).toBeTruthy();
+    });
+
+    test('Skips all base and additional requirements', async () => {
+        expect.assertions(1);
+        jest.spyOn(
+            LWCServerPluginInstalledRequirement.prototype,
+            'checkFunction'
+        ).mockImplementation(passedBaseRequirementsMock);
+        const extension = new AdditionalExtension();
+        extension.skipBaseRequirements = true;
+        extension.skipAdditionalRequirements = true;
+        const setupResult = await extension.executeSetup();
+        expect(setupResult.tests.length === 0).toBeTruthy();
     });
 
     test('There is only one test that failed with supplemental message', async () => {

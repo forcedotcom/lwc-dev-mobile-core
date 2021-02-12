@@ -101,7 +101,10 @@ export function WrappedPromise(
 }
 
 export abstract class BaseSetup implements RequirementList {
+    public skipBaseRequirements: boolean = false;
+    public skipAdditionalRequirements: boolean = false;
     public requirements: Requirement[];
+    public additionalRequirements: Requirement[];
     public logger: Logger;
     public setupMessages = Messages.loadMessages(
         '@salesforce/lwc-dev-mobile-core',
@@ -116,6 +119,7 @@ export abstract class BaseSetup implements RequirementList {
                 this.logger
             )
         ];
+        this.additionalRequirements = [];
     }
 
     public async executeSetup(): Promise<SetupTestResult> {
@@ -125,6 +129,20 @@ export abstract class BaseSetup implements RequirementList {
         };
 
         let totalDuration = 0;
+        let allRequirements: Requirement[] = [];
+        if (!this.skipBaseRequirements) {
+            allRequirements = allRequirements.concat(this.requirements);
+        }
+        if (!this.skipAdditionalRequirements) {
+            allRequirements = allRequirements.concat(
+                this.additionalRequirements
+            );
+        }
+
+        if (allRequirements.length === 0) {
+            return Promise.resolve(testResult);
+        }
+
         const setupTasks = new Listr(
             {
                 task: (rootCtx, rootTask): Listr => {
@@ -132,7 +150,7 @@ export abstract class BaseSetup implements RequirementList {
                         concurrent: true,
                         exitOnError: false
                     });
-                    for (const requirement of this.requirements) {
+                    for (const requirement of allRequirements) {
                         subTasks.add({
                             options: { persistentOutput: true },
                             task: (subCtx, subTask): Promise<void> =>
@@ -167,7 +185,7 @@ export abstract class BaseSetup implements RequirementList {
 
                     return subTasks;
                 },
-                title: 'Setup'
+                title: 'Requirements'
             },
             {
                 rendererOptions: {
@@ -188,9 +206,17 @@ export abstract class BaseSetup implements RequirementList {
         return Promise.resolve(testResult);
     }
 
-    public addRequirements(reqs: Requirement[]) {
+    public addBaseRequirements(reqs: Requirement[]) {
         if (reqs) {
             this.requirements = this.requirements.concat(reqs);
+        }
+    }
+
+    public addAdditionalRequirements(reqs: Requirement[]) {
+        if (reqs) {
+            this.additionalRequirements = this.additionalRequirements.concat(
+                reqs
+            );
         }
     }
 

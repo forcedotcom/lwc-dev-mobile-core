@@ -25,7 +25,7 @@ export class IOSEnvironmentSetup extends BaseSetup {
                 this.logger
             )
         ];
-        super.addRequirements(requirements);
+        super.addBaseRequirements(requirements);
     }
 }
 
