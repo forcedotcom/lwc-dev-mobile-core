@@ -110,6 +110,10 @@ export class Version {
         this.patch = patch;
     }
 
+    public same(inputVersion: Version): boolean {
+        return this.compare(inputVersion) === 0;
+    }
+
     public sameOrNewer(inputVersion: Version): boolean {
         return this.compare(inputVersion) > -1;
     }

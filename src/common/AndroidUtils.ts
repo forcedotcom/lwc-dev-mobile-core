@@ -172,10 +172,15 @@ export class AndroidSDKUtils {
             });
     }
 
-    public static async findRequiredAndroidAPIPackage(): Promise<AndroidPackage> {
-        const minSupportedRuntimeAndroid = Version.from(
+    public static async findRequiredAndroidAPIPackage(
+        apiLevel?: string
+    ): Promise<AndroidPackage> {
+        const minSupportedRuntime = Version.from(
             androidConfig.minSupportedRuntimeAndroid
         );
+        const targetRuntime: Version | undefined = apiLevel
+            ? Version.from(apiLevel)
+            : undefined;
 
         return AndroidSDKUtils.fetchInstalledPackages().then(
             async (packages) => {
@@ -187,9 +192,13 @@ export class AndroidSDKUtils {
                     );
                 }
 
-                const matchingPlatforms = packages.platforms.filter((pkg) =>
-                    pkg.version.sameOrNewer(minSupportedRuntimeAndroid)
-                );
+                const matchingPlatforms = packages.platforms.filter((pkg) => {
+                    if (targetRuntime) {
+                        return pkg.version.same(targetRuntime);
+                    } else {
+                        return pkg.version.sameOrNewer(minSupportedRuntime);
+                    }
+                });
                 if (matchingPlatforms.length < 1) {
                     return Promise.reject(
                         new Error(
@@ -231,10 +240,12 @@ export class AndroidSDKUtils {
         );
     }
 
-    public static async findRequiredEmulatorImages(): Promise<AndroidPackage> {
+    public static async findRequiredEmulatorImages(
+        apiLevel?: string
+    ): Promise<AndroidPackage> {
         let installedAndroidPackage: AndroidPackage;
 
-        return AndroidSDKUtils.findRequiredAndroidAPIPackage()
+        return AndroidSDKUtils.findRequiredAndroidAPIPackage(apiLevel)
             .then((pkg) => {
                 installedAndroidPackage = pkg;
                 return AndroidSDKUtils.packageWithRequiredEmulatorImages(

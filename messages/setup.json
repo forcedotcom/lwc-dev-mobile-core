@@ -1,11 +1,13 @@
 {
     "commandDescription": "Set up mobile environment for Lightning Web Component development.",
     "platformFlagDescription": "Specify platform ('iOS' or 'Android').",
+    "apiLevelFlagDescription": "Optionally specify Android API level. Defaults to the latest API level available.",
     "passed": "PASSED",
     "failed": "FAILED",
     "rootTaskTitle": "Requirements",
     "error:invalidInputFlagsDescription": "Invalid input value for platform.",
-    "error:setupFailed": "Setup for platform %s failed.",
+    "error:invalidApiLevelFlagsDescription": "Invalid input value for API level: %s",
+    "error:setupFailed": "Requirement verifications for platform %s failed.",
     "error:setupFailed:recommendation": "Please see the error messages above for details on resolving your setup issues.",
     "remedy:invalidInputFlagsDescription": "Specify a platform using ' -p [iOS|Android]'",
     "ios:reqs:macos:title" : "Checking macOS Environment",
@@ -36,7 +38,7 @@
     "android:reqs:emulatorimages:title" : "Checking SDK Platform Emulator Images",
     "android:reqs:emulatorimages:fulfilledMessage" : "Android emulator image (%s) was detected.",
     "android:reqs:emulatorimages:unfulfilledMessage" : "Install at least one of these emulator images: %s",
-   
+
     "common:reqs:serverplugin:title" : "Checking @salesforce/lwc-dev-server plugin",
     "common:reqs:serverplugin:fulfilledMessage" : "@salesforce/lwc-dev-server plugin is installed.",
     "common:reqs:serverplugin:unfulfilledMessage" : "Install the @salesforce/lwc-dev-server plugin."

@@ -8,7 +8,7 @@ import { flags, FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidEnvironmentSetup } from '../../../../../common/AndroidEnvironmentSetup';
-import { CommandLineUtils } from '../../../../../common/Common';
+import { CommandLineUtils, Version } from '../../../../../common/Common';
 import { IOSEnvironmentSetup } from '../../../../../common/IOSEnvironmentSetup';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
 import {
@@ -31,6 +31,12 @@ export class Setup extends SfdxCommand {
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
+        apilevel: flags.string({
+            char: 'a',
+            description: messages.getMessage('apiLevelFlagDescription'),
+            longDescription: messages.getMessage('apiLevelFlagDescription'),
+            required: false
+        }),
         platform: flags.string({
             char: 'p',
             description: messages.getMessage('platformFlagDescription'),
@@ -110,6 +116,32 @@ export class Setup extends SfdxCommand {
             );
         }
 
+        if (this.flags.apilevel) {
+            if (CommandLineUtils.platformFlagIsIOS(this.flags.platform)) {
+                this.logger.warn(
+                    'The apiLevel flag does not apply to the iOS platform... ignoring.'
+                );
+                return Promise.resolve();
+            }
+
+            try {
+                Version.from(this.flags.apilevel);
+            } catch (error) {
+                return Promise.reject(
+                    new SfdxError(
+                        util.format(
+                            messages.getMessage(
+                                'error:invalidApiLevelFlagsDescription'
+                            ),
+                            error
+                        ),
+                        'lwc-dev-mobile-core',
+                        this.examples
+                    )
+                );
+            }
+        }
+
         return Promise.resolve();
     }
 
@@ -124,7 +156,7 @@ export class Setup extends SfdxCommand {
             this.setupSteps = CommandLineUtils.platformFlagIsAndroid(
                 this.flags.platform
             )
-                ? new AndroidEnvironmentSetup(this.logger)
+                ? new AndroidEnvironmentSetup(this.logger, this.flags.apilevel)
                 : new IOSEnvironmentSetup(this.logger);
         }
 

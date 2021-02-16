@@ -11,7 +11,7 @@ import { AndroidSDKUtils } from './AndroidUtils';
 import { BaseSetup, Requirement } from './Requirements';
 
 export class AndroidEnvironmentSetup extends BaseSetup {
-    constructor(logger: Logger) {
+    constructor(logger: Logger, apiLevel?: string) {
         super(logger);
         const requirements = [
             new AndroidSDKRootSetRequirement(this.setupMessages, this.logger),
@@ -24,8 +24,16 @@ export class AndroidEnvironmentSetup extends BaseSetup {
                 this.setupMessages,
                 this.logger
             ),
-            new PlatformAPIPackageRequirement(this.setupMessages, this.logger),
-            new EmulatorImagesRequirement(this.setupMessages, this.logger)
+            new PlatformAPIPackageRequirement(
+                this.setupMessages,
+                this.logger,
+                apiLevel
+            ),
+            new EmulatorImagesRequirement(
+                this.setupMessages,
+                this.logger,
+                apiLevel
+            )
         ];
         super.addBaseRequirements(requirements);
     }
@@ -184,8 +192,9 @@ export class PlatformAPIPackageRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    private apiLevel?: string;
 
-    constructor(messages: Messages, logger: Logger) {
+    constructor(messages: Messages, logger: Logger, apiLevel?: string) {
         this.title = messages.getMessage('android:reqs:platformapi:title');
         this.fulfilledMessage = messages.getMessage(
             'android:reqs:platformapi:fulfilledMessage'
@@ -194,10 +203,11 @@ export class PlatformAPIPackageRequirement implements Requirement {
             'android:reqs:platformapi:unfulfilledMessage'
         );
         this.logger = logger;
+        this.apiLevel = apiLevel;
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidSDKUtils.findRequiredAndroidAPIPackage()
+        return AndroidSDKUtils.findRequiredAndroidAPIPackage(this.apiLevel)
             .then((result) =>
                 Promise.resolve(
                     util.format(this.fulfilledMessage, result.platformAPI)
@@ -220,8 +230,9 @@ export class EmulatorImagesRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    private apiLevel?: string;
 
-    constructor(messages: Messages, logger: Logger) {
+    constructor(messages: Messages, logger: Logger, apiLevel?: string) {
         this.title = messages.getMessage('android:reqs:emulatorimages:title');
         this.fulfilledMessage = messages.getMessage(
             'android:reqs:emulatorimages:fulfilledMessage'
@@ -230,10 +241,11 @@ export class EmulatorImagesRequirement implements Requirement {
             'android:reqs:emulatorimages:unfulfilledMessage'
         );
         this.logger = logger;
+        this.apiLevel = apiLevel;
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidSDKUtils.findRequiredEmulatorImages()
+        return AndroidSDKUtils.findRequiredEmulatorImages(this.apiLevel)
             .then((result) =>
                 Promise.resolve(util.format(this.fulfilledMessage, result.path))
             )

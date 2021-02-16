@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { AndroidSDKRootSource, AndroidSDKUtils } from '../AndroidUtils';
+import { Version } from '../Common';
 import { CommonUtils } from '../CommonUtils';
 import { PreviewUtils } from '../PreviewUtils';
 import { AndroidMockData } from './AndroidMockData';
@@ -227,6 +228,19 @@ describe('Android utils', () => {
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
+    });
+
+    test('Should Find a preferred Android package at a specific API level', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+        const apiPackage = await AndroidSDKUtils.findRequiredAndroidAPIPackage(
+            '28'
+        );
+        expect(apiPackage !== null && apiPackage.description !== null).toBe(
+            true
+        );
+        expect(apiPackage.version.same(Version.from('28'))).toBe(true);
     });
 
     test('Should not find a preferred Android package', async () => {
