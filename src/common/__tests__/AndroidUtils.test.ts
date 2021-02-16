@@ -220,7 +220,7 @@ describe('Android utils', () => {
         expect(myCommandBlockMock).toHaveBeenCalledTimes(2);
     });
 
-    test('Should Find a preferred Android package', async () => {
+    test('Should find a preferred Android package', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
@@ -230,7 +230,7 @@ describe('Android utils', () => {
         );
     });
 
-    test('Should Find a preferred Android package at a specific API level', async () => {
+    test('Should find a preferred Android package at a specific API level', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
@@ -252,7 +252,7 @@ describe('Android utils', () => {
         });
     });
 
-    test('Should Find a preferred Android emulator package', async () => {
+    test('Should find a preferred Android emulator package', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
