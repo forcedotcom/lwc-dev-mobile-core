@@ -3,6 +3,7 @@
     "platformFlagDescription": "Specify platform ('iOS' or 'Android').",
     "passed": "PASSED",
     "failed": "FAILED",
+    "rootTaskTitle": "Requirements",
     "error:invalidInputFlagsDescription": "Invalid input value for platform.",
     "error:setupFailed": "Setup for platform %s failed.",
     "error:setupFailed:recommendation": "Please see the error messages above for details on resolving your setup issues.",

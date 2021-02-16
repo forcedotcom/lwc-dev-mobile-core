@@ -143,6 +143,7 @@ export abstract class BaseSetup implements RequirementList {
             return Promise.resolve(testResult);
         }
 
+        const rootTaskTitle = this.setupMessages.getMessage('rootTaskTitle');
         const setupTasks = new Listr(
             {
                 task: (rootCtx, rootTask): Listr => {
@@ -166,7 +167,7 @@ export abstract class BaseSetup implements RequirementList {
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;
-                                    rootTask.title = `Setup (${this.formatDurationAsSeconds(
+                                    rootTask.title = `${rootTaskTitle} (${this.formatDurationAsSeconds(
                                         totalDuration
                                     )})`;
 
@@ -185,7 +186,7 @@ export abstract class BaseSetup implements RequirementList {
 
                     return subTasks;
                 },
-                title: 'Requirements'
+                title: rootTaskTitle
             },
             {
                 rendererOptions: {
