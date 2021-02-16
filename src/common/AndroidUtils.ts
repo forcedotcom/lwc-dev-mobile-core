@@ -331,7 +331,8 @@ export class AndroidSDKUtils {
 
     public static async startEmulator(
         emulatorName: string,
-        requestedPortNumber: number
+        requestedPortNumber: number,
+        writable: boolean = false
     ): Promise<number> {
         return AndroidSDKUtils.resolveEmulatorImage(emulatorName).then(
             (resolvedEmulator) => {
@@ -360,7 +361,9 @@ export class AndroidSDKUtils {
                     // is specially true on Windows platform. So istead we spawn the process to launch
                     // the emulator and later attempt at polling the emulator to see if it failed to boot.
                     const child = spawn(
-                        `${AndroidSDKUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber}`,
+                        writable
+                            ? `${AndroidSDKUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber} -writable-system`
+                            : `${AndroidSDKUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber}`,
                         { detached: true, shell: true, stdio: 'ignore' }
                     );
                     child.unref();
