@@ -276,7 +276,9 @@ describe('Android utils', () => {
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledWith(
-            userHome + `/.android/avd/${avdName}.avd/config.ini`,
+            path.normalize(
+                `${userHome}/.android/avd/${avdName}.avd/config.ini`
+            ),
             expectedConfig,
             'utf8'
         );
@@ -300,7 +302,9 @@ describe('Android utils', () => {
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledWith(
-            userHome + `/.android/avd/${avdName}.avd/config.ini`,
+            path.normalize(
+                `${userHome}/.android/avd/${avdName}.avd/config.ini`
+            ),
             expectedConfig,
             'utf8'
         );
@@ -320,7 +324,9 @@ describe('Android utils', () => {
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledWith(
-            userHome + `/.android/avd/${avdName}.avd/config.ini`,
+            path.normalize(
+                `${userHome}/.android/avd/${avdName}.avd/config.ini`
+            ),
             expectedConfig,
             'utf8'
         );

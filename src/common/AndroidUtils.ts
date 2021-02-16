@@ -149,6 +149,10 @@ export class AndroidSDKUtils {
         });
     }
 
+    public static async getSupportedDevices(): Promise<string[]> {
+        return Promise.resolve(androidConfig.supportedDevices);
+    }
+
     public static async fetchEmulators(): Promise<AndroidVirtualDevice[]> {
         let devices: AndroidVirtualDevice[] = [];
         return CommonUtils.executeCommandAsync(

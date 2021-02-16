@@ -44,9 +44,62 @@ export class Setup extends SfdxCommand {
         `sfdx force:lightning:local:setup -p Android`
     ];
 
+    public skipBaseRequirements = false;
+    public skipAdditionalRequirements = false;
+
     private setupSteps: BaseSetup | undefined;
 
     public async run(): Promise<any> {
+        return this.init() // ensure init first
+            .then(() => {
+                this.logger.info(
+                    `Setup command called for ${this.flags.platform}`
+                );
+                return this.validateInputParameters(); // validate input
+            })
+            .then(() => this.executeSetup(this.setup())) // verify requirements
+            .then((result) => {
+                if (!result.hasMetAllRequirements) {
+                    return Promise.reject(
+                        new SfdxError(
+                            util.format(
+                                messages.getMessage('error:setupFailed'),
+                                this.flags.platform
+                            ),
+                            'lwc-dev-mobile-core',
+                            [
+                                messages.getMessage(
+                                    'error:setupFailed:recommendation'
+                                )
+                            ]
+                        )
+                    );
+                } else {
+                    return Promise.resolve(result);
+                }
+            });
+    }
+
+    protected async init(): Promise<void> {
+        if (this.logger) {
+            // already initialized
+            return Promise.resolve();
+        }
+
+        return super
+            .init()
+            .then(() => Logger.child('mobile:setup', {}))
+            .then((logger) => {
+                this.logger = logger;
+                return LoggerSetup.initializePluginLoggers();
+            });
+    }
+
+    protected addAdditionalRequirements(reqs: Requirement[]) {
+        this.setup().addAdditionalRequirements(reqs);
+    }
+
+    protected async validateInputParameters(): Promise<void> {
         if (!CommandLineUtils.platformFlagIsValid(this.flags.platform)) {
             return Promise.reject(
                 new SfdxError(
@@ -56,42 +109,14 @@ export class Setup extends SfdxCommand {
                 )
             );
         }
-        this.logger.info(`Setup Command called for ${this.flags.platform}`);
-        return this.executeSetup(this.setup()).then((result) => {
-            if (!result.hasMetAllRequirements) {
-                return Promise.reject(
-                    new SfdxError(
-                        util.format(
-                            messages.getMessage('error:setupFailed'),
-                            this.flags.platform
-                        ),
-                        'lwc-dev-mobile-core',
-                        [
-                            messages.getMessage(
-                                'error:setupFailed:recommendation'
-                            )
-                        ]
-                    )
-                );
-            } else {
-                return Promise.resolve(result);
-            }
-        });
+
+        return Promise.resolve();
     }
 
-    public async executeSetup(setup: BaseSetup): Promise<SetupTestResult> {
+    private async executeSetup(setup: BaseSetup): Promise<SetupTestResult> {
+        setup.skipBaseRequirements = this.skipBaseRequirements;
+        setup.skipAdditionalRequirements = this.skipAdditionalRequirements;
         return setup.executeSetup();
-    }
-
-    protected async init(): Promise<void> {
-        await super.init();
-        const logger = await Logger.child('mobile:setup', {});
-        this.logger = logger;
-        await LoggerSetup.initializePluginLoggers();
-    }
-
-    protected addAdditionalRequirements(reqs: Requirement[]) {
-        this.setup().addAdditionalRequirements(reqs);
     }
 
     private setup(): BaseSetup {
@@ -104,19 +129,5 @@ export class Setup extends SfdxCommand {
         }
 
         return this.setupSteps;
-    }
-
-    get skipBaseRequirements(): boolean {
-        return this.setup().skipBaseRequirements;
-    }
-    set skipBaseRequirements(value: boolean) {
-        this.setup().skipBaseRequirements = value;
-    }
-
-    get skipAdditionalRequirements(): boolean {
-        return this.setup().skipAdditionalRequirements;
-    }
-    set skipAdditionalRequirements(value: boolean) {
-        this.setup().skipAdditionalRequirements = value;
     }
 }

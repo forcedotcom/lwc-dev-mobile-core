@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import androidConfig from '../config/androidconfig.json';
 import { AndroidSDKUtils } from './AndroidUtils';
 import { AndroidAppPreviewConfig, LaunchArgument } from './PreviewConfigFile';
 import { CommonUtils } from './CommonUtils';
@@ -29,7 +28,7 @@ export class AndroidLauncher {
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
-        const device = androidConfig.supportedDevices[0];
+        const device = (await AndroidSDKUtils.getSupportedDevices())[0];
         let emulatorPort = await AndroidSDKUtils.getNextAndroidAdbPort();
         const emuName = this.emulatorName;
         CommonUtils.startCliAction(`Launching`, `Searching for ${emuName}`);
