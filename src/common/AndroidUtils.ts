@@ -361,9 +361,9 @@ export class AndroidSDKUtils {
                     // is specially true on Windows platform. So istead we spawn the process to launch
                     // the emulator and later attempt at polling the emulator to see if it failed to boot.
                     const child = spawn(
-                        writable
-                            ? `${AndroidSDKUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber} -writable-system`
-                            : `${AndroidSDKUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber}`,
+                        `${AndroidSDKUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber}${
+                            writable ? ' -writable-system' : ''
+                        }`,
                         { detached: true, shell: true, stdio: 'ignore' }
                     );
                     child.unref();
