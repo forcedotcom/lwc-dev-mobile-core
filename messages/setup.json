@@ -1,7 +1,7 @@
 {
     "commandDescription": "Set up mobile environment for Lightning Web Component development.",
     "platformFlagDescription": "Specify platform ('iOS' or 'Android').",
-    "apiLevelFlagDescription": "Optionally specify Android API level. Defaults to the latest API level available.",
+    "apiLevelFlagDescription": "Specify Android API level. Defaults to the latest API level installed.",
     "passed": "PASSED",
     "failed": "FAILED",
     "rootTaskTitle": "Requirements",
