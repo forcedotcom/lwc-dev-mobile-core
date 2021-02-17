@@ -44,14 +44,14 @@ describe('Setup Tests', () => {
 
     test('Checks that Setup is initialized correctly for iOS', async () => {
         const setup = makeSetup(PlatformType.ios);
-        await setup.run();
+        await setup.run(true);
         expect(platformFlagIsValidMock).toHaveBeenCalledWith(PlatformType.ios);
         expect(executeSetupMock).toHaveBeenCalled();
     });
 
     test('Checks that Setup is initialized correctly for Android', async () => {
         const setup = makeSetup(PlatformType.android);
-        await setup.run();
+        await setup.run(true);
         expect(platformFlagIsValidMock).toHaveBeenCalledWith(
             PlatformType.android
         );
@@ -67,7 +67,7 @@ describe('Setup Tests', () => {
             LoggerSetup,
             'initializePluginLoggers'
         );
-        await setup.run();
+        await setup.run(true);
         expect(loggerSpy).toHaveBeenCalled();
         expect(LoggerSetupSpy).toHaveBeenCalled();
     });

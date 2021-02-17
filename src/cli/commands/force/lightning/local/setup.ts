@@ -55,14 +55,14 @@ export class Setup extends SfdxCommand {
 
     private setupSteps: BaseSetup | undefined;
 
-    public async run(): Promise<any> {
-        return this.init() // ensure init first
-            .then(() => {
-                this.logger.info(
-                    `Setup command called for ${this.flags.platform}`
-                );
-                return this.validateInputParameters(); // validate input
-            })
+    public async run(direct: boolean = false): Promise<any> {
+        if (direct) {
+            await this.init(); // ensure init first
+        }
+
+        this.logger.info(`Setup command called for ${this.flags.platform}`);
+
+        return this.validateInputParameters() // validate input
             .then(() => this.executeSetup(this.setup())) // verify requirements
             .then((result) => {
                 if (!result.hasMetAllRequirements) {
