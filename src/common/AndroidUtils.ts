@@ -23,7 +23,7 @@ import { PreviewUtils } from './PreviewUtils';
 const spawn = childProcess.spawn;
 type StdioOptions = childProcess.StdioOptions;
 
-const LOGGER_NAME = 'force:lightning:mobile:android';
+const LOGGER_NAME = 'force:lightning:local:androidutils';
 const WINDOWS_OS = 'win32';
 const ANDROID_SDK_MANAGER_NAME = 'sdkmanager';
 const ANDROID_AVD_MANAGER_NAME = 'avdmanager';

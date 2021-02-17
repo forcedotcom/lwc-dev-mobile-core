@@ -15,7 +15,7 @@ import { PreviewUtils } from './PreviewUtils';
 const XCRUN_CMD = '/usr/bin/xcrun';
 const DEVICE_TYPE_PREFIX = 'com.apple.CoreSimulator.SimDeviceType';
 const RUNTIME_TYPE_PREFIX = 'com.apple.CoreSimulator.SimRuntime';
-const LOGGER_NAME = 'force:lightning:mobile:ios';
+const LOGGER_NAME = 'force:lightning:local:iosutils';
 
 export class IOSUtils {
     public static async initializeLogger(): Promise<void> {

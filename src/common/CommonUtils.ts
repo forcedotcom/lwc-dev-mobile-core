@@ -7,10 +7,11 @@
 import { Logger } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
+import fs from 'fs';
 
 type StdioOptions = childProcess.StdioOptions;
 
-const LOGGER_NAME = 'force:lightning:mobile:common';
+const LOGGER_NAME = 'force:lightning:local:commonutils';
 
 export class CommonUtils {
     public static DEFAULT_LWC_SERVER_PORT = '3333';
@@ -43,6 +44,12 @@ export class CommonUtils {
             newPath = newPath.replace('~', userHome);
         }
         return newPath;
+    }
+
+    public static loadJsonFromFile(file: string): any {
+        const fileContent = fs.readFileSync(file, 'utf8');
+        const json = JSON.parse(fileContent);
+        return json;
     }
 
     public static executeCommandSync(

@@ -94,7 +94,7 @@ export class Setup extends SfdxCommand {
 
         return super
             .init()
-            .then(() => Logger.child('mobile:setup', {}))
+            .then(() => Logger.child('force:lightning:local:setup', {}))
             .then((logger) => {
                 this.logger = logger;
                 return LoggerSetup.initializePluginLoggers();
