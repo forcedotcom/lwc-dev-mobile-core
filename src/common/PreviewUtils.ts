@@ -5,8 +5,8 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import Ajv from 'ajv';
-import fs from 'fs';
 import path from 'path';
+import { CommonUtils } from './CommonUtils';
 import {
     AndroidAppPreviewConfig,
     IOSAppPreviewConfig,
@@ -56,7 +56,7 @@ export class PreviewUtils {
         schema: object
     ): Promise<ValidationResult> {
         try {
-            const configFileJson = PreviewUtils.getConfigFileAsJson(configFile);
+            const configFileJson = CommonUtils.loadJsonFromFile(configFile);
 
             const ajv = new Ajv({ allErrors: true });
             const validationResult = await ajv.validate(schema, configFileJson);
@@ -75,14 +75,8 @@ export class PreviewUtils {
         }
     }
 
-    public static getConfigFileAsJson(file: string): any {
-        const fileContent = fs.readFileSync(file, 'utf8');
-        const json = JSON.parse(fileContent);
-        return json;
-    }
-
     public static loadConfigFile(file: string): PreviewConfigFile {
-        const json = PreviewUtils.getConfigFileAsJson(file);
+        const json = CommonUtils.loadJsonFromFile(file);
         const configFile = Object.assign(new PreviewConfigFile(), json);
         return configFile;
     }

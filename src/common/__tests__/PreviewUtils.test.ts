@@ -8,6 +8,7 @@ import {
     AndroidAppPreviewConfig,
     IOSAppPreviewConfig
 } from '../PreviewConfigFile';
+import { CommonUtils } from '../CommonUtils';
 import { PreviewUtils } from '../PreviewUtils';
 import * as configSchema from './previewMockConfigurationSchema.json';
 
@@ -24,7 +25,7 @@ describe('Preview utils tests', () => {
     test('Config validation fails when app id is not defined', async () => {
         const json = '{"apps": {"ios": [{"name": "LWC Test App"}]}}';
         const configFileJson = JSON.parse(json);
-        jest.spyOn(PreviewUtils, 'getConfigFileAsJson').mockReturnValue(
+        jest.spyOn(CommonUtils, 'loadJsonFromFile').mockReturnValue(
             configFileJson
         );
 
@@ -42,7 +43,7 @@ describe('Preview utils tests', () => {
     test('Config validation fails when app name is not defined', async () => {
         const json = '{"apps": {"ios": [{"id": "com.salesforce.Test"}]}}';
         const configFileJson = JSON.parse(json);
-        jest.spyOn(PreviewUtils, 'getConfigFileAsJson').mockReturnValue(
+        jest.spyOn(CommonUtils, 'loadJsonFromFile').mockReturnValue(
             configFileJson
         );
 
@@ -74,7 +75,7 @@ describe('Preview utils tests', () => {
             }
         }`;
         const configFileJson = JSON.parse(json);
-        jest.spyOn(PreviewUtils, 'getConfigFileAsJson').mockReturnValue(
+        jest.spyOn(CommonUtils, 'loadJsonFromFile').mockReturnValue(
             configFileJson
         );
 
@@ -102,7 +103,7 @@ describe('Preview utils tests', () => {
             }
         }`;
         const configFileJson = JSON.parse(json);
-        jest.spyOn(PreviewUtils, 'getConfigFileAsJson').mockReturnValue(
+        jest.spyOn(CommonUtils, 'loadJsonFromFile').mockReturnValue(
             configFileJson
         );
 
@@ -134,7 +135,7 @@ describe('Preview utils tests', () => {
             }
         }`;
         const configFileJson = JSON.parse(json);
-        jest.spyOn(PreviewUtils, 'getConfigFileAsJson').mockReturnValue(
+        jest.spyOn(CommonUtils, 'loadJsonFromFile').mockReturnValue(
             configFileJson
         );
 
@@ -164,7 +165,7 @@ describe('Preview utils tests', () => {
             }
         }`;
         const configFileJson = JSON.parse(json);
-        jest.spyOn(PreviewUtils, 'getConfigFileAsJson').mockReturnValue(
+        jest.spyOn(CommonUtils, 'loadJsonFromFile').mockReturnValue(
             configFileJson
         );
 

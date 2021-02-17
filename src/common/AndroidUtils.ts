@@ -23,7 +23,7 @@ import { PreviewUtils } from './PreviewUtils';
 const spawn = childProcess.spawn;
 type StdioOptions = childProcess.StdioOptions;
 
-const LOGGER_NAME = 'force:lightning:mobile:android';
+const LOGGER_NAME = 'force:lightning:local:androidutils';
 const WINDOWS_OS = 'win32';
 const ANDROID_SDK_MANAGER_NAME = 'sdkmanager';
 const ANDROID_AVD_MANAGER_NAME = 'avdmanager';
@@ -149,6 +149,10 @@ export class AndroidSDKUtils {
         });
     }
 
+    public static async getSupportedDevices(): Promise<string[]> {
+        return Promise.resolve(androidConfig.supportedDevices);
+    }
+
     public static async fetchEmulators(): Promise<AndroidVirtualDevice[]> {
         let devices: AndroidVirtualDevice[] = [];
         return CommonUtils.executeCommandAsync(
@@ -168,36 +172,63 @@ export class AndroidSDKUtils {
             });
     }
 
-    public static async findRequiredAndroidAPIPackage(): Promise<AndroidPackage> {
-        const minSupportedRuntimeAndroid = Version.from(
+    public static async fetchAllAvailableApiPackages(): Promise<
+        AndroidPackage[]
+    > {
+        const minSupportedRuntime = Version.from(
             androidConfig.minSupportedRuntimeAndroid
         );
 
-        return AndroidSDKUtils.fetchInstalledPackages().then(
+        return AndroidSDKUtils.fetchInstalledPackages().then((packages) => {
+            if (packages.isEmpty()) {
+                return Promise.reject(
+                    new Error(
+                        `No Android API packages are installed. Minimum supported Android API package version is ${androidConfig.minSupportedRuntimeAndroid}`
+                    )
+                );
+            }
+
+            const matchingPlatforms = packages.platforms.filter((pkg) =>
+                pkg.version.sameOrNewer(minSupportedRuntime)
+            );
+
+            if (matchingPlatforms.length < 1) {
+                return Promise.reject(
+                    new Error(
+                        `Could not locate a supported Android API package. Minimum supported Android API package version is ${androidConfig.minSupportedRuntimeAndroid}`
+                    )
+                );
+            }
+
+            // Sort the packages with latest version by negating the comparison result
+            matchingPlatforms.sort((a, b) => a.version.compare(b.version) * -1);
+
+            return Promise.resolve(matchingPlatforms);
+        });
+    }
+
+    public static async findRequiredAndroidAPIPackage(
+        apiLevel?: string
+    ): Promise<AndroidPackage> {
+        const targetRuntime: Version | undefined = apiLevel
+            ? Version.from(apiLevel)
+            : undefined;
+
+        return AndroidSDKUtils.fetchAllAvailableApiPackages().then(
             async (packages) => {
-                if (packages.isEmpty()) {
-                    return Promise.reject(
-                        new Error(
-                            `No Android API packages are installed. Minimum supported Android API package version is ${androidConfig.minSupportedRuntimeAndroid}`
-                        )
+                let matchingPlatforms = packages;
+                if (targetRuntime) {
+                    matchingPlatforms = packages.filter((pkg) =>
+                        pkg.version.same(targetRuntime)
                     );
+                    if (matchingPlatforms.length < 1) {
+                        return Promise.reject(
+                            new Error(
+                                `Could not locate Android API package for API level ${apiLevel}.`
+                            )
+                        );
+                    }
                 }
-
-                const matchingPlatforms = packages.platforms.filter((pkg) =>
-                    pkg.version.sameOrNewer(minSupportedRuntimeAndroid)
-                );
-                if (matchingPlatforms.length < 1) {
-                    return Promise.reject(
-                        new Error(
-                            `Could not locate a supported Android API package. Minimum supported Android API package version is ${androidConfig.minSupportedRuntimeAndroid}`
-                        )
-                    );
-                }
-
-                // Sort the packages with latest version by negating the comparison result
-                matchingPlatforms.sort(
-                    (a, b) => a.version.compare(b.version) * -1
-                );
 
                 try {
                     // Return the latest package that also has matching emulator images
@@ -227,10 +258,12 @@ export class AndroidSDKUtils {
         );
     }
 
-    public static async findRequiredEmulatorImages(): Promise<AndroidPackage> {
+    public static async findRequiredEmulatorImages(
+        apiLevel?: string
+    ): Promise<AndroidPackage> {
         let installedAndroidPackage: AndroidPackage;
 
-        return AndroidSDKUtils.findRequiredAndroidAPIPackage()
+        return AndroidSDKUtils.findRequiredAndroidAPIPackage(apiLevel)
             .then((pkg) => {
                 installedAndroidPackage = pkg;
                 return AndroidSDKUtils.packageWithRequiredEmulatorImages(
