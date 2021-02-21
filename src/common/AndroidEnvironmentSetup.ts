@@ -6,8 +6,8 @@
  */
 import { Logger, Messages } from '@salesforce/core';
 import util from 'util';
-import androidConfig from '../config/androidconfig.json';
-import { AndroidSDKUtils } from './AndroidUtils';
+import { AndroidUtils } from './AndroidUtils';
+import { PlatformConfig } from './PlatformConfig';
 import { BaseSetup, Requirement } from './Requirements';
 
 export class AndroidEnvironmentSetup extends BaseSetup {
@@ -58,10 +58,10 @@ export class AndroidSDKRootSetRequirement implements Requirement {
     }
 
     public async checkFunction(): Promise<string> {
-        const root = AndroidSDKUtils.getAndroidSdkRoot();
+        const root = AndroidUtils.getAndroidSdkRoot();
         if (root) {
             return Promise.resolve(
-                AndroidSDKUtils.convertToUnixPath(
+                AndroidUtils.convertToUnixPath(
                     util.format(
                         this.fulfilledMessage,
                         root.rootSource,
@@ -96,7 +96,7 @@ export class Java8AvailableRequirement implements Requirement {
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidSDKUtils.androidSDKPrerequisitesCheck()
+        return AndroidUtils.androidSDKPrerequisitesCheck()
             .then((result) => Promise.resolve(this.fulfilledMessage))
             .catch((error) =>
                 Promise.reject(
@@ -125,10 +125,10 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidSDKUtils.fetchAndroidCmdLineToolsLocation()
+        return AndroidUtils.fetchAndroidCmdLineToolsLocation()
             .then((result) =>
                 Promise.resolve(
-                    AndroidSDKUtils.convertToUnixPath(
+                    AndroidUtils.convertToUnixPath(
                         util.format(this.fulfilledMessage, result)
                     )
                 )
@@ -157,10 +157,10 @@ export class AndroidSDKPlatformToolsInstalledRequirement
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidSDKUtils.fetchAndroidSDKPlatformToolsLocation()
+        return AndroidUtils.fetchAndroidSDKPlatformToolsLocation()
             .then((result) =>
                 Promise.resolve(
-                    AndroidSDKUtils.convertToUnixPath(
+                    AndroidUtils.convertToUnixPath(
                         util.format(this.fulfilledMessage, result)
                     )
                 )
@@ -170,7 +170,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement
                     return Promise.reject(
                         new Error(
                             'Platform tools not found. Expected at ' +
-                                AndroidSDKUtils.getAndroidPlatformTools() +
+                                AndroidUtils.getAndroidPlatformTools() +
                                 '.'
                         )
                     );
@@ -178,7 +178,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement
                     return Promise.reject(
                         util.format(
                             this.unfulfilledMessage,
-                            androidConfig.minSupportedRuntimeAndroid
+                            PlatformConfig.androidConfig().minSupportedRuntime
                         )
                     );
                 }
@@ -207,7 +207,7 @@ export class PlatformAPIPackageRequirement implements Requirement {
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidSDKUtils.findRequiredAndroidAPIPackage(this.apiLevel)
+        return AndroidUtils.findRequiredAndroidAPIPackage(this.apiLevel)
             .then((result) =>
                 Promise.resolve(
                     util.format(this.fulfilledMessage, result.platformAPI)
@@ -217,7 +217,7 @@ export class PlatformAPIPackageRequirement implements Requirement {
                 Promise.reject(
                     util.format(
                         this.unfulfilledMessage,
-                        androidConfig.minSupportedRuntimeAndroid
+                        PlatformConfig.androidConfig().minSupportedRuntime
                     )
                 )
             );
@@ -245,7 +245,7 @@ export class EmulatorImagesRequirement implements Requirement {
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidSDKUtils.findRequiredEmulatorImages(this.apiLevel)
+        return AndroidUtils.findRequiredEmulatorImages(this.apiLevel)
             .then((result) =>
                 Promise.resolve(util.format(this.fulfilledMessage, result.path))
             )
@@ -253,7 +253,7 @@ export class EmulatorImagesRequirement implements Requirement {
                 Promise.reject(
                     util.format(
                         this.unfulfilledMessage,
-                        androidConfig.supportedImages.join(',')
+                        PlatformConfig.androidConfig().supportedImages.join(',')
                     )
                 )
             );

@@ -6,7 +6,7 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { AndroidSDKRootSource, AndroidSDKUtils } from '../AndroidUtils';
+import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
 import { Version } from '../Common';
 import { CommonUtils } from '../CommonUtils';
 import { PreviewUtils } from '../PreviewUtils';
@@ -71,21 +71,18 @@ describe('Android utils', () => {
     beforeEach(() => {
         // tslint:disable-next-line: no-empty
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
-        jest.spyOn(AndroidSDKUtils, 'getAndroidSdkRoot').mockImplementation(
-            () => {
-                return {
-                    rootLocation: mockAndroidHome,
-                    rootSource: AndroidSDKRootSource.androidHome
-                };
-            }
+        jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(() => {
+            return {
+                rootLocation: mockAndroidHome,
+                rootSource: AndroidSDKRootSource.androidHome
+            };
+        });
+        jest.spyOn(AndroidUtils, 'getAndroidCmdLineToolsBin').mockReturnValue(
+            mockCmdLineToolsBin
         );
-        jest.spyOn(
-            AndroidSDKUtils,
-            'getAndroidCmdLineToolsBin'
-        ).mockReturnValue(mockCmdLineToolsBin);
         myCommandBlockMock.mockClear();
         badBlockMock.mockClear();
-        AndroidSDKUtils.clearCaches();
+        AndroidUtils.clearCaches();
         throwMock.mockClear();
         launchCommandMock.mockClear();
         launchCommandThrowsMock.mockClear();
@@ -103,7 +100,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMock
         );
-        await AndroidSDKUtils.androidSDKPrerequisitesCheck();
+        await AndroidUtils.androidSDKPrerequisitesCheck();
         expect(myGenericVersionsCommandBlockMock).toHaveBeenCalledWith(
             `${sdkCommand} --version`
         );
@@ -113,7 +110,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMock
         );
-        await AndroidSDKUtils.fetchAndroidCmdLineToolsLocation();
+        await AndroidUtils.fetchAndroidCmdLineToolsLocation();
         expect(myGenericVersionsCommandBlockMock).toHaveBeenCalledWith(
             `${sdkCommand} --version`
         );
@@ -123,7 +120,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMockThrows
         );
-        AndroidSDKUtils.fetchAndroidCmdLineToolsLocation().catch((error) => {
+        AndroidUtils.fetchAndroidCmdLineToolsLocation().catch((error) => {
             expect(error).toBeTruthy();
         });
     });
@@ -132,7 +129,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMock
         );
-        await AndroidSDKUtils.fetchAndroidSDKPlatformToolsLocation();
+        await AndroidUtils.fetchAndroidSDKPlatformToolsLocation();
         expect(myGenericVersionsCommandBlockMock).toHaveBeenCalledWith(
             `${adbCommand} --version`
         );
@@ -142,18 +139,16 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMockThrows
         );
-        AndroidSDKUtils.fetchAndroidSDKPlatformToolsLocation().catch(
-            (error) => {
-                expect(error).toBeTruthy();
-            }
-        );
+        AndroidUtils.fetchAndroidSDKPlatformToolsLocation().catch((error) => {
+            expect(error).toBeTruthy();
+        });
     });
 
     test('Should attempt to invoke the sdkmanager for installed packages', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        await AndroidSDKUtils.fetchInstalledPackages();
+        await AndroidUtils.fetchInstalledPackages();
         expect(myCommandBlockMock).toHaveBeenCalledWith(`${sdkCommand} --list`);
     });
 
@@ -161,7 +156,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const packages = await AndroidSDKUtils.fetchInstalledPackages();
+        const packages = await AndroidUtils.fetchInstalledPackages();
         expect(
             packages.platforms.length + packages.systemImages.length ===
                 AndroidMockData.mockRawStringPackageLength
@@ -172,29 +167,29 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             badBlockMock
         );
-        const packages = await AndroidSDKUtils.fetchInstalledPackages();
+        const packages = await AndroidUtils.fetchInstalledPackages();
         expect(packages.isEmpty()).toBe(true);
     });
 
     test('Should have no cache before first list packages call', async () => {
-        expect(AndroidSDKUtils.isCached()).toBeFalsy();
+        expect(AndroidUtils.isCached()).toBeFalsy();
     });
 
     test('Should establish cache on first call', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const packages = await AndroidSDKUtils.fetchInstalledPackages();
-        expect(AndroidSDKUtils.isCached()).toBeTruthy();
+        const packages = await AndroidUtils.fetchInstalledPackages();
+        expect(AndroidUtils.isCached()).toBeTruthy();
     });
 
     test('Should utilize cache for subsequent calls', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        let packages = await AndroidSDKUtils.fetchInstalledPackages();
-        packages = await AndroidSDKUtils.fetchInstalledPackages();
-        packages = await AndroidSDKUtils.fetchInstalledPackages();
+        let packages = await AndroidUtils.fetchInstalledPackages();
+        packages = await AndroidUtils.fetchInstalledPackages();
+        packages = await AndroidUtils.fetchInstalledPackages();
         expect(myCommandBlockMock).toHaveBeenCalledTimes(1);
     });
 
@@ -202,10 +197,10 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        let packages = await AndroidSDKUtils.fetchInstalledPackages();
-        packages = await AndroidSDKUtils.fetchInstalledPackages();
-        AndroidSDKUtils.clearCaches();
-        packages = await AndroidSDKUtils.fetchInstalledPackages();
+        let packages = await AndroidUtils.fetchInstalledPackages();
+        packages = await AndroidUtils.fetchInstalledPackages();
+        AndroidUtils.clearCaches();
+        packages = await AndroidUtils.fetchInstalledPackages();
         expect(myCommandBlockMock).toHaveBeenCalledTimes(2);
     });
 
@@ -213,10 +208,10 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        let packages = await AndroidSDKUtils.fetchInstalledPackages();
-        packages = await AndroidSDKUtils.fetchInstalledPackages();
-        AndroidSDKUtils.clearCaches();
-        packages = await AndroidSDKUtils.fetchInstalledPackages();
+        let packages = await AndroidUtils.fetchInstalledPackages();
+        packages = await AndroidUtils.fetchInstalledPackages();
+        AndroidUtils.clearCaches();
+        packages = await AndroidUtils.fetchInstalledPackages();
         expect(myCommandBlockMock).toHaveBeenCalledTimes(2);
     });
 
@@ -224,7 +219,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const apiPackage = await AndroidSDKUtils.findRequiredAndroidAPIPackage();
+        const apiPackage = await AndroidUtils.findRequiredAndroidAPIPackage();
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
@@ -234,7 +229,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const apiPackage = await AndroidSDKUtils.findRequiredAndroidAPIPackage(
+        const apiPackage = await AndroidUtils.findRequiredAndroidAPIPackage(
             '28'
         );
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
@@ -247,7 +242,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             badBlockMock
         );
-        AndroidSDKUtils.findRequiredAndroidAPIPackage().catch((error) => {
+        AndroidUtils.findRequiredAndroidAPIPackage().catch((error) => {
             expect(error).toBeTruthy();
         });
     });
@@ -256,7 +251,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const apiPackage = await AndroidSDKUtils.findRequiredEmulatorImages();
+        const apiPackage = await AndroidUtils.findRequiredEmulatorImages();
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
@@ -266,7 +261,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             badBlockMock
         );
-        AndroidSDKUtils.findRequiredEmulatorImages().catch((error) => {
+        AndroidUtils.findRequiredEmulatorImages().catch((error) => {
             expect(error).toBeTruthy();
         });
     });
@@ -286,7 +281,7 @@ describe('Android utils', () => {
             'showDeviceFrame=yes\n';
 
         readFileSpy.mockReturnValue(testConfig);
-        await AndroidSDKUtils.updateEmulatorConfig(avdName);
+        await AndroidUtils.updateEmulatorConfig(avdName);
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledWith(
@@ -312,7 +307,7 @@ describe('Android utils', () => {
             'showDeviceFrame=yes\n';
 
         readFileSpy.mockReturnValue(testConfig);
-        await AndroidSDKUtils.updateEmulatorConfig(avdName);
+        await AndroidUtils.updateEmulatorConfig(avdName);
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledWith(
@@ -334,7 +329,7 @@ describe('Android utils', () => {
             'hw.gpu.enabled=yes\n';
 
         readFileSpy.mockReturnValue(testConfig);
-        await AndroidSDKUtils.updateEmulatorConfig(avdName);
+        await AndroidUtils.updateEmulatorConfig(avdName);
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledWith(
@@ -351,7 +346,7 @@ describe('Android utils', () => {
         const testConfig = '';
 
         readFileSpy.mockReturnValue(testConfig);
-        await AndroidSDKUtils.updateEmulatorConfig(avdName);
+        await AndroidUtils.updateEmulatorConfig(avdName);
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledTimes(0);
@@ -361,7 +356,7 @@ describe('Android utils', () => {
         const avdName = 'configTest';
 
         readFileSpy.mockImplementation(throwMock);
-        await AndroidSDKUtils.updateEmulatorConfig(avdName);
+        await AndroidUtils.updateEmulatorConfig(avdName);
 
         expect(readFileSpy).toHaveBeenCalled();
         expect(writeFileSpy).toHaveBeenCalledTimes(0);
@@ -374,7 +369,7 @@ describe('Android utils', () => {
         const url = 'mock.url';
         const port = 1234;
         const expectedCommand = `${adbCommand} -s emulator-${port} shell am start -a android.intent.action.VIEW -d ${url}`;
-        await AndroidSDKUtils.launchURLIntent(url, port);
+        await AndroidUtils.launchURLIntent(url, port);
         expect(launchCommandMock).toHaveBeenCalledWith(expectedCommand);
     });
 
@@ -384,7 +379,7 @@ describe('Android utils', () => {
         );
         const url = 'mock.url';
         const port = 1234;
-        return AndroidSDKUtils.launchURLIntent(url, port).catch((error) => {
+        return AndroidUtils.launchURLIntent(url, port).catch((error) => {
             expect(error).toBeTruthy();
         });
     });
@@ -416,7 +411,7 @@ describe('Android utils', () => {
             mockCmd
         );
 
-        await AndroidSDKUtils.launchNativeApp(
+        await AndroidUtils.launchNativeApp(
             compName,
             projectDir,
             undefined,
@@ -452,7 +447,7 @@ describe('Android utils', () => {
             { name: 'arg2', value: 'val2' }
         ];
         const port = 1234;
-        return AndroidSDKUtils.launchNativeApp(
+        return AndroidUtils.launchNativeApp(
             compName,
             projectDir,
             undefined,
@@ -495,7 +490,7 @@ describe('Android utils', () => {
             mockCmd
         );
 
-        await AndroidSDKUtils.launchNativeApp(
+        await AndroidUtils.launchNativeApp(
             compName,
             projectDir,
             appBundlePath,
@@ -529,7 +524,7 @@ describe('Android utils', () => {
         delete process.env.ANDROID_SDK_ROOT; // set it to undefined
         jest.restoreAllMocks();
         jest.spyOn(fs, 'existsSync').mockImplementation(() => true);
-        const sdkRoot = AndroidSDKUtils.getAndroidSdkRoot();
+        const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         const rootPath = (sdkRoot && sdkRoot.rootLocation) || '';
         expect(rootPath).toBe(mockAndroidHome);
     });
@@ -539,7 +534,7 @@ describe('Android utils', () => {
         process.env.ANDROID_SDK_ROOT = mockAndroidSdkRoot;
         jest.restoreAllMocks();
         jest.spyOn(fs, 'existsSync').mockImplementation(() => true);
-        const sdkRoot = AndroidSDKUtils.getAndroidSdkRoot();
+        const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         const rootPath = (sdkRoot && sdkRoot.rootLocation) || '';
         expect(rootPath).toBe(mockAndroidSdkRoot);
     });
@@ -549,7 +544,7 @@ describe('Android utils', () => {
         process.env.ANDROID_SDK_ROOT = mockAndroidSdkRoot;
         jest.restoreAllMocks();
         jest.spyOn(fs, 'existsSync').mockImplementation(() => true);
-        const sdkRoot = AndroidSDKUtils.getAndroidSdkRoot();
+        const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         const rootPath = (sdkRoot && sdkRoot.rootLocation) || '';
         expect(rootPath).toBe(mockAndroidHome);
     });

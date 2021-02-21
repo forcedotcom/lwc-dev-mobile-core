@@ -20,7 +20,7 @@ import {
     PlatformAPIPackageRequirement
 } from '../AndroidEnvironmentSetup';
 import { AndroidPackage } from '../AndroidTypes';
-import { AndroidSDKRootSource, AndroidSDKUtils } from '../AndroidUtils';
+import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
 import { Version } from '../Common';
 import { CommonUtils } from '../CommonUtils';
 import { AndroidMockData } from './AndroidMockData';
@@ -49,14 +49,12 @@ describe('Android enviroment setup tests', () => {
     });
 
     test('Should resolve when Android SDK root is set', async () => {
-        jest.spyOn(AndroidSDKUtils, 'getAndroidSdkRoot').mockImplementation(
-            () => {
-                return {
-                    rootLocation: '/mock-android-home',
-                    rootSource: AndroidSDKRootSource.androidHome
-                };
-            }
-        );
+        jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(() => {
+            return {
+                rootLocation: '/mock-android-home',
+                rootSource: AndroidSDKRootSource.androidHome
+            };
+        });
         const requirement = new AndroidSDKRootSetRequirement(
             androidEnvironment.setupMessages,
             logger
@@ -66,7 +64,7 @@ describe('Android enviroment setup tests', () => {
     });
 
     test('Should reject when Android SDK root is not set', async () => {
-        jest.spyOn(AndroidSDKUtils, 'getAndroidSdkRoot').mockImplementation(
+        jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(
             () => undefined
         );
         const requirement = new AndroidSDKRootSetRequirement(
@@ -127,7 +125,7 @@ describe('Android enviroment setup tests', () => {
 
     test('Should resolve when Java 8 is available', async () => {
         jest.spyOn(
-            AndroidSDKUtils,
+            AndroidUtils,
             'androidSDKPrerequisitesCheck'
         ).mockImplementation(() => Promise.resolve(''));
         const requirement = new Java8AvailableRequirement(
@@ -140,7 +138,7 @@ describe('Android enviroment setup tests', () => {
 
     test('Should reject when Java 8 is not available', async () => {
         jest.spyOn(
-            AndroidSDKUtils,
+            AndroidUtils,
             'androidSDKPrerequisitesCheck'
         ).mockImplementation(() => Promise.reject(''));
         const requirement = new Java8AvailableRequirement(
@@ -153,7 +151,7 @@ describe('Android enviroment setup tests', () => {
 
     test('Should resolve when required platform API packages are present', async () => {
         jest.spyOn(
-            AndroidSDKUtils,
+            AndroidUtils,
             'findRequiredAndroidAPIPackage'
         ).mockImplementation(() =>
             Promise.resolve(
@@ -170,7 +168,7 @@ describe('Android enviroment setup tests', () => {
 
     test('Should reject when required platform API packages are not present', async () => {
         jest.spyOn(
-            AndroidSDKUtils,
+            AndroidUtils,
             'findRequiredAndroidAPIPackage'
         ).mockImplementation(() => Promise.reject(''));
         const requirement = new PlatformAPIPackageRequirement(
@@ -183,7 +181,7 @@ describe('Android enviroment setup tests', () => {
 
     test('Should resolve when required emulator images are available', async () => {
         jest.spyOn(
-            AndroidSDKUtils,
+            AndroidUtils,
             'findRequiredEmulatorImages'
         ).mockImplementation(() =>
             Promise.resolve(
@@ -200,7 +198,7 @@ describe('Android enviroment setup tests', () => {
 
     test('Should reject when Java 8 is not available', async () => {
         jest.spyOn(
-            AndroidSDKUtils,
+            AndroidUtils,
             'findRequiredEmulatorImages'
         ).mockImplementation(() => Promise.reject(''));
         const requirement = new EmulatorImagesRequirement(

@@ -6,9 +6,9 @@
  */
 import { Logger } from '@salesforce/core';
 import { Version } from '../common/Common';
-import iOSConfig from '../config/iosconfig.json';
 import { CommonUtils } from './CommonUtils';
 import { IOSSimulatorDevice } from './IOSTypes';
+import { PlatformConfig } from './PlatformConfig';
 import { LaunchArgument } from './PreviewConfigFile';
 import { PreviewUtils } from './PreviewUtils';
 
@@ -146,7 +146,7 @@ export class IOSUtils {
     public static async getSupportedRuntimes(): Promise<string[]> {
         return IOSUtils.getSimulatorRuntimes().then((configuredRuntimes) => {
             const minSupportedRuntimeIOS = Version.from(
-                iOSConfig.minSupportedRuntimeIOS
+                PlatformConfig.iOSConfig().minSupportedRuntime
             );
 
             const rtIntersection = configuredRuntimes.filter(
