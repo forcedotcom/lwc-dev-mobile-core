@@ -63,9 +63,9 @@ export class CommonUtils {
         template: string,
         variables: { [name: string]: string }
     ): string {
-        const regex = /\${\w+}/g;
+        const regex = /\$\{\w+\}/g;
         return template.replace(regex, (match) => {
-            const key = match.slice(2, -1).trim();
+            const key = match.slice(2, -1);
             if (variables[key] == null) {
                 throw new Error(
                     `Can't find a value for the key '${key}' in the property bag parameter.`
