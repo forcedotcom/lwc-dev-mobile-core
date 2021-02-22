@@ -9,13 +9,14 @@
  * TODO: Find a proper/permanent solution
  *
  * There seems to be a problem with accessing the IOS/Android config values from outside modules.
- * If module A has a dependency on our module, and if there is a module B that also has a dependency
- * on our module *and* a dependency on module A, then if module B calls into module A and A calls into
- * IOSConfig/AndroidConfig then module A gets garbled values.
+ * If module B has a dependency on lwc-dev-mobile-core, and if there is a module C that also has
+ * a dependency on lwc-dev-mobile-core *and* a dependency on module B, then if module C calls into
+ * module B and B calls into IOSConfig/AndroidConfig then module B gets garbled values.
  *
- * An example would be if module B called into Device Create command in module A at which point the
- * Device Create command would try to access ios/android config values and would fail b/c it gets back
- * garbled values.
+ * For example let Module A = lwc-dev-mobile-core and Module B = lwc-dev-mobile. Now if in a third
+ * module A and B are both imported and then the Create Device command in module B is invoked, then
+ * the Device Create command would try to access ios/android config values from module A and would
+ * fail b/c it gets back garbled values.
  *
  * This only happens if the field in these config classes are defined as Static, or an instance
  * of these classes are cached. So for now as a workaround, we have the PlatformConfig class where
