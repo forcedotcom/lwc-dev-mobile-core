@@ -54,7 +54,12 @@ export class CommonUtils {
         return json;
     }
 
-    public static interpolate(
+    // Replace instances of '${value}' in a string with variables['value'].
+    // Example input:
+    // template: '${token}.my.salesforce.com'
+    // variables['token']: 'myHost'
+    // returns: 'myHost.my.salesforce.com'
+    public static replaceTokens(
         template: string,
         variables: { [name: string]: string }
     ): string {

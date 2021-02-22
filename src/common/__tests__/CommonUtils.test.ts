@@ -9,19 +9,19 @@ import os from 'os';
 import fs from 'fs';
 
 describe('CommonUtils', () => {
-    test('interpolate function', async () => {
+    test('replaceTokens function', async () => {
         const template =
             // tslint:disable-next-line:no-invalid-template-strings
             'A quick brown ${animal1} jumped over the lazy ${animal2}';
 
-        const formatted = CommonUtils.interpolate(template, {
+        const formatted = CommonUtils.replaceTokens(template, {
             animal1: 'fox',
             animal2: 'dog'
         });
         expect(formatted).toBe('A quick brown fox jumped over the lazy dog');
 
         try {
-            CommonUtils.interpolate(template, {});
+            CommonUtils.replaceTokens(template, {});
         } catch (e) {
             expect(e.message).toBe(
                 "Can't find a value for the key 'animal1' in the property bag parameter."
