@@ -20,13 +20,11 @@ describe('CommonUtils', () => {
         });
         expect(formatted).toBe('A quick brown fox jumped over the lazy dog');
 
-        try {
-            CommonUtils.replaceTokens(template, {});
-        } catch (e) {
-            expect(e.message).toBe(
-                "Can't find a value for the key 'animal1' in the property bag parameter."
-            );
-        }
+        const notFormatted = CommonUtils.replaceTokens(template, {});
+        expect(notFormatted).toBe(
+            // tslint:disable-next-line:no-invalid-template-strings
+            'A quick brown ${animal1} jumped over the lazy ${animal2}'
+        );
     });
 
     test('createTempDirectory function', async () => {
