@@ -67,7 +67,7 @@ export class CommonUtils {
         return template.replace(regex, (match) => {
             const key = match.slice(2, -1);
             if (variables[key] == null) {
-                return `\$\{${key}\}`;
+                return match;
             }
             return variables[key];
         });
