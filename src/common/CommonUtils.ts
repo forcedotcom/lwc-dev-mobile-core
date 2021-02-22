@@ -8,6 +8,8 @@ import { Logger } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -50,6 +52,34 @@ export class CommonUtils {
         const fileContent = fs.readFileSync(file, 'utf8');
         const json = JSON.parse(fileContent);
         return json;
+    }
+
+    public static interpolate(
+        template: string,
+        variables: { [name: string]: string }
+    ): string {
+        const regex = /\${\w+}/g;
+        return template.replace(regex, (match) => {
+            const key = match.slice(2, -1).trim();
+            if (variables[key] == null) {
+                throw new Error(
+                    `Can't find a value for the key '${key}' in the property bag parameter.`
+                );
+            }
+            return variables[key];
+        });
+    }
+
+    public static createTempDirectory(subfolder: string = ''): Promise<string> {
+        return new Promise((resolve, reject) => {
+            fs.mkdtemp(path.join(os.tmpdir(), subfolder), (error, folder) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(folder);
+                }
+            });
+        });
     }
 
     public static executeCommandSync(
