@@ -27,6 +27,7 @@
  * (i.e import iOSConfig from { IOSConfig.json } or similar for Android)
  */
 
+// testing
 export class PlatformConfig {
     public static iOSConfig(): IOSConfig {
         return new IOSConfig();
