@@ -26,6 +26,7 @@
  * NOTE: The same issue would occur if these classes were defined as JSON files and where imported
  * (i.e import iOSConfig from { IOSConfig.json } or similar for Android)
  */
+
 export class PlatformConfig {
     public static iOSConfig(): IOSConfig {
         return new IOSConfig();
