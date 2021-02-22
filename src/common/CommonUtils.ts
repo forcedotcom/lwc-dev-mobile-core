@@ -73,7 +73,9 @@ export class CommonUtils {
         });
     }
 
-    public static createTempDirectory(subfolder: string = ''): Promise<string> {
+    public static async createTempDirectory(
+        subfolder: string = ''
+    ): Promise<string> {
         return new Promise((resolve, reject) => {
             fs.mkdtemp(path.join(os.tmpdir(), subfolder), (error, folder) => {
                 if (error) {
