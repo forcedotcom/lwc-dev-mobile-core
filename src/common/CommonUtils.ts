@@ -8,6 +8,9 @@ import { Logger } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import util from 'util';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -50,6 +53,38 @@ export class CommonUtils {
         const fileContent = fs.readFileSync(file, 'utf8');
         const json = JSON.parse(fileContent);
         return json;
+    }
+
+    // Replace instances of '${value}' in a string with variables['value'].
+    // Example input:
+    // template: '${token}.my.salesforce.com'
+    // variables['token']: 'myHost'
+    // returns: 'myHost.my.salesforce.com'
+    public static replaceTokens(
+        template: string,
+        variables: { [name: string]: string }
+    ): string {
+        const regex = /\$\{\w+\}/g;
+        return template.replace(regex, (match) => {
+            const key = match.slice(2, -1);
+            if (variables[key] == null) {
+                return match;
+            }
+            return variables[key];
+        });
+    }
+
+    public static async createTempDirectory(
+        subfolder: string = ''
+    ): Promise<string> {
+        const mkdtemp = util.promisify(fs.mkdtemp);
+        return mkdtemp(path.join(os.tmpdir(), subfolder))
+            .then((folder) => {
+                return Promise.resolve(folder);
+            })
+            .catch((error) => {
+                return Promise.reject(error);
+            });
     }
 
     public static executeCommandSync(
