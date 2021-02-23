@@ -146,29 +146,35 @@ export class CommonUtils {
     public static async getLwcServerPort(): Promise<string | undefined> {
         const getProcessCommand =
             process.platform === 'win32'
-                ? 'wmic process where "CommandLine Like \'%force:lightning:lwc:start%\'" get CommandLine  | findstr "sfdx.js"'
-                : "ps -ax | grep 'force:lightning:lwc:start' | grep 'sfdx.js' | grep -v grep";
+                ? 'wmic process where "CommandLine Like \'%force:lightning:lwc:start%\'" get CommandLine  | findstr -v "wmic"'
+                : 'ps -ax | grep force:lightning:lwc:start | grep -v grep';
 
         return CommonUtils.executeCommandAsync(getProcessCommand)
             .then((result) => {
-                // The result of the above command would be in the form of [ "........./sfdx.js" "force:lightning:lwc:start" ]
-                // when no port is specified, or in the form of [ "........./sfdx.js" "force:lightning:lwc:start" "-p" "1234" ]
-                // when a port is specified.
-
                 const output = result.stdout.trim();
+                const portPattern = 'force:lightning:lwc:start -p';
+                const startIndex = output.indexOf(portPattern);
                 let port = CommonUtils.DEFAULT_LWC_SERVER_PORT;
-                const pIndex = output.indexOf('-p');
-                if (pIndex > 0) {
-                    port = output
-                        .substr(pIndex + 2)
-                        .replace(/"/gi, '')
-                        .trim();
+                if (startIndex > 0) {
+                    const endIndex = output.indexOf(
+                        '\n',
+                        startIndex + portPattern.length
+                    );
+                    if (endIndex > startIndex) {
+                        port = output.substring(
+                            startIndex + portPattern.length,
+                            endIndex
+                        );
+                    } else {
+                        port = output.substr(startIndex + portPattern.length);
+                    }
                 }
-                return Promise.resolve(port);
+                return Promise.resolve(port.trim());
             })
             .catch((error) => {
-                // If we got here it's b/c the grep command fails on empty set,
-                // which means that the server is not running
+                CommonUtils.logger.warn(
+                    `Unable to determine server port: ${error}`
+                );
                 return Promise.resolve(undefined);
             });
     }
