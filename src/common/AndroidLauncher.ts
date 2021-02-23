@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { AndroidSDKUtils } from './AndroidUtils';
+import { AndroidUtils } from './AndroidUtils';
 import { AndroidAppPreviewConfig, LaunchArgument } from './PreviewConfigFile';
 import { CommonUtils } from './CommonUtils';
 import { PreviewUtils } from './PreviewUtils';
@@ -24,22 +24,22 @@ export class AndroidLauncher {
         appConfig: AndroidAppPreviewConfig | undefined,
         serverPort: string
     ): Promise<void> {
-        const preferredPack = await AndroidSDKUtils.findRequiredEmulatorImages();
+        const preferredPack = await AndroidUtils.findRequiredEmulatorImages();
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
-        const device = (await AndroidSDKUtils.getSupportedDevices())[0];
-        let emulatorPort = await AndroidSDKUtils.getNextAndroidAdbPort();
+        const device = (await AndroidUtils.getSupportedDevices())[0];
+        let emulatorPort = await AndroidUtils.getNextAndroidAdbPort();
         const emuName = this.emulatorName;
         CommonUtils.startCliAction(`Launching`, `Searching for ${emuName}`);
-        return AndroidSDKUtils.hasEmulator(emuName)
+        return AndroidUtils.hasEmulator(emuName)
             .then((result) => {
                 if (!result) {
                     CommonUtils.startCliAction(
                         `Launching`,
                         `Creating device ${emuName}`
                     );
-                    return AndroidSDKUtils.createNewVirtualDevice(
+                    return AndroidUtils.createNewVirtualDevice(
                         emuName,
                         emuImage,
                         androidApi,
@@ -58,7 +58,7 @@ export class AndroidLauncher {
                     `Launching`,
                     `Starting device ${emuName}`
                 );
-                return AndroidSDKUtils.startEmulator(emuName, emulatorPort);
+                return AndroidUtils.startEmulator(emuName, emulatorPort);
             })
             .then((actualPort) => {
                 emulatorPort = actualPort;
@@ -66,7 +66,7 @@ export class AndroidLauncher {
                     `Launching`,
                     `Waiting for device ${emuName} to boot`
                 );
-                return AndroidSDKUtils.pollDeviceStatus(emulatorPort);
+                return AndroidUtils.pollDeviceStatus(emulatorPort);
             })
             .then(() => {
                 const useServer = PreviewUtils.useLwcServerForPreviewing(
@@ -79,7 +79,7 @@ export class AndroidLauncher {
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
                     const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
                     const url = `${address}:${port}/lwc/preview/${compPath}`;
-                    return AndroidSDKUtils.launchURLIntent(url, emulatorPort);
+                    return AndroidUtils.launchURLIntent(url, emulatorPort);
                 } else {
                     CommonUtils.stopCliAction(`Launching App ${targetApp}`);
 
@@ -88,7 +88,7 @@ export class AndroidLauncher {
 
                     const targetAppArguments: LaunchArgument[] =
                         (appConfig && appConfig.launch_arguments) || [];
-                    return AndroidSDKUtils.launchNativeApp(
+                    return AndroidUtils.launchNativeApp(
                         compName,
                         projectDir,
                         appBundlePath,

@@ -6,9 +6,9 @@
  */
 import { Logger, Messages } from '@salesforce/core';
 import util from 'util';
-import iOSConfig from '../config/iosconfig.json';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
+import { PlatformConfig } from './PlatformConfig';
 import { BaseSetup, Requirement } from './Requirements';
 
 export class IOSEnvironmentSetup extends BaseSetup {
@@ -152,7 +152,9 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
                     return Promise.reject(
                         util.format(
                             this.unfulfilledMessage,
-                            `iOS-${iOSConfig.minSupportedRuntimeIOS}`
+                            `iOS-${
+                                PlatformConfig.iOSConfig().minSupportedRuntime
+                            }`
                         )
                     );
                 }
@@ -161,7 +163,9 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
                 return Promise.reject(
                     util.format(
                         this.unfulfilledMessage,
-                        `iOS-${iOSConfig.minSupportedRuntimeIOS} error:${error}`
+                        `iOS-${
+                            PlatformConfig.iOSConfig().minSupportedRuntime
+                        } error:${error}`
                     )
                 );
             });
