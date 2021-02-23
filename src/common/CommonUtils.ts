@@ -10,6 +10,7 @@ import { cli } from 'cli-ux';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import util from 'util';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -76,15 +77,14 @@ export class CommonUtils {
     public static async createTempDirectory(
         subfolder: string = ''
     ): Promise<string> {
-        return new Promise((resolve, reject) => {
-            fs.mkdtemp(path.join(os.tmpdir(), subfolder), (error, folder) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(folder);
-                }
+        const mkdtemp = util.promisify(fs.mkdtemp);
+        return mkdtemp(path.join(os.tmpdir(), subfolder))
+            .then((folder) => {
+                return Promise.resolve(folder);
+            })
+            .catch((error) => {
+                return Promise.reject(error);
             });
-        });
     }
 
     public static executeCommandSync(
