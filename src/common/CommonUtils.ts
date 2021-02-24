@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger } from '@salesforce/core';
+import { Logger, SfdxError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
 import fs from 'fs';
@@ -78,12 +78,22 @@ export class CommonUtils {
         subfolder: string = ''
     ): Promise<string> {
         const mkdtemp = util.promisify(fs.mkdtemp);
-        return mkdtemp(path.join(os.tmpdir(), subfolder))
+        const tempFolderPath = path.join(os.tmpdir(), subfolder);
+        return mkdtemp(tempFolderPath)
             .then((folder) => {
                 return Promise.resolve(folder);
             })
             .catch((error) => {
-                return Promise.reject(error);
+                return Promise.reject(
+                    new SfdxError(
+                        util.format(
+                            'Could not create a temp folder at %s: %s',
+                            tempFolderPath,
+                            error
+                        ),
+                        'lwc-dev-mobile-core'
+                    )
+                );
             });
     }
 

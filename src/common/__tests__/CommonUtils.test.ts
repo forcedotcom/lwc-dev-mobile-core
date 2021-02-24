@@ -42,10 +42,12 @@ describe('CommonUtils', () => {
         jest.spyOn(fs, 'mkdtemp').mockImplementationOnce((_, callback) =>
             callback(new Error(errorMessage), '')
         );
+
         try {
-            CommonUtils.createTempDirectory();
-        } catch (e) {
-            expect(e.message).toBe(errorMessage);
+            await CommonUtils.createTempDirectory();
+        } catch (error) {
+            const message = `Could not create a temp folder at ${tmpDir}: `;
+            expect(error.message.includes(message)).toBeTruthy();
         }
     });
 });
