@@ -8,9 +8,9 @@ import { Logger, SfdxError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
 import fs from 'fs';
-import os from 'os';
-import path from 'path';
 import util from 'util';
+import path from 'path';
+import os from 'os';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -74,11 +74,10 @@ export class CommonUtils {
         });
     }
 
-    public static async createTempDirectory(
-        subfolder: string = ''
-    ): Promise<string> {
+    public static async createTempDirectory(): Promise<string> {
         const mkdtemp = util.promisify(fs.mkdtemp);
-        const tempFolderPath = path.join(os.tmpdir(), subfolder);
+        const folderPrefix = 'lwc-mobile-';
+        const tempFolderPath = path.join(os.tmpdir(), folderPrefix);
         return mkdtemp(tempFolderPath)
             .then((folder) => {
                 return Promise.resolve(folder);

@@ -7,6 +7,7 @@
 import { CommonUtils } from '../CommonUtils';
 import os from 'os';
 import fs from 'fs';
+import path from 'path';
 
 describe('CommonUtils', () => {
     test('replaceTokens function', async () => {
@@ -29,24 +30,21 @@ describe('CommonUtils', () => {
 
     test('createTempDirectory function', async () => {
         const tmpDir = os.tmpdir();
+        const folderPrefix = 'lwc-mobile-';
+        const tempFolderPath = path.join(tmpDir, folderPrefix);
 
-        let folder = await CommonUtils.createTempDirectory();
+        const folder = await CommonUtils.createTempDirectory();
         expect(fs.existsSync(folder)).toBeTruthy();
-        expect(folder.includes(tmpDir)).toBeTruthy();
+        expect(folder.includes(tempFolderPath)).toBeTruthy();
 
-        folder = await CommonUtils.createTempDirectory('');
-        expect(fs.existsSync(folder)).toBeTruthy();
-        expect(folder.includes(tmpDir)).toBeTruthy();
-
-        const errorMessage = 'Error creating a temp folder';
         jest.spyOn(fs, 'mkdtemp').mockImplementationOnce((_, callback) =>
-            callback(new Error(errorMessage), '')
+            callback(new Error(), '')
         );
 
         try {
             await CommonUtils.createTempDirectory();
         } catch (error) {
-            const message = `Could not create a temp folder at ${tmpDir}: `;
+            const message = `Could not create a temp folder at ${tempFolderPath}: `;
             expect(error.message.includes(message)).toBeTruthy();
         }
     });
