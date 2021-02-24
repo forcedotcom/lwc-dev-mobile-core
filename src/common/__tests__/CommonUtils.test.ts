@@ -5,6 +5,9 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { CommonUtils } from '../CommonUtils';
+import os from 'os';
+import fs from 'fs';
+import path from 'path';
 
 describe('CommonUtils', () => {
     test('replaceTokens function', async () => {
@@ -23,5 +26,26 @@ describe('CommonUtils', () => {
             // tslint:disable-next-line:no-invalid-template-strings
             'A quick brown ${animal1} jumped over the lazy ${animal2}'
         );
+    });
+
+    test('createTempDirectory function', async () => {
+        const tmpDir = os.tmpdir();
+        const folderPrefix = 'lwc-mobile-';
+        const tempFolderPath = path.join(tmpDir, folderPrefix);
+
+        const folder = await CommonUtils.createTempDirectory();
+        expect(fs.existsSync(folder)).toBeTruthy();
+        expect(folder.includes(tempFolderPath)).toBeTruthy();
+
+        jest.spyOn(fs, 'mkdtemp').mockImplementationOnce((_, callback) =>
+            callback(new Error(), '')
+        );
+
+        try {
+            await CommonUtils.createTempDirectory();
+        } catch (error) {
+            const message = `Could not create a temp folder at ${tempFolderPath}: `;
+            expect(error.message.includes(message)).toBeTruthy();
+        }
     });
 });
