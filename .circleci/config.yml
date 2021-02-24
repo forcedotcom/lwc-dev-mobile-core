@@ -47,6 +47,7 @@ jobs:
             - yarn-packages-{{ checksum "yarn.lock" }}
       - run:
           name: Setup
+          shell: bash.exe
           command: yarn install && yarn build
       - save_cache:
           name: Save Yarn Package Cache
@@ -55,6 +56,7 @@ jobs:
             - ~/lwc-dev-mobile-core/node_modules
       - run: 
           name: Run Tests
+          shell: bash.exe
           command: yarn test
       - store_artifacts:
           path: reports/
