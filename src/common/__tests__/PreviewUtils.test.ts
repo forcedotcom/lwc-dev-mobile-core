@@ -10,7 +10,7 @@ import {
 } from '../PreviewConfigFile';
 import { CommonUtils } from '../CommonUtils';
 import { PreviewUtils } from '../PreviewUtils';
-import * as configSchema from './previewMockConfigurationSchema.json';
+import * as configSchema from './PreviewMockConfigurationSchema.json';
 
 describe('Preview utils tests', () => {
     afterEach(() => {
