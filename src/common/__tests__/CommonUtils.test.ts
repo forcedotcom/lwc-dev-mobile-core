@@ -5,8 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { CommonUtils } from '../CommonUtils';
-import os from 'os';
-import fs from 'fs';
 
 describe('CommonUtils', () => {
     test('replaceTokens function', async () => {
@@ -25,29 +23,5 @@ describe('CommonUtils', () => {
             // tslint:disable-next-line:no-invalid-template-strings
             'A quick brown ${animal1} jumped over the lazy ${animal2}'
         );
-    });
-
-    test('createTempDirectory function', async () => {
-        const tmpDir = os.tmpdir();
-
-        let folder = await CommonUtils.createTempDirectory();
-        expect(fs.existsSync(folder)).toBeTruthy();
-        expect(folder.includes(tmpDir)).toBeTruthy();
-
-        folder = await CommonUtils.createTempDirectory('');
-        expect(fs.existsSync(folder)).toBeTruthy();
-        expect(folder.includes(tmpDir)).toBeTruthy();
-
-        const errorMessage = 'Error creating a temp folder';
-        jest.spyOn(fs, 'mkdtemp').mockImplementationOnce((_, callback) =>
-            callback(new Error(errorMessage), '')
-        );
-
-        try {
-            await CommonUtils.createTempDirectory();
-        } catch (error) {
-            const message = `Could not create a temp folder at ${tmpDir}: `;
-            expect(error.message.includes(message)).toBeTruthy();
-        }
     });
 });
