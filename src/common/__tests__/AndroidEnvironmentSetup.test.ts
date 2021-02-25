@@ -152,7 +152,7 @@ describe('Android enviroment setup tests', () => {
     test('Should resolve when required platform API packages are present', async () => {
         jest.spyOn(
             AndroidUtils,
-            'findRequiredAndroidAPIPackage'
+            'fetchSupportedAndroidAPIPackage'
         ).mockImplementation(() =>
             Promise.resolve(
                 new AndroidPackage('', new Version(0, 0, 0), '', '')
@@ -169,7 +169,7 @@ describe('Android enviroment setup tests', () => {
     test('Should reject when required platform API packages are not present', async () => {
         jest.spyOn(
             AndroidUtils,
-            'findRequiredAndroidAPIPackage'
+            'fetchSupportedAndroidAPIPackage'
         ).mockImplementation(() => Promise.reject(''));
         const requirement = new PlatformAPIPackageRequirement(
             androidEnvironment.setupMessages,
@@ -182,7 +182,7 @@ describe('Android enviroment setup tests', () => {
     test('Should resolve when required emulator images are available', async () => {
         jest.spyOn(
             AndroidUtils,
-            'findRequiredEmulatorImages'
+            'fetchSupportedEmulatorImagePackage'
         ).mockImplementation(() =>
             Promise.resolve(
                 new AndroidPackage('', new Version(0, 0, 0), '', '')
@@ -199,7 +199,7 @@ describe('Android enviroment setup tests', () => {
     test('Should reject when Java 8 is not available', async () => {
         jest.spyOn(
             AndroidUtils,
-            'findRequiredEmulatorImages'
+            'fetchSupportedEmulatorImagePackage'
         ).mockImplementation(() => Promise.reject(''));
         const requirement = new EmulatorImagesRequirement(
             androidEnvironment.setupMessages,

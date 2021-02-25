@@ -207,7 +207,7 @@ export class PlatformAPIPackageRequirement implements Requirement {
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.findRequiredAndroidAPIPackage(this.apiLevel)
+        return AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel)
             .then((result) =>
                 Promise.resolve(
                     util.format(this.fulfilledMessage, result.platformAPI)
@@ -245,7 +245,7 @@ export class EmulatorImagesRequirement implements Requirement {
     }
 
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.findRequiredEmulatorImages(this.apiLevel)
+        return AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel)
             .then((result) =>
                 Promise.resolve(util.format(this.fulfilledMessage, result.path))
             )

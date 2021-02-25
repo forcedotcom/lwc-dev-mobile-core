@@ -219,7 +219,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const apiPackage = await AndroidUtils.findRequiredAndroidAPIPackage();
+        const apiPackage = await AndroidUtils.fetchSupportedAndroidAPIPackage();
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
@@ -229,7 +229,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const apiPackage = await AndroidUtils.findRequiredAndroidAPIPackage(
+        const apiPackage = await AndroidUtils.fetchSupportedAndroidAPIPackage(
             '28'
         );
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
@@ -242,7 +242,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             badBlockMock
         );
-        AndroidUtils.findRequiredAndroidAPIPackage().catch((error) => {
+        AndroidUtils.fetchSupportedAndroidAPIPackage().catch((error) => {
             expect(error).toBeTruthy();
         });
     });
@@ -251,7 +251,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const apiPackage = await AndroidUtils.findRequiredEmulatorImages();
+        const apiPackage = await AndroidUtils.fetchSupportedEmulatorImagePackage();
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
@@ -261,7 +261,7 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             badBlockMock
         );
-        AndroidUtils.findRequiredEmulatorImages().catch((error) => {
+        AndroidUtils.fetchSupportedEmulatorImagePackage().catch((error) => {
             expect(error).toBeTruthy();
         });
     });
