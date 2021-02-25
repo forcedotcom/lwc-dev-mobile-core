@@ -41,25 +41,47 @@ export interface AndroidSDKRoot {
 }
 
 export class AndroidUtils {
+    /**
+     * Initialized the logger used by AndroidUtils
+     */
     public static async initializeLogger(): Promise<void> {
         AndroidUtils.logger = await Logger.child(LOGGER_NAME);
         return Promise.resolve();
     }
 
+    /**
+     * Converts a path to UNIX style path.
+     *
+     * @param dirPath Input path.
+     * @returns UNIX style path.
+     */
     public static convertToUnixPath(dirPath: string): string {
         return dirPath.replace(/[\\]+/g, '/');
     }
 
+    /**
+     * Indicates whether Android packages are cached or not.
+     *
+     * @returns True if cached, False otherwise.
+     */
     public static isCached(): boolean {
         return !AndroidUtils.packageCache.isEmpty();
     }
 
+    /**
+     * Indicates whether user has set a value for JAVA_HOME environment variable.
+     *
+     * @returns True if set, False otherwise.
+     */
     public static isJavaHomeSet(): boolean {
         return process.env.JAVA_HOME
             ? process.env.JAVA_HOME.trim().length > 0
             : false;
     }
 
+    /**
+     * Clears all caches that AndroidUtils uses.
+     */
     public static clearCaches() {
         AndroidUtils.emulatorCommand = undefined;
         AndroidUtils.androidCmdLineToolsBin = undefined;
@@ -71,11 +93,13 @@ export class AndroidUtils {
         AndroidUtils.packageCache = new AndroidPackages();
     }
 
+    /**
+     * Attempt to run sdkmanager and see if it throws any exceptions. If no errors are encountered then all prerequisites are met.
+     * But if an error is encountered then we'll try to see if it is due to unsupported Java version or something else.
+     *
+     * @returns If prerequisites are met, then returns the location of Android command line tools.
+     */
     public static async androidSDKPrerequisitesCheck(): Promise<string> {
-        // Attempt to run sdkmanager and see if it throws any exceptions.
-        // If no errors are encountered then all prerequisites are met.
-        // But if an error is encountered then we'll try to see if it
-        // is due to unsupported Java version or something else.
         return AndroidUtils.fetchAndroidCmdLineToolsLocation()
             .then((result) => Promise.resolve(result))
             .catch((error) => {
@@ -103,6 +127,11 @@ export class AndroidUtils {
             });
     }
 
+    /**
+     * Attempts to fetch the location of Android command line tools.
+     *
+     * @returns The location of Android command line tools.
+     */
     public static async fetchAndroidCmdLineToolsLocation(): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
             return Promise.reject(new Error('Android SDK root is not set.'));
@@ -115,6 +144,11 @@ export class AndroidUtils {
         );
     }
 
+    /**
+     * Attempts to fetch the location of Android platform tools.
+     *
+     * @returns The location of Android platform tools.
+     */
     public static async fetchAndroidSDKPlatformToolsLocation(): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
             return Promise.reject(new Error('Android SDK root is not set.'));
@@ -127,6 +161,11 @@ export class AndroidUtils {
         );
     }
 
+    /**
+     * Attempts to fetch all Android packages that are installed on a user's machine.
+     *
+     * @returns The installed packages.
+     */
     public static async fetchInstalledPackages(): Promise<AndroidPackages> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
             return Promise.reject(new Error('Android SDK root is not set.'));
@@ -149,12 +188,22 @@ export class AndroidUtils {
         });
     }
 
+    /**
+     * Attempts to fetch all supported Android device types (e.g Pixel, Pixel_XL, Pixel_C)
+     *
+     * @returns The supported Android device types.
+     */
     public static async getSupportedDevices(): Promise<string[]> {
         return Promise.resolve(
             PlatformConfig.androidConfig().supportedDeviceTypes
         );
     }
 
+    /**
+     * Attempts to fetch all available Android virtual devices.
+     *
+     * @returns An array of all available Android virtual devices.
+     */
     public static async fetchEmulators(): Promise<AndroidVirtualDevice[]> {
         let devices: AndroidVirtualDevice[] = [];
         return CommonUtils.executeCommandAsync(
@@ -174,54 +223,97 @@ export class AndroidUtils {
             });
     }
 
-    public static async fetchAllAvailableApiPackages(): Promise<
-        AndroidPackage[]
-    > {
+    /**
+     * Attempts to find all Android API packages that are installed on a user's machine and that are above minSupportedRuntime version
+     * (and optionally that have matching supported emulator images).
+     *
+     * @param mustHaveSupportedEmulatorImages Indicates whether the API packages must have matching supported emulator images.
+     * @returns An array of Android API packages meeting the conditions.
+     */
+    public static async fetchAllAvailableApiPackages(
+        mustHaveSupportedEmulatorImages: boolean
+    ): Promise<AndroidPackage[]> {
         const minSupportedRuntime = Version.from(
             PlatformConfig.androidConfig().minSupportedRuntime
         );
 
-        return AndroidUtils.fetchInstalledPackages().then((packages) => {
-            if (packages.isEmpty()) {
-                return Promise.reject(
-                    new Error(
-                        `No Android API packages are installed. Minimum supported Android API package version is ${
-                            PlatformConfig.androidConfig().minSupportedRuntime
-                        }`
-                    )
+        return AndroidUtils.fetchInstalledPackages()
+            .then((allPackages) => {
+                if (allPackages.isEmpty()) {
+                    return Promise.reject(
+                        new Error(
+                            `No Android API packages are installed. Minimum supported Android API package version is ${
+                                PlatformConfig.androidConfig()
+                                    .minSupportedRuntime
+                            }`
+                        )
+                    );
+                }
+
+                const matchingPlatforms = allPackages.platforms.filter((pkg) =>
+                    pkg.version.sameOrNewer(minSupportedRuntime)
                 );
-            }
 
-            const matchingPlatforms = packages.platforms.filter((pkg) =>
-                pkg.version.sameOrNewer(minSupportedRuntime)
-            );
+                if (matchingPlatforms.length < 1) {
+                    return Promise.reject(
+                        new Error(
+                            `Could not locate a supported Android API package. Minimum supported Android API package version is ${
+                                PlatformConfig.androidConfig()
+                                    .minSupportedRuntime
+                            }`
+                        )
+                    );
+                }
 
-            if (matchingPlatforms.length < 1) {
-                return Promise.reject(
-                    new Error(
-                        `Could not locate a supported Android API package. Minimum supported Android API package version is ${
-                            PlatformConfig.androidConfig().minSupportedRuntime
-                        }`
-                    )
-                );
-            }
+                return Promise.resolve(matchingPlatforms);
+            })
+            .then(async (matchingPlatforms) => {
+                let results: AndroidPackage[] = [];
 
-            // Sort the packages with latest version by negating the comparison result
-            matchingPlatforms.sort((a, b) => a.version.compare(b.version) * -1);
+                if (mustHaveSupportedEmulatorImages) {
+                    for (const pkg of matchingPlatforms) {
+                        try {
+                            const emulatorImage = await AndroidUtils.packageWithRequiredEmulatorImages(
+                                pkg
+                            );
 
-            return Promise.resolve(matchingPlatforms);
-        });
+                            // if it has a supported emulator image then include it
+                            if (emulatorImage) {
+                                results.push(pkg);
+                            }
+                        } catch (error) {
+                            this.logger.warn(
+                                `Could not find emulator image for Android API package ${pkg.path}: ${error}`
+                            );
+                        }
+                    }
+                } else {
+                    results = matchingPlatforms;
+                }
+
+                // Sort the packages with latest version by negating the comparison result
+                results.sort((a, b) => a.version.compare(b.version) * -1);
+                return Promise.resolve(results);
+            });
     }
 
-    public static async findRequiredAndroidAPIPackage(
+    /**
+     * Checks for and returns a supported Android API package that also has matching supported emulator images installed.
+     *
+     * @param apiLevel Optional parameter. When defined, it indicates a specific API level to find the API package for.
+     * When not defined, the latest supported API package (with matching supported emulator images) that is installed
+     * on user's machine is fetched. Defaults to undefined.
+     * @returns A supported Android API package.
+     */
+    public static async fetchSupportedAndroidAPIPackage(
         apiLevel?: string
     ): Promise<AndroidPackage> {
         const targetRuntime: Version | undefined = apiLevel
             ? Version.from(apiLevel)
             : undefined;
 
-        return AndroidUtils.fetchAllAvailableApiPackages().then(
-            async (packages) => {
+        return AndroidUtils.fetchAllAvailableApiPackages(true).then(
+            (packages) => {
                 let matchingPlatforms = packages;
                 if (targetRuntime) {
                     matchingPlatforms = packages.filter((pkg) =>
@@ -230,46 +322,41 @@ export class AndroidUtils {
                     if (matchingPlatforms.length < 1) {
                         return Promise.reject(
                             new Error(
-                                `Could not locate Android API package for API level ${apiLevel}.`
+                                `Could not locate Android API package (with matching emulator images) for API level ${apiLevel}.`
                             )
                         );
                     }
                 }
 
-                try {
-                    // Return the latest package that also has matching emulator images
-                    for (const platform of matchingPlatforms) {
-                        const emulatorImage = await AndroidUtils.packageWithRequiredEmulatorImages(
-                            platform
-                        );
-
-                        if (emulatorImage) {
-                            return Promise.resolve(platform);
-                        }
-                    }
-
-                    // If we got here then it means that we don't have any Android API packages with emulator images.
-                    // So we will go ahead and return the latest one anyway. This is b/c the setup command will error
-                    // out stating that no packages with matching emulator images have been found so the user would
-                    // then know that they should install emulator images for the latest API package.
-                    return Promise.resolve(matchingPlatforms[0]);
-                } catch (error) {
+                if (matchingPlatforms.length < 1) {
                     return Promise.reject(
                         new Error(
-                            `Could not find android api packages. ${error.errorMessage}`
+                            `Could not locate a supported Android API package with matching emulator images. Minimum supported Android API package version is ${
+                                PlatformConfig.androidConfig()
+                                    .minSupportedRuntime
+                            }`
                         )
                     );
                 }
+
+                return Promise.resolve(matchingPlatforms[0]);
             }
         );
     }
 
-    public static async findRequiredEmulatorImages(
+    /**
+     * Attempts to fetch the Android package for a supported emulator image target (e.g. Google APIs, default, Google Play).
+     *
+     * @param apiLevel Optional parameter. When defined, it indicates a specific API level to find the emulator package for.
+     * When not defined, the latest supported API level that is installed on user's machine is used. Defaults to undefined.
+     * @returns Android package of a supported emulator.
+     */
+    public static async fetchSupportedEmulatorImagePackage(
         apiLevel?: string
     ): Promise<AndroidPackage> {
         let installedAndroidPackage: AndroidPackage;
 
-        return AndroidUtils.findRequiredAndroidAPIPackage(apiLevel)
+        return AndroidUtils.fetchSupportedAndroidAPIPackage(apiLevel)
             .then((pkg) => {
                 installedAndroidPackage = pkg;
                 return AndroidUtils.packageWithRequiredEmulatorImages(
@@ -296,6 +383,11 @@ export class AndroidUtils {
             );
     }
 
+    /**
+     * Returns the next available ADB port (usually to be used for launching an emulator on that port).
+     *
+     * @returns A number representing the next available ADB port.
+     */
     public static async getNextAndroidAdbPort(): Promise<number> {
         // need to incr by 2, one for console port and next for adb
         return AndroidUtils.getCurrentAdbPort().then((adbPort) =>
@@ -305,6 +397,12 @@ export class AndroidUtils {
         );
     }
 
+    /**
+     * Checks whether an emulator with a given name is available.
+     *
+     * @param emulatorName Name of an emulator (e.g Pixel XL, Nexus_6_API_30).
+     * @returns True if an emulator with a given name is available, False otherwise.
+     */
     public static async hasEmulator(emulatorName: string): Promise<boolean> {
         return AndroidUtils.resolveEmulatorImage(
             emulatorName
@@ -313,6 +411,15 @@ export class AndroidUtils {
         );
     }
 
+    /**
+     * Attempts to create a new Android virtual device.
+     *
+     * @param emulatorName Name to be used for the emulator (e.g Pixel XL, Nexus_6_API_30).
+     * @param emulatorImage An emulator image type to be used (e.g google_apis, default, google_apis_playstore)
+     * @param platformAPI A platform API to be used (e.g android-30, android-28)
+     * @param device A device type to be used (e.g pixel, pixel_xl, pixel_c)
+     * @param abi The ABI to be used (e.g x86, x86_64)
+     */
     public static async createNewVirtualDevice(
         emulatorName: string,
         emulatorImage: string,
@@ -366,6 +473,14 @@ export class AndroidUtils {
         }).then((resolve) => AndroidUtils.updateEmulatorConfig(emulatorName));
     }
 
+    /**
+     * Attempts to launch an emulator and returns the ADB port that the emulator was launched on.
+     *
+     * @param emulatorName Name of the emulator to be launched (e.g Pixel XL, Nexus_6_API_30).
+     * @param requestedPortNumber The ADB port to launch the emulator on. Note that this may not be the actual port that the emulator starts on.
+     * @param writable Whether the emulator should launch with the '-writable-system' flag.
+     * @returns The actual ADB port that the emulator was launched on.
+     */
     public static async startEmulator(
         emulatorName: string,
         requestedPortNumber: number,
@@ -383,7 +498,7 @@ export class AndroidUtils {
 
                 if (AndroidUtils.isEmulatorAlreadyRunning(resolvedEmulator)) {
                     // get port number from emu-launch-params.txt
-                    const portNumber = AndroidUtils.getEmulatorPort(
+                    const portNumber = AndroidUtils.resolveEmulatorPort(
                         resolvedEmulator,
                         requestedPortNumber
                     );
@@ -410,7 +525,14 @@ export class AndroidUtils {
         );
     }
 
-    public static async pollDeviceStatus(portNumber: number): Promise<void> {
+    /**
+     * Attempts to wait for an Android virtual device to finish booting on an ADB port.
+     *
+     * @param portNumber The ADB port of the Android virtual device.
+     */
+    public static async waitUntilDeviceIsReady(
+        portNumber: number
+    ): Promise<void> {
         const command = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} wait-for-device shell getprop sys.boot_completed`;
         const timeout = PlatformConfig.androidConfig()
             .deviceBootReadinessWaitTime;
@@ -440,11 +562,17 @@ export class AndroidUtils {
         );
     }
 
+    /**
+     * Attempts to launch a URL in the emulator browser.
+     *
+     * @param url The URL to be launched.
+     * @param portNumber The ADB port of an Android virtual device.
+     */
     public static async launchURLIntent(
         url: string,
-        emulatorPort: number
+        portNumber: number
     ): Promise<void> {
-        const openUrlCommand = `${AndroidUtils.getAdbShellCommand()} -s emulator-${emulatorPort} shell am start -a android.intent.action.VIEW -d ${url}`;
+        const openUrlCommand = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} shell am start -a android.intent.action.VIEW -d ${url}`;
         CommonUtils.startCliAction(
             'Launching',
             `Opening browser with url ${url}`
@@ -454,6 +582,19 @@ export class AndroidUtils {
         );
     }
 
+    /**
+     * Attempts to launch a native app in an emulator to preview LWC components. If the app is not installed then this method will attempt to install it first.
+     *
+     * @param compName Name of the LWC component.
+     * @param projectDir Path to the LWC project root directory.
+     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
+     * @param targetApp The bundle ID of the app to be launched.
+     * @param targetAppArguments Extra arguments to be passed to the app upon launch.
+     * @param launchActivity Activity name to be used for launching the app.
+     * @param portNumber The ADB port of an Android virtual device.
+     * @param serverAddress Optional address for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
+     * @param serverPort Optional port for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
+     */
     public static async launchNativeApp(
         compName: string,
         projectDir: string,
@@ -461,7 +602,7 @@ export class AndroidUtils {
         targetApp: string,
         targetAppArguments: LaunchArgument[],
         launchActivity: string,
-        emulatorPort: number,
+        portNumber: number,
         serverAddress: string | undefined,
         serverPort: string | undefined
     ): Promise<void> {
@@ -471,7 +612,7 @@ export class AndroidUtils {
             AndroidUtils.logger.info(installMsg);
             CommonUtils.startCliAction('Launching', installMsg);
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
-            const installCommand = `${AndroidUtils.getAdbShellCommand()} -s emulator-${emulatorPort} install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
+            const installCommand = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
         } else {
             thePromise = Promise.resolve({ stdout: '', stderr: '' });
@@ -496,7 +637,7 @@ export class AndroidUtils {
                 });
 
                 const launchCommand =
-                    `${AndroidUtils.getAdbShellCommand()} -s emulator-${emulatorPort}` +
+                    `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber}` +
                     ` shell am start -S -n "${targetApp}/${launchActivity}"` +
                     ' -a android.intent.action.MAIN' +
                     ' -c android.intent.category.LAUNCHER' +
@@ -511,10 +652,23 @@ export class AndroidUtils {
             .then(() => Promise.resolve());
     }
 
-    public static getEmulatorPort(
+    /**
+     * Given an emulator name and a requested emulator port, this method checks to see if the emulator
+     * is indeed launched on that port and if not then it will return the actual port.
+     *
+     * @param emulatorName Name of the emulator
+     * @param requestedPortNumber Requested port for an emulator.
+     * @returns The actual port for an emulator.
+     */
+    public static resolveEmulatorPort(
         emulatorName: string,
         requestedPortNumber: number
     ): number {
+        // Just like Android Studio AVD Manager GUI interface, replace blank spaces with _ so that the ID of this AVD
+        // doesn't have blanks (since that's not allowed). AVD Manager will automatially replace _ back with blank
+        // to generate user friendly display names.
+        const resolvedName = emulatorName.replace(/ /gi, '_');
+
         // if config file does not exist, its created but not launched so use the requestedPortNumber
         // else we will read it from emu-launch-params.txt file.
         const launchFileName = CommonUtils.resolveUserHomePath(
@@ -522,7 +676,7 @@ export class AndroidUtils {
                 `~`,
                 '.android',
                 'avd',
-                `${emulatorName}.avd`,
+                `${resolvedName}.avd`,
                 'emu-launch-params.txt'
             )
         );
@@ -596,6 +750,11 @@ export class AndroidUtils {
         });
     }
 
+    /**
+     * Attempts to get the path to Android platform tools directory.
+     *
+     * @returns The path to Android platform tools directory.
+     */
     public static getAndroidPlatformTools(): string {
         if (!AndroidUtils.androidPlatformTools) {
             const sdkRoot = AndroidUtils.getAndroidSdkRoot();
@@ -608,6 +767,13 @@ export class AndroidUtils {
         return AndroidUtils.androidPlatformTools;
     }
 
+    /**
+     * Attempts to determine the root directory path for Android SDK. It will first look for
+     * ANDROID_HOME environment variable. If it exists and point to a valid directory then
+     * its value is used. Otherwise it falls back to using ANDROID_SDK_ROOT environment variable.
+     *
+     * @returns The root directory path for Android SDK.
+     */
     public static getAndroidSdkRoot(): AndroidSDKRoot | undefined {
         if (!AndroidUtils.sdkRoot) {
             const home =
@@ -633,6 +799,12 @@ export class AndroidUtils {
         return AndroidUtils.sdkRoot;
     }
 
+    /**
+     * Attempts to get the path to Android command line tools BIN directory. If multiple versions
+     * of the command line tool are present, it will attempt to pick the latest version.
+     *
+     * @returns The path to Android command line tools BIN directory.
+     */
     public static getAndroidCmdLineToolsBin(): string {
         if (!AndroidUtils.androidCmdLineToolsBin) {
             const sdkRoot = AndroidUtils.getAndroidSdkRoot();
@@ -671,6 +843,11 @@ export class AndroidUtils {
         return AndroidUtils.androidCmdLineToolsBin;
     }
 
+    /**
+     * Attempts to get the path to the emulator command executable.
+     *
+     * @returns The path to the emulator command executable.
+     */
     public static getEmulatorCommand(): string {
         if (!AndroidUtils.emulatorCommand) {
             const sdkRoot = AndroidUtils.getAndroidSdkRoot();
@@ -684,6 +861,11 @@ export class AndroidUtils {
         return AndroidUtils.emulatorCommand;
     }
 
+    /**
+     * Attempts to get the path to the AVD manager command executable.
+     *
+     * @returns The path to the AVD manager command executable.
+     */
     public static getAvdManagerCommand(): string {
         if (!AndroidUtils.avdManagerCommand) {
             AndroidUtils.avdManagerCommand = path.join(
@@ -695,6 +877,11 @@ export class AndroidUtils {
         return AndroidUtils.avdManagerCommand;
     }
 
+    /**
+     * Attempts to get the path to the ADB command executable.
+     *
+     * @returns The path to the ADB command executable.
+     */
     public static getAdbShellCommand(): string {
         if (!AndroidUtils.adbShellCommand) {
             AndroidUtils.adbShellCommand = path.join(
@@ -706,6 +893,11 @@ export class AndroidUtils {
         return AndroidUtils.adbShellCommand;
     }
 
+    /**
+     * Attempts to get the path to the SDKMANAGER command executable.
+     *
+     * @returns The path to the SDKMANAGER command executable.
+     */
     public static getSdkManagerCommand(): string {
         if (!AndroidUtils.sdkManagerCommand) {
             AndroidUtils.sdkManagerCommand = path.join(

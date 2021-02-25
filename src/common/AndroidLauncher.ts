@@ -24,7 +24,7 @@ export class AndroidLauncher {
         appConfig: AndroidAppPreviewConfig | undefined,
         serverPort: string
     ): Promise<void> {
-        const preferredPack = await AndroidUtils.findRequiredEmulatorImages();
+        const preferredPack = await AndroidUtils.fetchSupportedEmulatorImagePackage();
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
@@ -66,7 +66,7 @@ export class AndroidLauncher {
                     `Launching`,
                     `Waiting for device ${emuName} to boot`
                 );
-                return AndroidUtils.pollDeviceStatus(emulatorPort);
+                return AndroidUtils.waitUntilDeviceIsReady(emulatorPort);
             })
             .then(() => {
                 const useServer = PreviewUtils.useLwcServerForPreviewing(

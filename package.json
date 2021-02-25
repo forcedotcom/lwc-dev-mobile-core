@@ -1,7 +1,7 @@
 {
   "name": "@salesforce/lwc-dev-mobile-core",
-  "description": "Salesforce CLI plugin for mobile extensions to Local Development",
-  "version": "1.0.0-beta1",
+  "description": "Core module supporting Salesforce CLI mobile extension plug-ins",
+  "version": "1.0.0-beta2",
   "author": {
     "name": "Meisam Seyed Aliroteh",
     "email": "maliroteh@salesforce.com",
