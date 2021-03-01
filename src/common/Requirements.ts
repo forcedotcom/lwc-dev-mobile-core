@@ -113,12 +113,7 @@ export abstract class BaseSetup implements RequirementList {
 
     constructor(logger: Logger) {
         this.logger = logger;
-        this.requirements = [
-            new LWCServerPluginInstalledRequirement(
-                this.setupMessages,
-                this.logger
-            )
-        ];
+        this.requirements = [];
         this.additionalRequirements = [];
     }
 
@@ -237,55 +232,5 @@ export abstract class BaseSetup implements RequirementList {
 
     private formatDurationAsSeconds(duration: number): string {
         return `${duration.toFixed(3)} sec`;
-    }
-}
-
-// tslint:disable-next-line: max-classes-per-file
-export class LWCServerPluginInstalledRequirement implements Requirement {
-    public title: string;
-    public fulfilledMessage: string;
-    public unfulfilledMessage: string;
-    public logger: Logger;
-
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage('common:reqs:serverplugin:title');
-        this.fulfilledMessage = messages.getMessage(
-            'common:reqs:serverplugin:fulfilledMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'common:reqs:serverplugin:unfulfilledMessage'
-        );
-        this.logger = logger;
-    }
-
-    public async checkFunction(): Promise<string> {
-        return CommonUtils.isLwcServerPluginInstalled()
-            .then(() => {
-                this.logger.info('sfdx server plugin detected.');
-                return Promise.resolve(this.fulfilledMessage);
-            })
-            .catch((error) => {
-                this.logger.info('sfdx server plugin was not detected.');
-
-                try {
-                    const command =
-                        'sfdx plugins:install @salesforce/lwc-dev-server';
-                    this.logger.info(
-                        `Installing sfdx server plugin.... ${command}`
-                    );
-                    CommonUtils.executeCommandSync(command, [
-                        'inherit',
-                        'pipe',
-                        'inherit'
-                    ]);
-                    this.logger.info('sfdx server plugin installed.');
-                    return Promise.resolve(this.fulfilledMessage);
-                } catch (error) {
-                    this.logger.error(
-                        `sfdx server plugin installion failed. ${error}`
-                    );
-                    return Promise.reject(new Error(this.unfulfilledMessage));
-                }
-            });
     }
 }

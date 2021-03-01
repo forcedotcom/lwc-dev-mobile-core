@@ -5,20 +5,9 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger } from '@salesforce/core';
-import {
-    BaseSetup,
-    LWCServerPluginInstalledRequirement
-} from '../Requirements';
+import { BaseSetup } from '../Requirements';
 
 const logger = new Logger('test');
-
-const passedBaseRequirementsMock = jest.fn(() => {
-    return Promise.resolve('sfdx server plugin is installed.');
-});
-
-const failedBaseRequirementsMock = jest.fn(() => {
-    return Promise.reject(new Error('sfdx server plugin is not installed.'));
-});
 
 class TruthyExtension extends BaseSetup {
     constructor() {
@@ -159,20 +148,12 @@ class AdditionalExtension extends BaseSetup {
 describe('Requirements Processing', () => {
     test('Meets all requirements', async () => {
         expect.assertions(1);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const setupResult = await new TruthyExtension().executeSetup();
         expect(setupResult.hasMetAllRequirements).toBeTruthy();
     });
 
     test('Executes all true requirements', async () => {
         expect.assertions(1);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const extension = new TruthyExtension();
         const setupResult = await extension.executeSetup();
         expect(
@@ -182,30 +163,18 @@ describe('Requirements Processing', () => {
 
     test('Executes all passed and failed requirements', async () => {
         expect.assertions(1);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const setupResult = await new FalsyExtension().executeSetup();
         expect(setupResult.hasMetAllRequirements).toBeFalsy();
     });
 
     test('Executes all passed and failed base requirements', async () => {
         expect.assertions(1);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(failedBaseRequirementsMock);
         const setupResult = await new TruthyExtension().executeSetup();
-        expect(setupResult.hasMetAllRequirements).toBeFalsy();
+        expect(setupResult.hasMetAllRequirements).toBeTruthy();
     });
 
     test('Executes all passed and failed requirements', async () => {
         expect.assertions(1);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const extension = new TruthyExtension();
         const setupResult = await extension.executeSetup();
         expect(
@@ -215,10 +184,6 @@ describe('Requirements Processing', () => {
 
     test('Skips all base requirements and only executes all additional requirements', async () => {
         expect.assertions(1);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const extension = new AdditionalExtension();
         extension.skipBaseRequirements = true;
         const setupResult = await extension.executeSetup();
@@ -227,10 +192,6 @@ describe('Requirements Processing', () => {
 
     test('Skips all base and additional requirements', async () => {
         expect.assertions(1);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const extension = new AdditionalExtension();
         extension.skipBaseRequirements = true;
         extension.skipAdditionalRequirements = true;
@@ -240,10 +201,6 @@ describe('Requirements Processing', () => {
 
     test('There is only one test that failed with supplemental message', async () => {
         expect.assertions(2);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const extension = new FalsyExtension();
         const setupResult = await extension.executeSetup();
         const testsResultWithMessages = setupResult.tests.filter(
@@ -258,10 +215,6 @@ describe('Requirements Processing', () => {
 
     test('There is only one test without any message', async () => {
         expect.assertions(2);
-        jest.spyOn(
-            LWCServerPluginInstalledRequirement.prototype,
-            'checkFunction'
-        ).mockImplementation(passedBaseRequirementsMock);
         const extension = new FalsyExtension();
         const setupResult = await extension.executeSetup();
         const testsResultWithoutMessages = setupResult.tests.filter(

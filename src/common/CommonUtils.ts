@@ -19,23 +19,82 @@ const LOGGER_NAME = 'force:lightning:local:commonutils';
 export class CommonUtils {
     public static DEFAULT_LWC_SERVER_PORT = '3333';
 
+    /**
+     * Initializes the logger used by CommonUtils for logging activities.
+     */
     public static async initializeLogger(): Promise<void> {
         CommonUtils.logger = await Logger.child(LOGGER_NAME);
         return Promise.resolve();
     }
 
+    /**
+     * Returns a Promise that supports timeout
+     *
+     * @param timeout Timeout value in milliseconds.
+     * @param promise The promise to execute
+     * @param failureMessage Optional failure message when timeout happens
+     * @returns A Promise that supports timeout
+     */
+    public static promiseWithTimeout<T>(
+        timeout: number,
+        promise: Promise<T>,
+        failureMessage?: string
+    ): Promise<T> {
+        // Javascript/TypeScript do not have promises that timeout. However we could use
+        // Promise.race() to easily implement that. Promise.race() executes two promises
+        // and returns as soon as one of them resolves/rejects without waiting for the other.
+        // So we can take the user provided promise and race it against another promise that we
+        // create, which simply sleeps for a set amount of time then rejects with timeout error.
+        let timeoutHandle: NodeJS.Timeout;
+        const timeoutPromise = new Promise<never>((resolve, reject) => {
+            timeoutHandle = setTimeout(() => {
+                reject(new Error(failureMessage));
+            }, timeout);
+        });
+
+        return Promise.race([promise, timeoutPromise]).finally(() => {
+            // Clear the timeout handle so that any attached debugger would not remain attached
+            // until after setTimeout() call returns. This is specially useful for large timeout values.
+            clearTimeout(timeoutHandle);
+        });
+    }
+
+    /**
+     * Sleeps for a given amount of time.
+     *
+     * @param ms Sleep time in milliseconds.
+     * @returns A promise that simply sleeps for a given amount of time.
+     */
     public static async delay(ms: number): Promise<void> {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
+    /**
+     * Starts a CLI action
+     *
+     * @param action Title of the action.
+     * @param status Optional status message for the action.
+     */
     public static startCliAction(action: string, status?: string) {
         cli.action.start(action, status, { stdout: true });
     }
 
+    /**
+     * Stops a CLI action
+     *
+     * @param message Optional status message for the action.
+     */
     public static stopCliAction(message?: string) {
         cli.action.stop(message);
     }
 
+    /**
+     * Given a path it will attempt to replace the ~ character *at the beginning* of
+     * the path (if any) with the user's home path value.
+     *
+     * @param inputPath The path to resolve.
+     * @returns Resolved path.
+     */
     public static resolveUserHomePath(inputPath: string): string {
         let newPath = inputPath.trim();
         if (newPath.startsWith('~')) {
@@ -49,17 +108,29 @@ export class CommonUtils {
         return newPath;
     }
 
+    /**
+     * Given the path to a JSON file, it will load the content of the file.
+     *
+     * @param file The path to the JSON file.
+     * @returns Content of the file as JSON object.
+     */
     public static loadJsonFromFile(file: string): any {
         const fileContent = fs.readFileSync(file, 'utf8');
         const json = JSON.parse(fileContent);
         return json;
     }
 
-    // Replace instances of '${value}' in a string with variables['value'].
-    // Example input:
-    // template: '${token}.my.salesforce.com'
-    // variables['token']: 'myHost'
-    // returns: 'myHost.my.salesforce.com'
+    /**
+     * Given a tokenized string, it replaces instances of variables in the tokenized string with their associated values.
+     * Example input:
+     * template: '${token}.my.salesforce.com'
+     * variables['token']: 'myHost'
+     * returns: 'myHost.my.salesforce.com'
+     *
+     * @param template Tokenized input string.
+     * @param variables List of token names and values.
+     * @returns Resolved string.
+     */
     public static replaceTokens(
         template: string,
         variables: { [name: string]: string }
@@ -74,6 +145,11 @@ export class CommonUtils {
         });
     }
 
+    /**
+     * Creates a unique temp directory that is prefixed with 'lwc-mobile-'
+     *
+     * @returns Path to the newaly created temp directory.
+     */
     public static async createTempDirectory(): Promise<string> {
         const mkdtemp = util.promisify(fs.mkdtemp);
         const folderPrefix = 'lwc-mobile-';
@@ -96,6 +172,13 @@ export class CommonUtils {
             });
     }
 
+    /**
+     * Execute a command synchronously and throws any errors that occur.
+     *
+     * @param command The command to be executed.
+     * @param stdioOptions Options to be used for [stderr, stdin, stdout]. Defaults to ['ignore', 'pipe', 'ignore']
+     * @returns Result of the command execution.
+     */
     public static executeCommandSync(
         command: string,
         stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
@@ -114,6 +197,12 @@ export class CommonUtils {
         }
     }
 
+    /**
+     * Execute a command asynchronously.
+     *
+     * @param command The command to be executed.
+     * @returns A promise containing the results of stdout and stderr
+     */
     public static async executeCommandAsync(
         command: string
     ): Promise<{ stdout: string; stderr: string }> {
@@ -145,6 +234,12 @@ export class CommonUtils {
         );
     }
 
+    /**
+     * A Promise that checks whether the local dev server plugin is installed or not.
+     * The Promise will resolve if the plugin is installed and will reject otherwise.
+     *
+     * @returns A Promise that checks whether the local dev server plugin is installed or not.
+     */
     public static async isLwcServerPluginInstalled(): Promise<void> {
         const command = 'sfdx force:lightning:lwc:start --help';
         return CommonUtils.executeCommandAsync(command).then(() =>
@@ -152,6 +247,11 @@ export class CommonUtils {
         );
     }
 
+    /**
+     * Gets the port number for local dev server.
+     *
+     * @returns The port that local dev server is running on, or undefined if the server is not running.
+     */
     public static async getLwcServerPort(): Promise<string | undefined> {
         const getProcessCommand =
             process.platform === 'win32'
