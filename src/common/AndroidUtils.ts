@@ -457,9 +457,8 @@ export class AndroidUtils {
                             )
                         );
                     });
-                    child.stderr.on('data', (data) => {
-                        const msg = data.toString() as string;
-                        if (msg && msg.includes('Error:')) {
+                    child.stderr.on('data', (data: Buffer) => {
+                        if (data.includes('Error:')) {
                             reject(
                                 new Error(
                                     `Could not create emulator. Command failed: ${createAvdCommand}\n${data}`

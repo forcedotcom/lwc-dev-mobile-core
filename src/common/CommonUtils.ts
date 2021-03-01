@@ -29,6 +29,11 @@ export class CommonUtils {
         promise: Promise<T>,
         failureMessage?: string
     ): Promise<T> {
+        // Javascript/TypeScript do not have promises that timeout. However we could use
+        // Promise.race() to easily implement that. Promise.race() executes two promises
+        // and returns as soon as one of them resolves/rejects without waiting for the other.
+        // So we can take the user provided promise and race it against another promise that we
+        // create, which simply sleeps for a set amount of time then rejects with timeout error.
         let timeoutHandle: NodeJS.Timeout;
         const timeoutPromise = new Promise<never>((resolve, reject) => {
             timeoutHandle = setTimeout(() => {
@@ -37,6 +42,8 @@ export class CommonUtils {
         });
 
         return Promise.race([promise, timeoutPromise]).finally(() => {
+            // Clear the timeout handle so that any attached debugger would not remain attached
+            // until after setTimeout() call returns.
             clearTimeout(timeoutHandle);
         });
     }
