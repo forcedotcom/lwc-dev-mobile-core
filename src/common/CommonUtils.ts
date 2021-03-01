@@ -24,6 +24,23 @@ export class CommonUtils {
         return Promise.resolve();
     }
 
+    public static promiseWithTimeout<T>(
+        timeout: number,
+        promise: Promise<T>,
+        failureMessage?: string
+    ): Promise<T> {
+        let timeoutHandle: NodeJS.Timeout;
+        const timeoutPromise = new Promise<never>((resolve, reject) => {
+            timeoutHandle = setTimeout(() => {
+                reject(new Error(failureMessage));
+            }, timeout);
+        });
+
+        return Promise.race([promise, timeoutPromise]).finally(() => {
+            clearTimeout(timeoutHandle);
+        });
+    }
+
     public static async delay(ms: number): Promise<void> {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }

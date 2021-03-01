@@ -458,11 +458,14 @@ export class AndroidUtils {
                         );
                     });
                     child.stderr.on('data', (data) => {
-                        reject(
-                            new Error(
-                                `Could not create emulator. Command failed: ${createAvdCommand}\n${data}`
-                            )
-                        );
+                        const msg = data.toString() as string;
+                        if (msg && msg.includes('Error:')) {
+                            reject(
+                                new Error(
+                                    `Could not create emulator. Command failed: ${createAvdCommand}\n${data}`
+                                )
+                            );
+                        }
                     });
                 } else {
                     reject(new Error(`Could not create emulator.`));
@@ -533,33 +536,19 @@ export class AndroidUtils {
     public static async waitUntilDeviceIsReady(
         portNumber: number
     ): Promise<void> {
-        const command = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} wait-for-device shell getprop sys.boot_completed`;
+        const quote = process.platform === WINDOWS_OS ? '"' : "'";
+        const bootCmd = `shell ${quote}while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;${quote}`;
+        const command = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} wait-for-device ${bootCmd}`;
         const timeout = PlatformConfig.androidConfig()
             .deviceBootReadinessWaitTime;
-        let numberOfRetries = PlatformConfig.androidConfig()
-            .deviceBootStatusPollRetries;
 
-        while (numberOfRetries > 0) {
-            try {
-                const stdout = CommonUtils.executeCommandSync(command);
-                if (stdout && stdout.trim() === '1') {
-                    return Promise.resolve();
-                } else {
-                    await CommonUtils.delay(timeout);
-                    numberOfRetries--;
-                }
-            } catch (error) {
-                return Promise.reject(
-                    new Error(
-                        `Unable to communicate with emulator via ADB: ${error}`
-                    )
-                );
-            }
-        }
-
-        return Promise.reject(
-            new Error(`Timeout waiting for emulator-${portNumber} to boot.`)
+        const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
+            timeout,
+            CommonUtils.executeCommandAsync(command),
+            `Timeout waiting for emulator-${portNumber} to boot.`
         );
+
+        return waitUntilReadyPromise.then(() => Promise.resolve());
     }
 
     /**
@@ -718,6 +707,26 @@ export class AndroidUtils {
                 // If we cannot edit the AVD config, fail silently.
                 // This will be a degraded experience but should still work.
                 return Promise.resolve();
+            }
+
+            // Ensure value for runtime.network.latency is in lowercase.
+            // Otherwise the device may not be launchable via AVD Manager.
+            const networkLatency = config.get('runtime.network.latency');
+            if (networkLatency) {
+                config.set(
+                    'runtime.network.latency',
+                    networkLatency.trim().toLocaleLowerCase()
+                );
+            }
+
+            // Ensure value for runtime.network.speed is in lowercase.
+            // Otherwise the device may not be launchable via AVD Manager.
+            const networkSpeed = config.get('runtime.network.speed');
+            if (networkSpeed) {
+                config.set(
+                    'runtime.network.speed',
+                    networkSpeed.trim().toLocaleLowerCase()
+                );
             }
 
             // Utilize hardware.

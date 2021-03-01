@@ -37,9 +37,5 @@
     "android:reqs:platformapi:unfulfilledMessage" : "No supported Android API package found. Minimum supported Android API package version is %s.",
     "android:reqs:emulatorimages:title" : "Checking SDK Platform Emulator Images",
     "android:reqs:emulatorimages:fulfilledMessage" : "Android emulator image (%s) was detected.",
-    "android:reqs:emulatorimages:unfulfilledMessage" : "Install at least one of these emulator images: %s",
-
-    "common:reqs:serverplugin:title" : "Checking @salesforce/lwc-dev-server plugin",
-    "common:reqs:serverplugin:fulfilledMessage" : "@salesforce/lwc-dev-server plugin is installed.",
-    "common:reqs:serverplugin:unfulfilledMessage" : "Install the @salesforce/lwc-dev-server plugin."
+    "android:reqs:emulatorimages:unfulfilledMessage" : "Install at least one of these emulator images: %s"
 }
