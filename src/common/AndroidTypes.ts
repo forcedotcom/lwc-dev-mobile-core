@@ -147,7 +147,7 @@ export class AndroidVirtualDevice {
                         .map((entry) => entry.replace('android-', ''));
                     apiLevel = Version.from(targetAPI[0]);
                 } catch (error) {
-                    // ignore and continue
+                    // fetching apiLevel is a best effort, so ignore and continue
                 }
 
                 devices.push(
