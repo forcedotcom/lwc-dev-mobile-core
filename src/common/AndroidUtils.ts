@@ -523,27 +523,29 @@ export class AndroidUtils {
                     );
                 }
 
-                if (AndroidUtils.isEmulatorAlreadyRunning(resolvedEmulator)) {
-                    // get port number from emu-launch-params.txt
-                    const portNumber = AndroidUtils.resolveEmulatorPort(
-                        resolvedEmulator,
-                        requestedPortNumber
-                    );
+                try {
+                    if (
+                        AndroidUtils.isEmulatorAlreadyRunning(resolvedEmulator)
+                    ) {
+                        // get port number from emu-launch-params.txt
+                        const portNumber = AndroidUtils.resolveEmulatorPort(
+                            resolvedEmulator,
+                            requestedPortNumber
+                        );
 
-                    const isWritable = await AndroidUtils.isEmulatorSystemWritable(
-                        portNumber
-                    );
+                        const isWritable = await AndroidUtils.isEmulatorSystemWritable(
+                            portNumber
+                        );
 
-                    if (isWritable === writable) {
-                        // already launched and modes match so just return its port
-                        return Promise.resolve(portNumber);
+                        if (isWritable === writable) {
+                            // already launched and modes match so just return its port
+                            return Promise.resolve(portNumber);
+                        }
+
+                        // mismatch... shut it down and relaunch it in the right mode
+                        await AndroidUtils.stopEmulator(portNumber);
                     }
 
-                    // mismatch... shut it down and relaunch it in the right mode
-                    await AndroidUtils.stopEmulator(portNumber);
-                }
-
-                try {
                     // We intentionally use spawn and ignore stdio here b/c emulator command can
                     // spit out a bunch of output to stderr where they are not really errors. This
                     // is specially true on Windows platform. So istead we spawn the process to launch
@@ -557,14 +559,12 @@ export class AndroidUtils {
                     child.unref();
 
                     if (waitForBoot) {
-                        return AndroidUtils.waitUntilDeviceIsReady(
+                        await AndroidUtils.waitUntilDeviceIsReady(
                             requestedPortNumber
-                        ).then(() => {
-                            return Promise.resolve(requestedPortNumber);
-                        });
-                    } else {
-                        return Promise.resolve(requestedPortNumber);
+                        );
                     }
+
+                    return Promise.resolve(requestedPortNumber);
                 } catch (error) {
                     return Promise.reject(error);
                 }
@@ -802,10 +802,10 @@ export class AndroidUtils {
     public static async waitUntilDeviceIsPoweredOff(
         portNumber: number
     ): Promise<void> {
-        const isWindows = process.platform === WINDOWS_OS;
-        const command = isWindows
-            ? `powershell -Command "while($(adb devices | findstr emulator-${portNumber})){ Start-Sleep -s 1 }"`
-            : `while [[ -n $(adb devices | grep emulator-${portNumber}) ]]; do sleep 1; done;`;
+        const command =
+            process.platform === WINDOWS_OS
+                ? `powershell -Command "while($(adb devices | findstr emulator-${portNumber})){ Start-Sleep -s 1 }"`
+                : `while [[ -n $(adb devices | grep emulator-${portNumber}) ]]; do sleep 1; done;`;
         const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
 
         const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
