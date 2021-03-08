@@ -235,6 +235,24 @@ export class CommonUtils {
     }
 
     /**
+     * Launches the desktop browser and navigates to the provided URL.
+     *
+     * @returns A Promise that launches the desktop browser and navigates to the provided URL.
+     */
+    public static async launchUrlInDesktopBrowser(url: string): Promise<void> {
+        const openCmd =
+            process.platform === 'darwin'
+                ? 'open'
+                : process.platform === 'win32'
+                ? 'start'
+                : 'xdg-open';
+
+        return CommonUtils.executeCommandAsync(`${openCmd} ${url}`).then(() =>
+            Promise.resolve()
+        );
+    }
+
+    /**
      * A Promise that checks whether the local dev server plugin is installed or not.
      * The Promise will resolve if the plugin is installed and will reject otherwise.
      *
