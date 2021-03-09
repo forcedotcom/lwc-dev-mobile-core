@@ -221,7 +221,7 @@ export class AndroidUtils {
     }
 
     /**
-     * Attempts to fetch a specific Android virtual devices.
+     * Attempts to fetch a specific Android virtual device.
      *
      * @returns An AndroidVirtualDevice object for the specified virtual device, or undefined if device not found.
      */
@@ -665,12 +665,12 @@ export class AndroidUtils {
      *
      * @param portNumber The ADB port of the Android virtual device.
      * @param numRetries Optional parameter that indicates the number of retries if an error occurs. Defaults to 0 (no retries).
-     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to 500 milliseconds.
+     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to AndroidConfig.AdbRetryAttemptDelay.
      */
     public static async remountAsRootWritableSystem(
         portNumber: number,
         numRetries: number = 0,
-        retryDelay: number = 500
+        retryDelay: number = PlatformConfig.androidConfig().AdbRetryAttemptDelay
     ): Promise<void> {
         const emulatorName = await AndroidUtils.fetchEmulatorNameFromPort(
             portNumber
@@ -795,7 +795,7 @@ export class AndroidUtils {
 
     /**
      * Attempts to wait for an Android virtual device to power off. It determines whether a device is powered off
-     * by continously running 'adb devices' command and see if this particular device is no longer in the list.
+     * by continuously running 'adb devices' command and see if this particular device is no longer in the list.
      *
      * @param portNumber The ADB port of the Android virtual device.
      */
@@ -816,7 +816,7 @@ export class AndroidUtils {
 
         return waitUntilReadyPromise.then(() => {
             // It may often be the case that the device is removed from 'adb devices' list too quickly
-            // specially on Windows platform. So we also wait an exra 5 seconds.
+            // specially on Windows platform. So we also wait an extra 5 seconds.
             return CommonUtils.delay(5000);
         });
     }
@@ -827,32 +827,41 @@ export class AndroidUtils {
      * @param command The command to be executed. This should not include 'adb' command itself.
      * @param portNumber The ADB port of the Android virtual device.
      * @param numRetries Optional parameter that indicates the number of times the command will be executed again if ADB comes back with an error. Defaults to 0 (no retries).
-     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to 500 milliseconds.
+     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to AndroidConfig.AdbRetryAttemptDelay.
      */
     public static async executeAdbCommand(
         command: string,
         portNumber: number,
         numRetries: number = 0,
-        retryDelay: number = 500
+        retryDelay: number = PlatformConfig.androidConfig().AdbRetryAttemptDelay
     ): Promise<string> {
         const adbCmd = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} ${command}`;
 
-        let result: { stdout: string; stderr: string } = {
-            stdout: '',
-            stderr: ''
-        };
+        let allOutput = '';
 
         for (let i = 0; i <= numRetries; i++) {
-            result = await CommonUtils.executeCommandAsync(adbCmd);
+            let result: { stdout: string; stderr: string } = {
+                stdout: '',
+                stderr: ''
+            };
+            let err: any;
+
+            try {
+                result = await CommonUtils.executeCommandAsync(adbCmd);
+            } catch (error) {
+                err = error;
+            }
+
+            allOutput =
+                (err ? err : '') +
+                (result.stderr ? '\n' + result.stderr : '') +
+                (result.stdout ? '\n' + result.stdout : '');
+
             // ADB is terrible and in addition to actual errors it may also send warnings or even success messages to stderr.
             // For example if you run the command 'adb shell reboot -p' to power down a device, when done it prints the success
-            // message 'Done\n' to stderr. And sometimes ADB prints error messages to stdout instead of stderr.
-            if (
-                (result.stderr &&
-                    result.stderr.toLowerCase().includes('error:')) ||
-                (result.stdout &&
-                    result.stdout.toLowerCase().includes('error:'))
-            ) {
+            // message 'Done\n' to stderr. And sometimes ADB prints error messages to stdout instead of stderr. So we first gether
+            // all outputs into one and then explicitly check to see if an error has occured or not.
+            if (allOutput && allOutput.toLowerCase().includes('error:')) {
                 this.logger.warn(
                     `ADB command '${adbCmd}' failed. Retrying ${
                         numRetries - i
@@ -868,7 +877,7 @@ export class AndroidUtils {
         }
 
         // If we got here then it means that the command failed to execute successfully after all retries (if any)
-        return Promise.reject(new Error(result.stderr));
+        return Promise.reject(new Error(allOutput));
     }
 
     /**
