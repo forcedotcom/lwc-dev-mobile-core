@@ -19,7 +19,7 @@ const LOGGER_NAME = 'force:lightning:local:iosutils';
 
 export class IOSUtils {
     /**
-     * Initialized the logger used by AndroidUtils
+     * Initialized the logger used by IOSUtils
      */
     public static async initializeLogger(): Promise<void> {
         IOSUtils.logger = await Logger.child(LOGGER_NAME);

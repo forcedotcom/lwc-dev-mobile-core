@@ -60,5 +60,6 @@ export class AndroidConfig {
     public readonly defaultEmulatorName: string = 'SFDXEmulator';
     public readonly defaultAdbPort: number = 5572;
     public readonly deviceReadinessWaitTime: number = 120000;
-    public readonly AdbRetryAttemptDelay: number = 1000;
+    public readonly AdbNumRetryAttempts: number = 6;
+    public readonly AdbRetryAttemptDelay: number = 500;
 }

@@ -537,8 +537,9 @@ export class AndroidUtils {
                             portNumber
                         );
 
-                        if (isWritable === writable) {
-                            // already launched and modes match so just return its port
+                        if (writable === false || isWritable === true) {
+                            // If we're not asked for a writable, or if it already
+                            // is writable then we're done so just return its port.
                             return Promise.resolve(portNumber);
                         }
 
@@ -664,13 +665,9 @@ export class AndroidUtils {
      * is not launched with writable system access, this function will restart it with write access first then remounts as root.
      *
      * @param portNumber The ADB port of the Android virtual device.
-     * @param numRetries Optional parameter that indicates the number of retries if an error occurs. Defaults to 0 (no retries).
-     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to AndroidConfig.AdbRetryAttemptDelay.
      */
     public static async remountAsRootWritableSystem(
-        portNumber: number,
-        numRetries: number = 0,
-        retryDelay: number = PlatformConfig.androidConfig().AdbRetryAttemptDelay
+        portNumber: number
     ): Promise<void> {
         const emulatorName = await AndroidUtils.fetchEmulatorNameFromPort(
             portNumber
@@ -691,51 +688,38 @@ export class AndroidUtils {
         return AndroidUtils.startEmulator(emulatorName, portNumber, true, true)
             .then(() =>
                 // Now that emulator is launched with writable system, run root command
-                AndroidUtils.executeAdbCommand(
-                    'root',
-                    portNumber,
-                    numRetries,
-                    retryDelay
-                )
+                AndroidUtils.executeAdbCommandWithRetry('root', portNumber)
             )
             .then(async () => {
                 // For API 29 or higher there are a few more steps to be done before we can remount after rooting
                 if (emulator.apiLevel.sameOrNewer(Version.from('29'))) {
                     const verificationIsAlreadyDisabled = (
-                        await AndroidUtils.executeAdbCommand(
+                        await AndroidUtils.executeAdbCommandWithRetry(
                             'shell avbctl get-verification',
-                            portNumber,
-                            numRetries,
-                            retryDelay
+                            portNumber
                         )
                     ).includes('disabled');
 
                     const verityIsAlreadyDisabled = (
-                        await AndroidUtils.executeAdbCommand(
+                        await AndroidUtils.executeAdbCommandWithRetry(
                             'shell avbctl get-verity',
-                            portNumber,
-                            numRetries,
-                            retryDelay
+                            portNumber
                         )
                     ).includes('disabled');
 
                     if (!verificationIsAlreadyDisabled) {
                         // Disable Android Verified Boot
-                        await AndroidUtils.executeAdbCommand(
+                        await AndroidUtils.executeAdbCommandWithRetry(
                             'shell avbctl disable-verification',
-                            portNumber,
-                            numRetries,
-                            retryDelay
+                            portNumber
                         );
                     }
 
                     if (!verityIsAlreadyDisabled) {
                         // Disable Verity
-                        await AndroidUtils.executeAdbCommand(
+                        await AndroidUtils.executeAdbCommandWithRetry(
                             'disable-verity',
-                            portNumber,
-                            numRetries,
-                            retryDelay
+                            portNumber
                         );
                     }
 
@@ -749,11 +733,9 @@ export class AndroidUtils {
                         await AndroidUtils.rebootEmulator(portNumber, true);
 
                         // Root again
-                        await AndroidUtils.executeAdbCommand(
+                        await AndroidUtils.executeAdbCommandWithRetry(
                             'root',
-                            portNumber,
-                            numRetries,
-                            retryDelay
+                            portNumber
                         );
                     }
                 }
@@ -762,12 +744,7 @@ export class AndroidUtils {
             })
             .then(() =>
                 // Now we're ready to remount and truely have root & writable access to system
-                AndroidUtils.executeAdbCommand(
-                    'remount',
-                    portNumber,
-                    numRetries,
-                    retryDelay
-                )
+                AndroidUtils.executeAdbCommandWithRetry('remount', portNumber)
             )
             .then(() => Promise.resolve());
     }
@@ -826,13 +803,26 @@ export class AndroidUtils {
      *
      * @param command The command to be executed. This should not include 'adb' command itself.
      * @param portNumber The ADB port of the Android virtual device.
-     * @param numRetries Optional parameter that indicates the number of times the command will be executed again if ADB comes back with an error. Defaults to 0 (no retries).
-     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to AndroidConfig.AdbRetryAttemptDelay.
      */
     public static async executeAdbCommand(
         command: string,
+        portNumber: number
+    ): Promise<string> {
+        return AndroidUtils.executeAdbCommandWithRetry(command, portNumber, 0);
+    }
+
+    /**
+     * Attempts to execute an ADB command on an Android virtual device, and will retry the command if it fails.
+     *
+     * @param command The command to be executed. This should not include 'adb' command itself.
+     * @param portNumber The ADB port of the Android virtual device.
+     * @param numRetries Optional parameter that indicates the number of times the command will be executed again if ADB comes back with an error. Defaults to AndroidConfig.AdbNumRetryAttempts.
+     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to AndroidConfig.AdbRetryAttemptDelay.
+     */
+    public static async executeAdbCommandWithRetry(
+        command: string,
         portNumber: number,
-        numRetries: number = 0,
+        numRetries: number = PlatformConfig.androidConfig().AdbNumRetryAttempts,
         retryDelay: number = PlatformConfig.androidConfig().AdbRetryAttemptDelay
     ): Promise<string> {
         const adbCmd = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} ${command}`;
