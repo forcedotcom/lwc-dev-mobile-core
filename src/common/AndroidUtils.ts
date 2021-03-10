@@ -25,7 +25,6 @@ const WINDOWS_OS = 'win32';
 const ANDROID_SDK_MANAGER_NAME = 'sdkmanager';
 const ANDROID_AVD_MANAGER_NAME = 'avdmanager';
 const ANDROID_ADB_NAME = 'adb';
-const DEFAULT_ADB_CONSOLE_PORT = 5554;
 
 export enum AndroidSDKRootSource {
     androidHome = 'ANDROID_HOME',
@@ -407,20 +406,6 @@ export class AndroidUtils {
     }
 
     /**
-     * Returns the next available ADB port (usually to be used for launching an emulator on that port).
-     *
-     * @returns A number representing the next available ADB port.
-     */
-    public static async getNextAndroidAdbPort(): Promise<number> {
-        // need to incr by 2, one for console port and next for adb
-        return AndroidUtils.getCurrentAdbPort().then((adbPort) =>
-            adbPort < PlatformConfig.androidConfig().defaultAdbPort
-                ? Promise.resolve(PlatformConfig.androidConfig().defaultAdbPort)
-                : Promise.resolve(adbPort + 2)
-        );
-    }
-
-    /**
      * Checks whether an emulator with a given name is available.
      *
      * @param emulatorName Name of an emulator (e.g Pixel XL, Nexus_6_API_30).
@@ -502,19 +487,18 @@ export class AndroidUtils {
      * Attempts to launch an emulator and returns the ADB port that the emulator was launched on.
      *
      * @param emulatorName Name of the emulator to be launched (e.g Pixel XL, Nexus_6_API_30).
-     * @param requestedPortNumber The ADB port to launch the emulator on. Note that this may not be the actual port that the emulator starts on.
      * @param writable Optional boolean indicating whether the emulator should launch with the '-writable-system' flag. Defaults to false.
-     * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
-     * @returns The actual ADB port that the emulator was launched on.
+     * @param waitForBoot Optional boolean indicating whether it should wait for the device to finish booting up. Defaults to true.
+     * @returns The ADB port that the emulator was launched on.
      */
     public static async startEmulator(
         emulatorName: string,
-        requestedPortNumber: number,
         writable: boolean = false,
         waitForBoot: boolean = true
     ): Promise<number> {
-        return AndroidUtils.resolveEmulatorImage(emulatorName).then(
-            async (resolvedEmulator) => {
+        let resolvedEmulatorName = emulatorName;
+        return AndroidUtils.resolveEmulatorImage(emulatorName)
+            .then((resolvedEmulator) => {
                 // This shouldn't happen b/c we make sure an emulator exists
                 // before calling this method, but keeping it just in case
                 if (resolvedEmulator === undefined) {
@@ -522,55 +506,50 @@ export class AndroidUtils {
                         new Error(`Invalid emulator: ${emulatorName}`)
                     );
                 }
+                resolvedEmulatorName = resolvedEmulator;
+                return AndroidUtils.emulatorHasPort(resolvedEmulator);
+            })
+            .then(async (port) => {
+                const resolvedPortNumer = port
+                    ? port
+                    : await AndroidUtils.getNextAvailableAdbPort();
 
-                try {
-                    if (
-                        AndroidUtils.isEmulatorAlreadyRunning(resolvedEmulator)
-                    ) {
-                        // get port number from emu-launch-params.txt
-                        const portNumber = AndroidUtils.resolveEmulatorPort(
-                            resolvedEmulator,
-                            requestedPortNumber
-                        );
-
-                        const isWritable = await AndroidUtils.isEmulatorSystemWritable(
-                            portNumber
-                        );
-
-                        if (writable === false || isWritable === true) {
-                            // If we're not asked for a writable, or if it already
-                            // is writable then we're done so just return its port.
-                            return Promise.resolve(portNumber);
-                        }
-
-                        // mismatch... shut it down and relaunch it in the right mode
-                        await AndroidUtils.stopEmulator(portNumber);
-                    }
-
-                    // We intentionally use spawn and ignore stdio here b/c emulator command can
-                    // spit out a bunch of output to stderr where they are not really errors. This
-                    // is specially true on Windows platform. So istead we spawn the process to launch
-                    // the emulator and later attempt at polling the emulator to see if it failed to boot.
-                    const child = childProcess.spawn(
-                        `${AndroidUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber}${
-                            writable ? ' -writable-system' : ''
-                        }`,
-                        { detached: true, shell: true, stdio: 'ignore' }
+                if (resolvedPortNumer === port) {
+                    // already is running on a port
+                    const isWritable = await AndroidUtils.isEmulatorSystemWritable(
+                        resolvedPortNumer
                     );
-                    child.unref();
 
-                    if (waitForBoot) {
-                        await AndroidUtils.waitUntilDeviceIsReady(
-                            requestedPortNumber
-                        );
+                    if (writable === false || isWritable === true) {
+                        // If we're not asked for a writable, or if it already
+                        // is writable then we're done so just return its port.
+                        return Promise.resolve(resolvedPortNumer);
                     }
 
-                    return Promise.resolve(requestedPortNumber);
-                } catch (error) {
-                    return Promise.reject(error);
+                    // mismatch... shut it down and relaunch it in the right mode
+                    await AndroidUtils.stopEmulator(resolvedPortNumer);
                 }
-            }
-        );
+
+                // We intentionally use spawn and ignore stdio here b/c emulator command can
+                // spit out a bunch of output to stderr where they are not really errors. This
+                // is specially true on Windows platform. So istead we spawn the process to launch
+                // the emulator and later attempt at polling the emulator to see if it failed to boot.
+                const child = childProcess.spawn(
+                    `${AndroidUtils.getEmulatorCommand()} @${resolvedEmulatorName} -port ${resolvedPortNumer}${
+                        writable ? ' -writable-system' : ''
+                    }`,
+                    { detached: true, shell: true, stdio: 'ignore' }
+                );
+                child.unref();
+
+                if (waitForBoot) {
+                    await AndroidUtils.waitUntilDeviceIsReady(
+                        resolvedPortNumer
+                    );
+                }
+
+                return Promise.resolve(resolvedPortNumer);
+            });
     }
 
     /**
@@ -661,36 +640,40 @@ export class AndroidUtils {
     }
 
     /**
-     * Remounts adb as root with writable system access for the AVD that is running on the specified port. If the AVD currently
+     * Mounts adb as root with writable system access for the AVD that is running on the specified port. If the AVD currently
      * is not launched with writable system access, this function will restart it with write access first then remounts as root.
      *
-     * @param portNumber The ADB port of the Android virtual device.
+     * @param emulatorName Name of the emulator to be launched (e.g Pixel XL, Nexus_6_API_30).
+     * @returns The ADB port that the emulator was launched on with writable access.
      */
-    public static async remountAsRootWritableSystem(
-        portNumber: number
-    ): Promise<void> {
-        const emulatorName = await AndroidUtils.fetchEmulatorNameFromPort(
-            portNumber
-        );
-        const emulator = await AndroidUtils.fetchEmulator(emulatorName);
-        if (!emulator) {
-            return Promise.reject(
-                new Error(
-                    `Unable to determine device info: Port = ${portNumber} , Name = ${emulatorName}`
-                )
-            );
-        }
+    public static async mountAsRootWritableSystem(
+        emulatorName: string
+    ): Promise<number> {
+        let portNumber = 0;
 
         // First attempt to start the emulator with writable system. Since it is already running, startEmulator() will check
         // to see if it is also running with writable system already or not. If so then nothing will happen and startEmulator()
         // will just return. Otherwise startEmulator() will power off the emulator first, then relaunch it with writable system,
         // and finally wait for it to finish booting.
-        return AndroidUtils.startEmulator(emulatorName, portNumber, true, true)
-            .then(() =>
+        return AndroidUtils.startEmulator(emulatorName, true, true)
+            .then((port) => {
+                portNumber = port;
                 // Now that emulator is launched with writable system, run root command
-                AndroidUtils.executeAdbCommandWithRetry('root', portNumber)
-            )
+                return AndroidUtils.executeAdbCommandWithRetry(
+                    'root',
+                    portNumber
+                );
+            })
             .then(async () => {
+                const emulator = await AndroidUtils.fetchEmulator(emulatorName);
+                if (!emulator) {
+                    return Promise.reject(
+                        new Error(
+                            `Unable to determine device info: Port = ${portNumber} , Name = ${emulatorName}`
+                        )
+                    );
+                }
+
                 // For API 29 or higher there are a few more steps to be done before we can remount after rooting
                 if (emulator.apiLevel.sameOrNewer(Version.from('29'))) {
                     const verificationIsAlreadyDisabled = (
@@ -746,7 +729,7 @@ export class AndroidUtils {
                 // Now we're ready to remount and truely have root & writable access to system
                 AndroidUtils.executeAdbCommandWithRetry('remount', portNumber)
             )
-            .then(() => Promise.resolve());
+            .then(() => Promise.resolve(portNumber));
     }
 
     /**
@@ -964,63 +947,6 @@ export class AndroidUtils {
                 );
             })
             .then(() => Promise.resolve());
-    }
-
-    /**
-     * Given an emulator name and a requested emulator port, this method checks to see if the emulator
-     * is indeed launched on that port and if not then it will return the actual port.
-     *
-     * @param emulatorName Name of the emulator
-     * @param requestedPortNumber Requested port for an emulator.
-     * @returns The actual port for an emulator.
-     */
-    public static resolveEmulatorPort(
-        emulatorName: string,
-        requestedPortNumber: number
-    ): number {
-        // Just like Android Studio AVD Manager GUI interface, replace blank spaces with _ so that the ID of this AVD
-        // doesn't have blanks (since that's not allowed). AVD Manager will automatially replace _ back with blank
-        // to generate user friendly display names.
-        const resolvedName = emulatorName.replace(/ /gi, '_');
-
-        // if config file does not exist, its created but not launched so use the requestedPortNumber
-        // else we will read it from emu-launch-params.txt file.
-        const launchFileName = CommonUtils.resolveUserHomePath(
-            path.join(
-                `~`,
-                '.android',
-                'avd',
-                `${resolvedName}.avd`,
-                'emu-launch-params.txt'
-            )
-        );
-        let adjustedPort = requestedPortNumber;
-        if (fs.existsSync(launchFileName)) {
-            const data = fs.readFileSync(launchFileName, 'utf8').toString();
-            // find the following string in file, absence of port indicates use of default port
-            // -port
-            // 5572
-            adjustedPort = DEFAULT_ADB_CONSOLE_PORT;
-            const portArgumentString = '-port';
-            const portStringIndx = data.indexOf(portArgumentString);
-            if (portStringIndx > -1) {
-                const portIndx = data.indexOf(
-                    '55',
-                    portStringIndx + portArgumentString.length
-                );
-                if (portIndx > -1) {
-                    const parsedPort = parseInt(
-                        data.substring(portIndx, portIndx + 4),
-                        10
-                    );
-                    // port numbers must be in the range if present
-                    if (parsedPort >= 5554 && parsedPort <= 5584) {
-                        adjustedPort = parsedPort;
-                    }
-                }
-            }
-        }
-        return adjustedPort;
     }
 
     // This method is public for testing purposes.
@@ -1253,33 +1179,55 @@ export class AndroidUtils {
     private static sdkManagerCommand: string | undefined;
     private static sdkRoot: AndroidSDKRoot | undefined;
 
-    private static async getCurrentAdbPort(): Promise<number> {
-        let adbPort = 0;
-        const command = `${AndroidUtils.getAdbShellCommand()} devices`;
-        return CommonUtils.executeCommandAsync(command)
-            .then((result) => {
-                if (result.stdout) {
-                    let listOfDevices: number[] = result.stdout
-                        .split(os.EOL)
-                        .filter((avd: string) =>
-                            avd.toLowerCase().startsWith('emulator')
-                        )
-                        .map((value) => {
-                            const array = value.match(/\d+/);
-                            const portNumbers = array ? array.map(Number) : [0];
-                            return portNumbers[0];
-                        });
-                    if (listOfDevices && listOfDevices.length > 0) {
-                        listOfDevices = listOfDevices.sort().reverse();
-                        adbPort = listOfDevices[0];
-                    }
+    private static async emulatorHasPort(
+        emulatorName: string
+    ): Promise<number | null> {
+        try {
+            const ports = await AndroidUtils.getAllCurrentlyUsedAdbPorts();
+            for (const port of ports) {
+                const name = await AndroidUtils.fetchEmulatorNameFromPort(port);
+                if (name === emulatorName) {
+                    return port;
                 }
-                return Promise.resolve(adbPort);
-            })
-            .catch((error) => {
-                AndroidUtils.logger.error(error);
-                return Promise.resolve(adbPort);
-            });
+            }
+        } catch (error) {
+            this.logger.warn(
+                `Unable to determine if emulator is already running: ${error}`
+            );
+        }
+
+        return null;
+    }
+
+    private static async getNextAvailableAdbPort(): Promise<number> {
+        return AndroidUtils.getAllCurrentlyUsedAdbPorts().then((ports) => {
+            const adbPort =
+                ports.length > 0
+                    ? ports.sort().reverse()[0] + 2 // need to incr by 2, one for console port and next for adb
+                    : PlatformConfig.androidConfig().defaultAdbPort;
+
+            return Promise.resolve(adbPort);
+        });
+    }
+
+    private static async getAllCurrentlyUsedAdbPorts(): Promise<number[]> {
+        let ports: number[] = [];
+        const command = `${AndroidUtils.getAdbShellCommand()} devices`;
+        return CommonUtils.executeCommandAsync(command).then((result) => {
+            if (result.stdout) {
+                ports = result.stdout
+                    .split('\n')
+                    .filter((avd: string) =>
+                        avd.toLowerCase().startsWith('emulator')
+                    )
+                    .map((value) => {
+                        const array = value.match(/\d+/);
+                        const portNumbers = array ? array.map(Number) : [0];
+                        return portNumbers[0];
+                    });
+            }
+            return Promise.resolve(ports);
+        });
     }
 
     private static async packageWithRequiredEmulatorImages(
@@ -1327,45 +1275,6 @@ export class AndroidUtils {
         return AndroidUtils.fetchInstalledPackages().then(
             (packages) => packages.systemImages
         );
-    }
-
-    private static isEmulatorAlreadyRunning(emulatorName: string): boolean {
-        const findProcessCommand =
-            process.platform === WINDOWS_OS
-                ? `wmic process where "CommandLine Like \'%qemu-system-x86_64%\'" get CommandLine | findstr /V "wmic process where" | findstr "${emulatorName}"`
-                : `ps -ax | grep qemu-system-x86_64 | grep ${emulatorName} | grep -v grep`;
-
-        // ram.img.dirty is a one byte file created when avd is started and removed when avd is stopped.
-        const launchFileName = CommonUtils.resolveUserHomePath(
-            path.join(
-                `~`,
-                '.android',
-                'avd',
-                `${emulatorName}.avd`,
-                'snapshots',
-                'default_boot',
-                'ram.img.dirty'
-            )
-        );
-
-        // first ensure that ram.img.dirty exists
-        if (!fs.existsSync(launchFileName)) {
-            return false;
-        }
-
-        // then ensure that the process is also running for the selected emulator
-        let foundProcess = false;
-        try {
-            const findResult = CommonUtils.executeCommandSync(
-                findProcessCommand
-            );
-            foundProcess = findResult != null && findResult.trim().length > 0;
-        } catch (error) {
-            AndroidUtils.logger.debug(
-                `Unable to find the emulator process: ${error}`
-            );
-        }
-        return foundProcess;
     }
 
     // NOTE: detaching a process in windows seems to detach the streams. Prevent spawn from detaching when

@@ -42,7 +42,6 @@ export class AndroidLauncher {
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
         const device = (await AndroidUtils.getSupportedDevices())[0];
-        let emulatorPort = await AndroidUtils.getNextAndroidAdbPort();
         const emuName = this.emulatorName;
         CommonUtils.startCliAction(`Launching`, `Searching for ${emuName}`);
         return AndroidUtils.hasEmulator(emuName)
@@ -71,11 +70,9 @@ export class AndroidLauncher {
                     `Launching`,
                     `Starting device ${emuName}`
                 );
-                return AndroidUtils.startEmulator(emuName, emulatorPort);
+                return AndroidUtils.startEmulator(emuName);
             })
-            .then((actualPort) => {
-                emulatorPort = actualPort;
-
+            .then((emulatorPort) => {
                 const useServer = PreviewUtils.useLwcServerForPreviewing(
                     targetApp,
                     appConfig
