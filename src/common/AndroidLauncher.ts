@@ -16,6 +16,19 @@ export class AndroidLauncher {
         this.emulatorName = emulatorName;
     }
 
+    /**
+     * Attempts to preview a Lightning Web Component. It will create the target emulator if it doesn't already exist.
+     * It will launch the emulator and wait for it to boot and will then proceed to preview the LWC. If the preview
+     * target is the browser then it will launch the emulator browser for previewing the LWC. If the preview target
+     * is a native app then it will install & launch the native app for previewing the LWC.
+     *
+     * @param compName Name of the LWC component.
+     * @param projectDir Path to the LWC project root directory.
+     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
+     * @param targetApp The bundle ID of the app to be launched.
+     * @param appConfig An AndroidAppPreviewConfig object containing app configuration info.
+     * @param serverPort The port for local dev server.
+     */
     public async launchPreview(
         compName: string,
         projectDir: string,
@@ -62,13 +75,7 @@ export class AndroidLauncher {
             })
             .then((actualPort) => {
                 emulatorPort = actualPort;
-                CommonUtils.startCliAction(
-                    `Launching`,
-                    `Waiting for device ${emuName} to boot`
-                );
-                return AndroidUtils.waitUntilDeviceIsReady(emulatorPort);
-            })
-            .then(() => {
+
                 const useServer = PreviewUtils.useLwcServerForPreviewing(
                     targetApp,
                     appConfig

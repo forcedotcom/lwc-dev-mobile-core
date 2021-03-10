@@ -5,6 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Version } from './Common';
+import fs from 'fs';
 
 export class AndroidPackages {
     public static parseRawPackagesString(
@@ -133,8 +134,31 @@ export class AndroidVirtualDevice {
             const api = AndroidVirtualDevice.getValueForKey(avd, 'based on:');
 
             if (name && device && path && target && api) {
+                const filePath = path.replace(`${name}.avd`, `${name}.ini`);
+                let apiLevel = new Version(0, 0, 0);
+                try {
+                    const configFile = fs.readFileSync(filePath, 'utf8');
+                    const targetAPI = configFile
+                        .split('\n')
+                        .filter((entry) => entry.startsWith('target='))
+                        .map((entry) =>
+                            entry.replace('target=', '').trim().toLowerCase()
+                        )
+                        .map((entry) => entry.replace('android-', ''));
+                    apiLevel = Version.from(targetAPI[0]);
+                } catch (error) {
+                    // fetching apiLevel is a best effort, so ignore and continue
+                }
+
                 devices.push(
-                    new AndroidVirtualDevice(name, device, path, target, api)
+                    new AndroidVirtualDevice(
+                        name,
+                        device,
+                        path,
+                        target,
+                        api,
+                        apiLevel
+                    )
                 );
             }
         }
@@ -215,13 +239,15 @@ export class AndroidVirtualDevice {
     public path: string;
     public target: string;
     public api: string;
+    public apiLevel: Version;
 
     constructor(
         name: string,
         deviceName: string,
         path: string,
         target: string,
-        api: string
+        api: string,
+        apiLevel: Version
     ) {
         this.name = name;
         this.displayName = name.replace(/[_-]/gi, ' ').trim(); // eg. Pixel_XL --> Pixel XL, tv-emulator --> tv emulator
@@ -229,6 +255,7 @@ export class AndroidVirtualDevice {
         this.path = path.trim();
         this.target = target.replace(/\([^\(]*\)/gi, '').trim(); // eg. Google APIs (Google Inc.) --> Google APIs
         this.api = api.trim();
+        this.apiLevel = apiLevel;
     }
 
     public toString(): string {

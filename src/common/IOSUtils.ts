@@ -18,15 +18,33 @@ const RUNTIME_TYPE_PREFIX = 'com.apple.CoreSimulator.SimRuntime';
 const LOGGER_NAME = 'force:lightning:local:iosutils';
 
 export class IOSUtils {
+    /**
+     * Initialized the logger used by IOSUtils
+     */
     public static async initializeLogger(): Promise<void> {
         IOSUtils.logger = await Logger.child(LOGGER_NAME);
         return Promise.resolve();
     }
 
-    public static async bootDevice(udid: string): Promise<void> {
+    /**
+     * Attempts to launch a simulator.
+     *
+     * @param udid The UDID of the simulator to launch.
+     * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
+     */
+    public static async bootDevice(
+        udid: string,
+        waitForBoot: boolean = true
+    ): Promise<void> {
         const command = `${XCRUN_CMD} simctl boot ${udid}`;
         return CommonUtils.executeCommandAsync(command)
-            .then(() => Promise.resolve())
+            .then(() => {
+                if (waitForBoot) {
+                    return IOSUtils.waitUntilDeviceIsReady(udid);
+                } else {
+                    return Promise.resolve();
+                }
+            })
             .catch((error) => {
                 if (!IOSUtils.isDeviceAlreadyBootedError(error)) {
                     return Promise.reject(
@@ -40,6 +58,13 @@ export class IOSUtils {
             });
     }
 
+    /**
+     * Attempts to create a new simulator device.
+     *
+     * @param simulatorName The name for the simulator.
+     * @param deviceType The type of device to use for the simulator (e.g iPhone-8)
+     * @param runtime The runtime to use for the device (e.g iOS-13)
+     */
     public static async createNewDevice(
         simulatorName: string,
         deviceType: string,
@@ -57,6 +82,12 @@ export class IOSUtils {
             );
     }
 
+    /**
+     * Attempts to get the info about a simulator.
+     *
+     * @param simulatorName The name for the simulator.
+     * @returns An IOSSimulatorDevice object containing the info of a simulator, or NULL if not found.
+     */
     public static async getSimulator(
         simulatorName: string
     ): Promise<IOSSimulatorDevice | null> {
@@ -79,6 +110,11 @@ export class IOSUtils {
             });
     }
 
+    /**
+     * Attempts to get a list of simulators that are supported.
+     *
+     * @returns An array of IOSSimulatorDevice objects containing the info about the supported simulators.
+     */
     public static async getSupportedSimulators(): Promise<
         IOSSimulatorDevice[]
     > {
@@ -105,6 +141,11 @@ export class IOSUtils {
             });
     }
 
+    /**
+     * Attempts to get a list of device types that are supported.
+     *
+     * @returns An array of strings containing the supported device types.
+     */
     public static async getSupportedDevices(): Promise<string[]> {
         return CommonUtils.executeCommandAsync(
             `${XCRUN_CMD} simctl list  --json devicetypes`
@@ -143,6 +184,11 @@ export class IOSUtils {
             );
     }
 
+    /**
+     * Attempts to get a list of runtimes that are supported.
+     *
+     * @returns An array of strings containing the supported runtimes.
+     */
     public static async getSupportedRuntimes(): Promise<string[]> {
         return IOSUtils.getSimulatorRuntimes().then((configuredRuntimes) => {
             const minSupportedRuntimeIOS = Version.from(
@@ -169,6 +215,11 @@ export class IOSUtils {
         });
     }
 
+    /**
+     * Attempts to get a list of all runtimes that are available.
+     *
+     * @returns An array of strings containing all of the available runtimes.
+     */
     public static async getSimulatorRuntimes(): Promise<string[]> {
         const runtimesCmd = `${XCRUN_CMD} simctl list --json runtimes available`;
         return CommonUtils.executeCommandAsync(runtimesCmd)
@@ -209,6 +260,9 @@ export class IOSUtils {
             });
     }
 
+    /**
+     * Attempts to wait for a simulator to finish booting up.
+     */
     public static async waitUntilDeviceIsReady(udid: string): Promise<void> {
         const command = `${XCRUN_CMD} simctl bootstatus "${udid}"`;
         return CommonUtils.executeCommandAsync(command)
@@ -222,6 +276,9 @@ export class IOSUtils {
             );
     }
 
+    /**
+     * Attempts to launch the simulator app, which hosts all simulators.
+     */
     public static async launchSimulatorApp(): Promise<void> {
         const command = `open -a Simulator`;
         return CommonUtils.executeCommandAsync(command)
@@ -235,6 +292,12 @@ export class IOSUtils {
             );
     }
 
+    /**
+     * Attempts to launch the browser in a booted simulator and navigates to the provided URL.
+     *
+     * @param udid The UDID of the simulator.
+     * @param url The URL to navigate to.
+     */
     public static async launchURLInBootedSimulator(
         udid: string,
         url: string
@@ -255,6 +318,18 @@ export class IOSUtils {
             );
     }
 
+    /**
+     * Attempts to launch a native app in a simulator to preview LWC components. If the app is not installed then this method will attempt to install it first.
+     *
+     * @param udid The UDID of the simulator.
+     * @param compName Name of the LWC component.
+     * @param projectDir Path to the LWC project root directory.
+     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
+     * @param targetApp The bundle ID of the app to be launched.
+     * @param targetAppArguments Extra arguments to be passed to the app upon launch.
+     * @param serverAddress Optional address for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
+     * @param serverPort Optional port for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
+     */
     public static async launchAppInBootedSimulator(
         udid: string,
         compName: string,

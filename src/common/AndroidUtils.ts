@@ -20,9 +20,6 @@ import { PlatformConfig } from './PlatformConfig';
 import { LaunchArgument } from './PreviewConfigFile';
 import { PreviewUtils } from './PreviewUtils';
 
-const spawn = childProcess.spawn;
-type StdioOptions = childProcess.StdioOptions;
-
 const LOGGER_NAME = 'force:lightning:local:androidutils';
 const WINDOWS_OS = 'win32';
 const ANDROID_SDK_MANAGER_NAME = 'sdkmanager';
@@ -221,6 +218,32 @@ export class AndroidUtils {
                 AndroidUtils.logger.warn(error);
                 return Promise.resolve(devices);
             });
+    }
+
+    /**
+     * Attempts to fetch a specific Android virtual device.
+     *
+     * @returns An AndroidVirtualDevice object for the specified virtual device, or undefined if device not found.
+     */
+    public static async fetchEmulator(
+        emulatorName: string
+    ): Promise<AndroidVirtualDevice | undefined> {
+        return AndroidUtils.resolveEmulatorImage(emulatorName).then(
+            async (resolvedEmulator) => {
+                if (!resolvedEmulator) {
+                    return Promise.resolve(undefined);
+                }
+
+                const emulators = await AndroidUtils.fetchEmulators();
+                for (const emulator of emulators) {
+                    if (emulator.name === resolvedEmulator) {
+                        return Promise.resolve(emulator);
+                    }
+                }
+
+                return Promise.resolve(undefined);
+            }
+        );
     }
 
     /**
@@ -480,16 +503,18 @@ export class AndroidUtils {
      *
      * @param emulatorName Name of the emulator to be launched (e.g Pixel XL, Nexus_6_API_30).
      * @param requestedPortNumber The ADB port to launch the emulator on. Note that this may not be the actual port that the emulator starts on.
-     * @param writable Whether the emulator should launch with the '-writable-system' flag.
+     * @param writable Optional boolean indicating whether the emulator should launch with the '-writable-system' flag. Defaults to false.
+     * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
      * @returns The actual ADB port that the emulator was launched on.
      */
     public static async startEmulator(
         emulatorName: string,
         requestedPortNumber: number,
-        writable: boolean = false
+        writable: boolean = false,
+        waitForBoot: boolean = true
     ): Promise<number> {
         return AndroidUtils.resolveEmulatorImage(emulatorName).then(
-            (resolvedEmulator) => {
+            async (resolvedEmulator) => {
                 // This shouldn't happen b/c we make sure an emulator exists
                 // before calling this method, but keeping it just in case
                 if (resolvedEmulator === undefined) {
@@ -498,33 +523,230 @@ export class AndroidUtils {
                     );
                 }
 
-                if (AndroidUtils.isEmulatorAlreadyRunning(resolvedEmulator)) {
-                    // get port number from emu-launch-params.txt
-                    const portNumber = AndroidUtils.resolveEmulatorPort(
-                        resolvedEmulator,
-                        requestedPortNumber
-                    );
-                    return Promise.resolve(portNumber);
-                }
-
                 try {
+                    if (
+                        AndroidUtils.isEmulatorAlreadyRunning(resolvedEmulator)
+                    ) {
+                        // get port number from emu-launch-params.txt
+                        const portNumber = AndroidUtils.resolveEmulatorPort(
+                            resolvedEmulator,
+                            requestedPortNumber
+                        );
+
+                        const isWritable = await AndroidUtils.isEmulatorSystemWritable(
+                            portNumber
+                        );
+
+                        if (writable === false || isWritable === true) {
+                            // If we're not asked for a writable, or if it already
+                            // is writable then we're done so just return its port.
+                            return Promise.resolve(portNumber);
+                        }
+
+                        // mismatch... shut it down and relaunch it in the right mode
+                        await AndroidUtils.stopEmulator(portNumber);
+                    }
+
                     // We intentionally use spawn and ignore stdio here b/c emulator command can
                     // spit out a bunch of output to stderr where they are not really errors. This
                     // is specially true on Windows platform. So istead we spawn the process to launch
                     // the emulator and later attempt at polling the emulator to see if it failed to boot.
-                    const child = spawn(
+                    const child = childProcess.spawn(
                         `${AndroidUtils.getEmulatorCommand()} @${resolvedEmulator} -port ${requestedPortNumber}${
                             writable ? ' -writable-system' : ''
                         }`,
                         { detached: true, shell: true, stdio: 'ignore' }
                     );
                     child.unref();
+
+                    if (waitForBoot) {
+                        await AndroidUtils.waitUntilDeviceIsReady(
+                            requestedPortNumber
+                        );
+                    }
+
                     return Promise.resolve(requestedPortNumber);
                 } catch (error) {
                     return Promise.reject(error);
                 }
             }
         );
+    }
+
+    /**
+     * Attempts to power off an emulator.
+     *
+     * @param portNumber The ADB port of the emulator.
+     * @param waitForPowerOff Optional boolean indicating whether it should wait for the device to shut down. Defaults to true.
+     */
+    public static async stopEmulator(
+        portNumber: number,
+        waitForPowerOff: boolean = true
+    ): Promise<void> {
+        return AndroidUtils.executeAdbCommand(
+            'shell reboot -p',
+            portNumber
+        ).then(() => {
+            if (waitForPowerOff) {
+                return AndroidUtils.waitUntilDeviceIsPoweredOff(portNumber);
+            } else {
+                return Promise.resolve();
+            }
+        });
+    }
+
+    /**
+     * Attempts to reboot an emulator.
+     *
+     * @param portNumber The ADB port of the emulator.
+     * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
+     */
+    public static async rebootEmulator(
+        portNumber: number,
+        waitForBoot: boolean = true
+    ): Promise<void> {
+        return AndroidUtils.executeAdbCommand('shell reboot', portNumber).then(
+            () => {
+                if (waitForBoot) {
+                    return AndroidUtils.waitUntilDeviceIsReady(portNumber);
+                } else {
+                    return Promise.resolve();
+                }
+            }
+        );
+    }
+
+    /**
+     * Determines if an emulator was launched with -writable-system parameter by looking at its emu-launch-params.txt file.
+     *
+     * @param portNumber The ADB port of the Android virtual device.
+     * @returns A boolean indicating whether the emulator on the given port was launched with -writable-system parameter
+     */
+    public static async isEmulatorSystemWritable(
+        portNumber: number
+    ): Promise<boolean> {
+        try {
+            const emuPath = (
+                await AndroidUtils.executeAdbCommand('emu avd path', portNumber)
+            )
+                .split('\n')[0]
+                .trim();
+
+            const paramFile = path.join(emuPath, 'emu-launch-params.txt');
+
+            const launchParams = fs.readFileSync(paramFile, 'utf8');
+            return Promise.resolve(launchParams.includes('-writable-system'));
+        } catch (error) {
+            this.logger.warn(
+                `Unable to determine if emulator is system writable: ${error}`
+            );
+        }
+
+        return Promise.resolve(false);
+    }
+
+    /**
+     * Given an emulator that is running on a port, it returns the name of the AVD that is running on that port.
+     *
+     * @param portNumber The ADB port of the Android virtual device.
+     * @returns The name of the AVD that is running on that specified port.
+     */
+    public static async fetchEmulatorNameFromPort(
+        portNumber: number
+    ): Promise<string> {
+        return AndroidUtils.executeAdbCommand(
+            'emu avd name',
+            portNumber
+        ).then((result) => result.split('\n')[0].trim());
+    }
+
+    /**
+     * Remounts adb as root with writable system access for the AVD that is running on the specified port. If the AVD currently
+     * is not launched with writable system access, this function will restart it with write access first then remounts as root.
+     *
+     * @param portNumber The ADB port of the Android virtual device.
+     */
+    public static async remountAsRootWritableSystem(
+        portNumber: number
+    ): Promise<void> {
+        const emulatorName = await AndroidUtils.fetchEmulatorNameFromPort(
+            portNumber
+        );
+        const emulator = await AndroidUtils.fetchEmulator(emulatorName);
+        if (!emulator) {
+            return Promise.reject(
+                new Error(
+                    `Unable to determine device info: Port = ${portNumber} , Name = ${emulatorName}`
+                )
+            );
+        }
+
+        // First attempt to start the emulator with writable system. Since it is already running, startEmulator() will check
+        // to see if it is also running with writable system already or not. If so then nothing will happen and startEmulator()
+        // will just return. Otherwise startEmulator() will power off the emulator first, then relaunch it with writable system,
+        // and finally wait for it to finish booting.
+        return AndroidUtils.startEmulator(emulatorName, portNumber, true, true)
+            .then(() =>
+                // Now that emulator is launched with writable system, run root command
+                AndroidUtils.executeAdbCommandWithRetry('root', portNumber)
+            )
+            .then(async () => {
+                // For API 29 or higher there are a few more steps to be done before we can remount after rooting
+                if (emulator.apiLevel.sameOrNewer(Version.from('29'))) {
+                    const verificationIsAlreadyDisabled = (
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'shell avbctl get-verification',
+                            portNumber
+                        )
+                    ).includes('disabled');
+
+                    const verityIsAlreadyDisabled = (
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'shell avbctl get-verity',
+                            portNumber
+                        )
+                    ).includes('disabled');
+
+                    if (!verificationIsAlreadyDisabled) {
+                        // Disable Android Verified Boot
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'shell avbctl disable-verification',
+                            portNumber
+                        );
+                    }
+
+                    if (!verityIsAlreadyDisabled) {
+                        // Disable Verity
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'disable-verity',
+                            portNumber
+                        );
+                    }
+
+                    // If AVB and Verify were not disabled already and we had to run
+                    // commands to disable them, then reboot for changes to take effect.
+                    if (
+                        !verificationIsAlreadyDisabled ||
+                        !verityIsAlreadyDisabled
+                    ) {
+                        // Reboot for changes to take effect
+                        await AndroidUtils.rebootEmulator(portNumber, true);
+
+                        // Root again
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'root',
+                            portNumber
+                        );
+                    }
+                }
+
+                return Promise.resolve();
+            })
+            .then(() =>
+                // Now we're ready to remount and truely have root & writable access to system
+                AndroidUtils.executeAdbCommandWithRetry('remount', portNumber)
+            )
+            .then(() => Promise.resolve());
     }
 
     /**
@@ -536,18 +758,116 @@ export class AndroidUtils {
         portNumber: number
     ): Promise<void> {
         const quote = process.platform === WINDOWS_OS ? '"' : "'";
-        const bootCmd = `shell ${quote}while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;${quote}`;
-        const command = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} wait-for-device ${bootCmd}`;
-        const timeout = PlatformConfig.androidConfig()
-            .deviceBootReadinessWaitTime;
+        const command = `wait-for-device shell ${quote}while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;${quote}`;
+        const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
 
         const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
             timeout,
-            CommonUtils.executeCommandAsync(command),
+            AndroidUtils.executeAdbCommand(command, portNumber),
             `Timeout waiting for emulator-${portNumber} to boot.`
         );
 
         return waitUntilReadyPromise.then(() => Promise.resolve());
+    }
+
+    /**
+     * Attempts to wait for an Android virtual device to power off. It determines whether a device is powered off
+     * by continuously running 'adb devices' command and see if this particular device is no longer in the list.
+     *
+     * @param portNumber The ADB port of the Android virtual device.
+     */
+    public static async waitUntilDeviceIsPoweredOff(
+        portNumber: number
+    ): Promise<void> {
+        const command =
+            process.platform === WINDOWS_OS
+                ? `powershell -Command "while($(adb devices | findstr emulator-${portNumber})){ Start-Sleep -s 1 }"`
+                : `while [[ -n $(adb devices | grep emulator-${portNumber}) ]]; do sleep 1; done;`;
+        const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
+
+        const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
+            timeout,
+            CommonUtils.executeCommandAsync(command),
+            `Timeout waiting for emulator-${portNumber} to power off.`
+        );
+
+        return waitUntilReadyPromise.then(() => {
+            // It may often be the case that the device is removed from 'adb devices' list too quickly
+            // specially on Windows platform. So we also wait an extra 5 seconds.
+            return CommonUtils.delay(5000);
+        });
+    }
+
+    /**
+     * Attempts to execute an ADB command on an Android virtual device.
+     *
+     * @param command The command to be executed. This should not include 'adb' command itself.
+     * @param portNumber The ADB port of the Android virtual device.
+     */
+    public static async executeAdbCommand(
+        command: string,
+        portNumber: number
+    ): Promise<string> {
+        return AndroidUtils.executeAdbCommandWithRetry(command, portNumber, 0);
+    }
+
+    /**
+     * Attempts to execute an ADB command on an Android virtual device, and will retry the command if it fails.
+     *
+     * @param command The command to be executed. This should not include 'adb' command itself.
+     * @param portNumber The ADB port of the Android virtual device.
+     * @param numRetries Optional parameter that indicates the number of times the command will be executed again if ADB comes back with an error. Defaults to AndroidConfig.AdbNumRetryAttempts.
+     * @param retryDelay Optional parameter that indicates the milliseconds of delay before retrying again. Defaults to AndroidConfig.AdbRetryAttemptDelay.
+     */
+    public static async executeAdbCommandWithRetry(
+        command: string,
+        portNumber: number,
+        numRetries: number = PlatformConfig.androidConfig().AdbNumRetryAttempts,
+        retryDelay: number = PlatformConfig.androidConfig().AdbRetryAttemptDelay
+    ): Promise<string> {
+        const adbCmd = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} ${command}`;
+
+        let allOutput = '';
+
+        for (let i = 0; i <= numRetries; i++) {
+            let result: { stdout: string; stderr: string } = {
+                stdout: '',
+                stderr: ''
+            };
+            let err: any;
+
+            try {
+                result = await CommonUtils.executeCommandAsync(adbCmd);
+            } catch (error) {
+                err = error;
+            }
+
+            allOutput =
+                (err ? err : '') +
+                (result.stderr ? '\n' + result.stderr : '') +
+                (result.stdout ? '\n' + result.stdout : '');
+
+            // ADB is terrible and in addition to actual errors it may also send warnings or even success messages to stderr.
+            // For example if you run the command 'adb shell reboot -p' to power down a device, when done it prints the success
+            // message 'Done\n' to stderr. And sometimes ADB prints error messages to stdout instead of stderr. So we first gether
+            // all outputs into one and then explicitly check to see if an error has occured or not.
+            if (allOutput && allOutput.toLowerCase().includes('error:')) {
+                this.logger.warn(
+                    `ADB command '${adbCmd}' failed. Retrying ${
+                        numRetries - i
+                    } more times.\n${result.stderr}\n${result.stdout}`
+                );
+                if (i < numRetries) {
+                    // If we still have more retries left, delay and retry
+                    await CommonUtils.delay(retryDelay);
+                }
+            } else {
+                return Promise.resolve(result.stdout);
+            }
+        }
+
+        // If we got here then it means that the command failed to execute successfully after all retries (if any)
+        return Promise.reject(new Error(allOutput));
     }
 
     /**
@@ -560,14 +880,15 @@ export class AndroidUtils {
         url: string,
         portNumber: number
     ): Promise<void> {
-        const openUrlCommand = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} shell am start -a android.intent.action.VIEW -d ${url}`;
+        const openUrlCommand = `shell am start -a android.intent.action.VIEW -d ${url}`;
         CommonUtils.startCliAction(
             'Launching',
             `Opening browser with url ${url}`
         );
-        return CommonUtils.executeCommandAsync(openUrlCommand).then(() =>
-            Promise.resolve()
-        );
+        return AndroidUtils.executeAdbCommand(
+            openUrlCommand,
+            portNumber
+        ).then(() => Promise.resolve());
     }
 
     /**
@@ -594,16 +915,19 @@ export class AndroidUtils {
         serverAddress: string | undefined,
         serverPort: string | undefined
     ): Promise<void> {
-        let thePromise: Promise<{ stdout: string; stderr: string }>;
+        let thePromise: Promise<string>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = `Installing app ${appBundlePath.trim()} to emulator`;
             AndroidUtils.logger.info(installMsg);
             CommonUtils.startCliAction('Launching', installMsg);
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
-            const installCommand = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
-            thePromise = CommonUtils.executeCommandAsync(installCommand);
+            const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
+            thePromise = AndroidUtils.executeAdbCommand(
+                installCommand,
+                portNumber
+            );
         } else {
-            thePromise = Promise.resolve({ stdout: '', stderr: '' });
+            thePromise = Promise.resolve('');
         }
 
         return thePromise
@@ -625,8 +949,7 @@ export class AndroidUtils {
                 });
 
                 const launchCommand =
-                    `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber}` +
-                    ` shell am start -S -n "${targetApp}/${launchActivity}"` +
+                    `shell am start -S -n "${targetApp}/${launchActivity}"` +
                     ' -a android.intent.action.MAIN' +
                     ' -c android.intent.category.LAUNCHER' +
                     ` ${launchArgs}`;
@@ -635,7 +958,10 @@ export class AndroidUtils {
                 AndroidUtils.logger.info(launchMsg);
                 CommonUtils.startCliAction('Launching', launchMsg);
 
-                return CommonUtils.executeCommandAsync(launchCommand);
+                return AndroidUtils.executeAdbCommand(
+                    launchCommand,
+                    portNumber
+                );
             })
             .then(() => Promise.resolve());
     }
@@ -1048,10 +1374,13 @@ export class AndroidUtils {
         command: string
     ): childProcess.ChildProcessWithoutNullStreams {
         if (process.platform === WINDOWS_OS) {
-            const child = spawn(command, { shell: true });
+            const child = childProcess.spawn(command, { shell: true });
             return child;
         } else {
-            const child = spawn(command, { shell: true, detached: true });
+            const child = childProcess.spawn(command, {
+                shell: true,
+                detached: true
+            });
             child.unref();
             return child;
         }
