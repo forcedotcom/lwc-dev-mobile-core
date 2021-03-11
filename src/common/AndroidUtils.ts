@@ -528,14 +528,17 @@ export class AndroidUtils {
 
                     // mismatch... shut it down and relaunch it in the right mode
                     CommonUtils.updateCliAction(
-                        'emulator currently launched without the -writable-system flag so shutting it down first'
+                        'emulator currently launched without -writable-system. Shutting down.'
                     );
                     await AndroidUtils.stopEmulator(resolvedPortNumber);
                 }
 
+                const verb =
+                    resolvedPortNumber === port ? 'relaunching' : 'launching';
+
                 CommonUtils.updateCliAction(
-                    `launching ${resolvedEmulatorName} on port ${resolvedPortNumber}${
-                        writable ? ' with the -writable-system flag' : ''
+                    `${verb} ${resolvedEmulatorName} on port ${resolvedPortNumber}${
+                        writable ? ' with -writable-system' : ''
                     }`
                 );
 
@@ -751,7 +754,9 @@ export class AndroidUtils {
                 return Promise.resolve();
             })
             .then(() => {
-                CommonUtils.updateCliAction('remounting');
+                CommonUtils.updateCliAction(
+                    'remounting system partition to be writable'
+                );
                 // Now we're ready to remount and truly have root & writable access to system
                 return AndroidUtils.executeAdbCommandWithRetry(
                     'remount',
