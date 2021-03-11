@@ -436,7 +436,7 @@ export class AndroidUtils {
         abi: string
     ): Promise<void> {
         // Just like Android Studio AVD Manager GUI interface, replace blank spaces with _ so that the ID of this AVD
-        // doesn't have blanks (since that's not allowed). AVD Manager will automatially replace _ back with blank
+        // doesn't have blanks (since that's not allowed). AVD Manager will automatically replace _ back with blank
         // to generate user friendly display names.
         const resolvedName = emulatorName.replace(/ /gi, '_');
 
@@ -510,32 +510,41 @@ export class AndroidUtils {
                 return AndroidUtils.emulatorHasPort(resolvedEmulator);
             })
             .then(async (port) => {
-                const resolvedPortNumer = port
+                const resolvedPortNumber = port
                     ? port
                     : await AndroidUtils.getNextAvailableAdbPort();
 
-                if (resolvedPortNumer === port) {
+                if (resolvedPortNumber === port) {
                     // already is running on a port
                     const isWritable = await AndroidUtils.isEmulatorSystemWritable(
-                        resolvedPortNumer
+                        resolvedPortNumber
                     );
 
                     if (writable === false || isWritable === true) {
                         // If we're not asked for a writable, or if it already
                         // is writable then we're done so just return its port.
-                        return Promise.resolve(resolvedPortNumer);
+                        return Promise.resolve(resolvedPortNumber);
                     }
 
                     // mismatch... shut it down and relaunch it in the right mode
-                    await AndroidUtils.stopEmulator(resolvedPortNumer);
+                    CommonUtils.updateCliAction(
+                        'emulator currently launched without the -writable-system flag so shutting it down first'
+                    );
+                    await AndroidUtils.stopEmulator(resolvedPortNumber);
                 }
+
+                CommonUtils.updateCliAction(
+                    `launching ${resolvedEmulatorName} on port ${resolvedPortNumber}${
+                        writable ? ' with the -writable-system flag' : ''
+                    }`
+                );
 
                 // We intentionally use spawn and ignore stdio here b/c emulator command can
                 // spit out a bunch of output to stderr where they are not really errors. This
-                // is specially true on Windows platform. So istead we spawn the process to launch
+                // is specially true on Windows platform. So instead we spawn the process to launch
                 // the emulator and later attempt at polling the emulator to see if it failed to boot.
                 const child = childProcess.spawn(
-                    `${AndroidUtils.getEmulatorCommand()} @${resolvedEmulatorName} -port ${resolvedPortNumer}${
+                    `${AndroidUtils.getEmulatorCommand()} @${resolvedEmulatorName} -port ${resolvedPortNumber}${
                         writable ? ' -writable-system' : ''
                     }`,
                     { detached: true, shell: true, stdio: 'ignore' }
@@ -543,12 +552,15 @@ export class AndroidUtils {
                 child.unref();
 
                 if (waitForBoot) {
+                    CommonUtils.updateCliAction(
+                        `waiting for ${resolvedEmulatorName} to boot`
+                    );
                     await AndroidUtils.waitUntilDeviceIsReady(
-                        resolvedPortNumer
+                        resolvedPortNumber
                     );
                 }
 
-                return Promise.resolve(resolvedPortNumer);
+                return Promise.resolve(resolvedPortNumber);
             });
     }
 
@@ -690,6 +702,15 @@ export class AndroidUtils {
                         )
                     ).includes('disabled');
 
+                    if (
+                        !verificationIsAlreadyDisabled ||
+                        !verityIsAlreadyDisabled
+                    ) {
+                        CommonUtils.updateCliAction(
+                            'disabling Android Verified Build and Verity'
+                        );
+                    }
+
                     if (!verificationIsAlreadyDisabled) {
                         // Disable Android Verified Boot
                         await AndroidUtils.executeAdbCommandWithRetry(
@@ -712,6 +733,10 @@ export class AndroidUtils {
                         !verificationIsAlreadyDisabled ||
                         !verityIsAlreadyDisabled
                     ) {
+                        CommonUtils.updateCliAction(
+                            'rebooting for changes to take effect'
+                        );
+
                         // Reboot for changes to take effect
                         await AndroidUtils.rebootEmulator(portNumber, true);
 
@@ -725,10 +750,14 @@ export class AndroidUtils {
 
                 return Promise.resolve();
             })
-            .then(() =>
-                // Now we're ready to remount and truely have root & writable access to system
-                AndroidUtils.executeAdbCommandWithRetry('remount', portNumber)
-            )
+            .then(() => {
+                CommonUtils.updateCliAction('remounting');
+                // Now we're ready to remount and truly have root & writable access to system
+                return AndroidUtils.executeAdbCommandWithRetry(
+                    'remount',
+                    portNumber
+                );
+            })
             .then(() => Promise.resolve(portNumber));
     }
 
@@ -833,7 +862,7 @@ export class AndroidUtils {
             // ADB is terrible and in addition to actual errors it may also send warnings or even success messages to stderr.
             // For example if you run the command 'adb shell reboot -p' to power down a device, when done it prints the success
             // message 'Done\n' to stderr. And sometimes ADB prints error messages to stdout instead of stderr. So we first gether
-            // all outputs into one and then explicitly check to see if an error has occured or not.
+            // all outputs into one and then explicitly check to see if an error has occurred or not.
             if (allOutput && allOutput.toLowerCase().includes('error:')) {
                 this.logger.warn(
                     `ADB command '${adbCmd}' failed. Retrying ${
@@ -961,7 +990,7 @@ export class AndroidUtils {
             }
 
             // Ensure value for runtime.network.latency is in lowercase.
-            // Otherwise the device may not be launchable via AVD Manager.
+            // Otherwise the device may not be able to launch via AVD Manager.
             const networkLatency = config.get('runtime.network.latency');
             if (networkLatency) {
                 config.set(
@@ -971,7 +1000,7 @@ export class AndroidUtils {
             }
 
             // Ensure value for runtime.network.speed is in lowercase.
-            // Otherwise the device may not be launchable via AVD Manager.
+            // Otherwise the device may not be able to launch via AVD Manager.
             const networkSpeed = config.get('runtime.network.speed');
             if (networkSpeed) {
                 config.set(
@@ -1082,7 +1111,7 @@ export class AndroidUtils {
             //    cmdline-tools/4.0-beta01/bin
             //    cmdline-tools/latest/bin
             //
-            // Below, we get the list of all directories, then sort them descendingly and grab the first one.
+            // Below, we get the list of all directories, then sort them descending and grab the first one.
             // This would either resolve to 'latest' or the latest versioned folder name
             if (fs.existsSync(AndroidUtils.androidCmdLineToolsBin)) {
                 const content = fs.readdirSync(
@@ -1167,6 +1196,30 @@ export class AndroidUtils {
         }
 
         return AndroidUtils.sdkManagerCommand;
+    }
+
+    /**
+     * Given an emulator name, this method checks to see if it is targeting Google Play or not.
+     * If not then the method resolves otherwise it will reject.
+     */
+    public static async ensureDeviceIsNotGooglePlay(
+        emulatorName: string
+    ): Promise<void> {
+        return AndroidUtils.fetchEmulator(emulatorName).then((device) => {
+            if (!device) {
+                return Promise.reject(
+                    new Error(
+                        'Devices targeting Google Play are not supported. Please use a device that is targeting Google APIs instead.'
+                    )
+                );
+            } else if (device.target.toLowerCase().includes('play')) {
+                return Promise.reject(
+                    new Error(`Device ${emulatorName} not found.`)
+                );
+            } else {
+                return Promise.resolve();
+            }
+        });
     }
 
     private static logger: Logger = new Logger(LOGGER_NAME);
