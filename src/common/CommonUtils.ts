@@ -80,6 +80,21 @@ export class CommonUtils {
     }
 
     /**
+     * Updates the last CLI task with the provided status message. If it cannot find
+     * an active CLI task, it will call startCliAction instead to start a new task.
+     *
+     * @param status Status message for the action.
+     */
+    public static updateCliAction(status: string) {
+        const task = cli.action.task;
+        if (!task || !task.active) {
+            CommonUtils.startCliAction(status);
+        } else {
+            task.status = status;
+        }
+    }
+
+    /**
      * Stops a CLI action
      *
      * @param message Optional status message for the action.
