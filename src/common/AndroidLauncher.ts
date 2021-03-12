@@ -4,10 +4,22 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { Messages } from '@salesforce/core';
+import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { AndroidAppPreviewConfig, LaunchArgument } from './PreviewConfigFile';
 import { CommonUtils } from './CommonUtils';
 import { PreviewUtils } from './PreviewUtils';
+
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
 
 export class AndroidLauncher {
     private emulatorName: string;
@@ -43,13 +55,18 @@ export class AndroidLauncher {
         const abi = preferredPack.abi;
         const device = (await AndroidUtils.getSupportedDevices())[0];
         const emuName = this.emulatorName;
-        CommonUtils.startCliAction(`Launching`, `Searching for ${emuName}`);
+        CommonUtils.startCliAction(
+            messages.getMessage('startPreviewAction'),
+            util.format(messages.getMessage('searchForDeviceStatus'), emuName)
+        );
         return AndroidUtils.hasEmulator(emuName)
             .then((result) => {
                 if (!result) {
-                    CommonUtils.startCliAction(
-                        `Launching`,
-                        `Creating device ${emuName}`
+                    CommonUtils.updateCliAction(
+                        util.format(
+                            messages.getMessage('createDeviceStatus'),
+                            emuName
+                        )
                     );
                     return AndroidUtils.createNewVirtualDevice(
                         emuName,
@@ -59,16 +76,20 @@ export class AndroidLauncher {
                         abi
                     );
                 }
-                CommonUtils.startCliAction(
-                    `Launching`,
-                    `Found device ${emuName}`
+                CommonUtils.updateCliAction(
+                    util.format(
+                        messages.getMessage('foundDeviceStatus'),
+                        emuName
+                    )
                 );
                 return Promise.resolve();
             })
             .then(() => {
-                CommonUtils.startCliAction(
-                    `Launching`,
-                    `Starting device ${emuName}`
+                CommonUtils.updateCliAction(
+                    util.format(
+                        messages.getMessage('startDeviceStatus'),
+                        emuName
+                    )
                 );
                 return AndroidUtils.startEmulator(emuName);
             })
@@ -83,9 +104,20 @@ export class AndroidLauncher {
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
                     const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
                     const url = `${address}:${port}/lwc/preview/${compPath}`;
+                    CommonUtils.stopCliAction(
+                        util.format(
+                            messages.getMessage('launchBrowserStatus'),
+                            url
+                        )
+                    );
                     return AndroidUtils.launchURLIntent(url, emulatorPort);
                 } else {
-                    CommonUtils.stopCliAction(`Launching App ${targetApp}`);
+                    CommonUtils.stopCliAction(
+                        util.format(
+                            messages.getMessage('launchAppStatus'),
+                            targetApp
+                        )
+                    );
 
                     const launchActivity =
                         (appConfig && appConfig.activity) || '';
@@ -110,7 +142,9 @@ export class AndroidLauncher {
                 return Promise.resolve();
             })
             .catch((error) => {
-                CommonUtils.stopCliAction('Error encountered during launch');
+                CommonUtils.stopCliAction(
+                    messages.getMessage('genericErrorStatus')
+                );
                 throw error;
             });
     }

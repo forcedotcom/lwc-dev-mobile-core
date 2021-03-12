@@ -4,10 +4,22 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { Messages } from '@salesforce/core';
+import util from 'util';
 import { IOSUtils } from './IOSUtils';
 import { IOSAppPreviewConfig, LaunchArgument } from './PreviewConfigFile';
 import { CommonUtils } from './CommonUtils';
 import { PreviewUtils } from './PreviewUtils';
+
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
 
 export class IOSLauncher {
     private simulatorName: string;
@@ -46,36 +58,41 @@ export class IOSLauncher {
             currentSimulator && currentSimulator.udid;
         let deviceUDID = '';
         CommonUtils.startCliAction(
-            `Launching`,
-            `Searching for ${this.simulatorName}`
+            messages.getMessage('startPreviewAction'),
+            util.format(
+                messages.getMessage('searchForDeviceStatus'),
+                this.simulatorName
+            )
         );
         if (!currentSimulatorUDID || currentSimulatorUDID.length === 0) {
-            CommonUtils.startCliAction(
-                `Launching`,
-                `Creating device ${this.simulatorName}`
+            CommonUtils.updateCliAction(
+                util.format(
+                    messages.getMessage('createDeviceStatus'),
+                    this.simulatorName
+                )
             );
             deviceUDID = await IOSUtils.createNewDevice(
                 this.simulatorName,
                 availableDevices[0],
                 supportedRuntimes[0]
             );
-            CommonUtils.startCliAction(
-                `Launching`,
-                `Created device ${this.simulatorName}`
-            );
         } else {
-            CommonUtils.startCliAction(
-                `Launching`,
-                `Found device ${this.simulatorName}`
+            CommonUtils.updateCliAction(
+                util.format(
+                    messages.getMessage('foundDeviceStatus'),
+                    this.simulatorName
+                )
             );
             deviceUDID = currentSimulatorUDID;
         }
 
         return IOSUtils.launchSimulatorApp()
             .then(() => {
-                CommonUtils.startCliAction(
-                    `Launching`,
-                    `Starting device ${deviceUDID}`
+                CommonUtils.updateCliAction(
+                    util.format(
+                        messages.getMessage('startDeviceStatus'),
+                        `${this.simulatorName} (${deviceUDID})`
+                    )
                 );
                 return IOSUtils.bootDevice(deviceUDID);
             })
@@ -90,8 +107,20 @@ export class IOSLauncher {
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
                     const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
                     const url = `${address}:${port}/lwc/preview/${compPath}`;
+                    CommonUtils.stopCliAction(
+                        util.format(
+                            messages.getMessage('launchBrowserStatus'),
+                            url
+                        )
+                    );
                     return IOSUtils.launchURLInBootedSimulator(deviceUDID, url);
                 } else {
+                    CommonUtils.stopCliAction(
+                        util.format(
+                            messages.getMessage('launchAppStatus'),
+                            targetApp
+                        )
+                    );
                     const targetAppArguments: LaunchArgument[] =
                         (appConfig && appConfig.launch_arguments) || [];
                     return IOSUtils.launchAppInBootedSimulator(
@@ -111,7 +140,9 @@ export class IOSLauncher {
                 return Promise.resolve();
             })
             .catch((error) => {
-                CommonUtils.stopCliAction('Error encountered during launch');
+                CommonUtils.stopCliAction(
+                    messages.getMessage('genericErrorStatus')
+                );
                 throw error;
             });
     }

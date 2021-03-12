@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import util from 'util';
 import {
     AndroidPackage,
     AndroidPackages,
@@ -19,6 +20,16 @@ import { CommonUtils } from './CommonUtils';
 import { PlatformConfig } from './PlatformConfig';
 import { LaunchArgument } from './PreviewConfigFile';
 import { PreviewUtils } from './PreviewUtils';
+
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
 
 const LOGGER_NAME = 'force:lightning:local:androidutils';
 const WINDOWS_OS = 'win32';
@@ -106,14 +117,16 @@ export class AndroidUtils {
                 );
 
                 if (!AndroidUtils.isJavaHomeSet()) {
-                    return Promise.reject(new Error('JAVA_HOME is not set.'));
+                    return Promise.reject(
+                        new SfdxError('JAVA_HOME is not set.')
+                    );
                 } else if (idx !== -1) {
                     return Promise.reject(
-                        new Error('unsupported Java version.')
+                        new SfdxError('unsupported Java version.')
                     );
                 } else if (error.status && error.status === 127) {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `SDK Manager not found. Expected at ${AndroidUtils.getSdkManagerCommand()}`
                         )
                     );
@@ -130,7 +143,9 @@ export class AndroidUtils {
      */
     public static async fetchAndroidCmdLineToolsLocation(): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(new Error('Android SDK root is not set.'));
+            return Promise.reject(
+                new SfdxError('Android SDK root is not set.')
+            );
         }
 
         return CommonUtils.executeCommandAsync(
@@ -147,7 +162,9 @@ export class AndroidUtils {
      */
     public static async fetchAndroidSDKPlatformToolsLocation(): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(new Error('Android SDK root is not set.'));
+            return Promise.reject(
+                new SfdxError('Android SDK root is not set.')
+            );
         }
 
         return CommonUtils.executeCommandAsync(
@@ -164,7 +181,9 @@ export class AndroidUtils {
      */
     public static async fetchInstalledPackages(): Promise<AndroidPackages> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(new Error('Android SDK root is not set.'));
+            return Promise.reject(
+                new SfdxError('Android SDK root is not set.')
+            );
         }
 
         if (AndroidUtils.isCached()) {
@@ -263,7 +282,7 @@ export class AndroidUtils {
             .then((allPackages) => {
                 if (allPackages.isEmpty()) {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `No Android API packages are installed. Minimum supported Android API package version is ${
                                 PlatformConfig.androidConfig()
                                     .minSupportedRuntime
@@ -278,7 +297,7 @@ export class AndroidUtils {
 
                 if (matchingPlatforms.length < 1) {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `Could not locate a supported Android API package. Minimum supported Android API package version is ${
                                 PlatformConfig.androidConfig()
                                     .minSupportedRuntime
@@ -343,7 +362,7 @@ export class AndroidUtils {
                     );
                     if (matchingPlatforms.length < 1) {
                         return Promise.reject(
-                            new Error(
+                            new SfdxError(
                                 `Could not locate Android API package (with matching emulator images) for API level ${apiLevel}.`
                             )
                         );
@@ -352,7 +371,7 @@ export class AndroidUtils {
 
                 if (matchingPlatforms.length < 1) {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `Could not locate a supported Android API package with matching emulator images. Minimum supported Android API package version is ${
                                 PlatformConfig.androidConfig()
                                     .minSupportedRuntime
@@ -390,7 +409,7 @@ export class AndroidUtils {
                     return Promise.resolve(emulatorImage);
                 } else {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `Could not locate an emulator image. Requires any one of these [${PlatformConfig.androidConfig().supportedImages.join(
                                 ','
                             )} for ${[installedAndroidPackage.platformAPI]}]`
@@ -398,11 +417,14 @@ export class AndroidUtils {
                     );
                 }
             })
-            .catch((error) =>
-                Promise.reject(
-                    new Error(`Could not find android emulator packages.`)
-                )
-            );
+            .catch((error) => {
+                this.logger.error(
+                    `Could not find android emulator packages.\n${error}`
+                );
+                return Promise.reject(
+                    new SfdxError(`Could not find android emulator packages.`)
+                );
+            });
     }
 
     /**
@@ -460,7 +482,7 @@ export class AndroidUtils {
                     child.stdout.on('exit', () => resolve(true));
                     child.stderr.on('error', (err) => {
                         reject(
-                            new Error(
+                            new SfdxError(
                                 `Could not create emulator. Command failed: ${createAvdCommand}\n${err}`
                             )
                         );
@@ -468,17 +490,17 @@ export class AndroidUtils {
                     child.stderr.on('data', (data: Buffer) => {
                         if (data.includes('Error:')) {
                             reject(
-                                new Error(
+                                new SfdxError(
                                     `Could not create emulator. Command failed: ${createAvdCommand}\n${data}`
                                 )
                             );
                         }
                     });
                 } else {
-                    reject(new Error(`Could not create emulator.`));
+                    reject(new SfdxError(`Could not create emulator.`));
                 }
             } catch (error) {
-                reject(new Error(`Could not create emulator. ${error}`));
+                reject(new SfdxError(`Could not create emulator. ${error}`));
             }
         }).then((resolve) => AndroidUtils.updateEmulatorConfig(emulatorName));
     }
@@ -503,7 +525,7 @@ export class AndroidUtils {
                 // before calling this method, but keeping it just in case
                 if (resolvedEmulator === undefined) {
                     return Promise.reject(
-                        new Error(`Invalid emulator: ${emulatorName}`)
+                        new SfdxError(`Invalid emulator: ${emulatorName}`)
                     );
                 }
                 resolvedEmulatorName = resolvedEmulator;
@@ -528,18 +550,28 @@ export class AndroidUtils {
 
                     // mismatch... shut it down and relaunch it in the right mode
                     CommonUtils.updateCliAction(
-                        'emulator currently launched without -writable-system. Shutting down.'
+                        messages.getMessage('notWritableSystemShutDownStatus')
                     );
                     await AndroidUtils.stopEmulator(resolvedPortNumber);
                 }
 
-                const verb =
-                    resolvedPortNumber === port ? 'relaunching' : 'launching';
+                let msg = '';
+                if (resolvedPortNumber === port) {
+                    msg = writable
+                        ? messages.getMessage('emulatorRelaunchWritableStatus')
+                        : messages.getMessage(
+                              'emulatorRelaunchNotWritableStatus'
+                          );
+                } else {
+                    msg = writable
+                        ? messages.getMessage('emulatorLaunchWritableStatus')
+                        : messages.getMessage(
+                              'emulatorLaunchNotWritableStatus'
+                          );
+                }
 
                 CommonUtils.updateCliAction(
-                    `${verb} ${resolvedEmulatorName} on port ${resolvedPortNumber}${
-                        writable ? ' with -writable-system' : ''
-                    }`
+                    util.format(msg, resolvedEmulatorName, resolvedPortNumber)
                 );
 
                 // We intentionally use spawn and ignore stdio here b/c emulator command can
@@ -556,7 +588,10 @@ export class AndroidUtils {
 
                 if (waitForBoot) {
                     CommonUtils.updateCliAction(
-                        `waiting for ${resolvedEmulatorName} to boot`
+                        util.format(
+                            messages.getMessage('waitForBootStatus'),
+                            resolvedEmulatorName
+                        )
                     );
                     await AndroidUtils.waitUntilDeviceIsReady(
                         resolvedPortNumber
@@ -683,7 +718,7 @@ export class AndroidUtils {
                 const emulator = await AndroidUtils.fetchEmulator(emulatorName);
                 if (!emulator) {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `Unable to determine device info: Port = ${portNumber} , Name = ${emulatorName}`
                         )
                     );
@@ -710,7 +745,7 @@ export class AndroidUtils {
                         !verityIsAlreadyDisabled
                     ) {
                         CommonUtils.updateCliAction(
-                            'disabling Android Verified Build and Verity'
+                            messages.getMessage('disableAVBVerityStatus')
                         );
                     }
 
@@ -737,7 +772,7 @@ export class AndroidUtils {
                         !verityIsAlreadyDisabled
                     ) {
                         CommonUtils.updateCliAction(
-                            'rebooting for changes to take effect'
+                            messages.getMessage('rebootChangesStatus')
                         );
 
                         // Reboot for changes to take effect
@@ -755,7 +790,7 @@ export class AndroidUtils {
             })
             .then(() => {
                 CommonUtils.updateCliAction(
-                    'remounting system partition to be writable'
+                    messages.getMessage('remountSystemWritableStatus')
                 );
                 // Now we're ready to remount and truly have root & writable access to system
                 return AndroidUtils.executeAdbCommandWithRetry(
@@ -781,7 +816,10 @@ export class AndroidUtils {
         const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
             timeout,
             AndroidUtils.executeAdbCommand(command, portNumber),
-            `Timeout waiting for emulator-${portNumber} to boot.`
+            util.format(
+                messages.getMessage('bootTimeOut'),
+                `emulator-${portNumber}`
+            )
         );
 
         return waitUntilReadyPromise.then(() => Promise.resolve());
@@ -805,7 +843,10 @@ export class AndroidUtils {
         const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
             timeout,
             CommonUtils.executeCommandAsync(command),
-            `Timeout waiting for emulator-${portNumber} to power off.`
+            util.format(
+                messages.getMessage('powerOffTimeOut'),
+                `emulator-${portNumber}`
+            )
         );
 
         return waitUntilReadyPromise.then(() => {
@@ -884,7 +925,7 @@ export class AndroidUtils {
         }
 
         // If we got here then it means that the command failed to execute successfully after all retries (if any)
-        return Promise.reject(new Error(allOutput));
+        return Promise.reject(new SfdxError(allOutput));
     }
 
     /**
@@ -899,8 +940,8 @@ export class AndroidUtils {
     ): Promise<void> {
         const openUrlCommand = `shell am start -a android.intent.action.VIEW -d ${url}`;
         CommonUtils.startCliAction(
-            'Launching',
-            `Opening browser with url ${url}`
+            messages.getMessage('launchBrowserAction'),
+            util.format(messages.getMessage('openBrowserWithUrlStatus'), url)
         );
         return AndroidUtils.executeAdbCommand(
             openUrlCommand,
@@ -934,9 +975,15 @@ export class AndroidUtils {
     ): Promise<void> {
         let thePromise: Promise<string>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
-            const installMsg = `Installing app ${appBundlePath.trim()} to emulator`;
+            const installMsg = util.format(
+                messages.getMessage('installAppStatus'),
+                appBundlePath.trim()
+            );
             AndroidUtils.logger.info(installMsg);
-            CommonUtils.startCliAction('Launching', installMsg);
+            CommonUtils.startCliAction(
+                messages.getMessage('launchAppAction'),
+                installMsg
+            );
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
             const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
             thePromise = AndroidUtils.executeAdbCommand(
@@ -971,9 +1018,12 @@ export class AndroidUtils {
                     ' -c android.intent.category.LAUNCHER' +
                     ` ${launchArgs}`;
 
-                const launchMsg = `Launching app ${targetApp} in emulator`;
+                const launchMsg = util.format(
+                    messages.getMessage('launchAppStatus'),
+                    targetApp
+                );
                 AndroidUtils.logger.info(launchMsg);
-                CommonUtils.startCliAction('Launching', launchMsg);
+                CommonUtils.updateCliAction(launchMsg);
 
                 return AndroidUtils.executeAdbCommand(
                     launchCommand,
@@ -1213,13 +1263,13 @@ export class AndroidUtils {
         return AndroidUtils.fetchEmulator(emulatorName).then((device) => {
             if (!device) {
                 return Promise.reject(
-                    new Error(
+                    new SfdxError(
                         'Devices targeting Google Play are not supported. Please use a device that is targeting Google APIs instead.'
                     )
                 );
             } else if (device.target.toLowerCase().includes('play')) {
                 return Promise.reject(
-                    new Error(`Device ${emulatorName} not found.`)
+                    new SfdxError(`Device ${emulatorName} not found.`)
                 );
             } else {
                 return Promise.resolve();
@@ -1409,7 +1459,7 @@ export class AndroidUtils {
             return configMap;
         } catch (error) {
             AndroidUtils.logger.warn(
-                'Unable to read emulator config at: ' + filePath
+                `Unable to read emulator config ${filePath}: ${error}`
             );
             return new Map<string, string>();
         }
@@ -1439,7 +1489,7 @@ export class AndroidUtils {
             // If we cannot edit the AVD config, fail silently.
             // This will be a degraded experience but should still work.
             AndroidUtils.logger.warn(
-                'Unable to write emulator config at: ' + filePath
+                `Unable to write emulator config to ${filePath}: ${error}`
             );
         }
     }

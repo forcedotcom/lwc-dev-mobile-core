@@ -8,7 +8,6 @@ import { Logger, Messages } from '@salesforce/core';
 import chalk from 'chalk';
 import { Listr } from 'listr2';
 import { performance, PerformanceObserver } from 'perf_hooks';
-import { CommonUtils } from './CommonUtils';
 import { PerformanceMarkers } from './PerformanceMarkers';
 export type CheckRequirementsFunc = () => Promise<string | undefined>;
 // Initialize Messages with the current plugin directory

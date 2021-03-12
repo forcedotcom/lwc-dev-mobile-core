@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
@@ -70,7 +70,7 @@ export class AndroidSDKRootSetRequirement implements Requirement {
                 )
             );
         } else {
-            return Promise.reject(this.unfulfilledMessage);
+            return Promise.reject(new SfdxError(this.unfulfilledMessage));
         }
     }
 }
@@ -100,7 +100,9 @@ export class Java8AvailableRequirement implements Requirement {
             .then((result) => Promise.resolve(this.fulfilledMessage))
             .catch((error) =>
                 Promise.reject(
-                    util.format(this.unfulfilledMessage, error.message)
+                    new SfdxError(
+                        util.format(this.unfulfilledMessage, error.message)
+                    )
                 )
             );
     }
@@ -133,7 +135,9 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
                     )
                 )
             )
-            .catch((error) => Promise.reject(this.unfulfilledMessage));
+            .catch((error) =>
+                Promise.reject(new SfdxError(this.unfulfilledMessage))
+            );
     }
 }
 
@@ -143,6 +147,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
+    private notFoundMessage: string;
     public logger: Logger;
 
     constructor(messages: Messages, logger: Logger) {
@@ -152,6 +157,9 @@ export class AndroidSDKPlatformToolsInstalledRequirement
         );
         this.unfulfilledMessage = messages.getMessage(
             'android:reqs:platformtools:unfulfilledMessage'
+        );
+        this.notFoundMessage = messages.getMessage(
+            'android:reqs:platformtools:notFound'
         );
         this.logger = logger;
     }
@@ -168,17 +176,21 @@ export class AndroidSDKPlatformToolsInstalledRequirement
             .catch((error) => {
                 if (error.status === 127) {
                     return Promise.reject(
-                        new Error(
-                            'Platform tools not found. Expected at ' +
-                                AndroidUtils.getAndroidPlatformTools() +
-                                '.'
+                        new SfdxError(
+                            util.format(
+                                this.notFoundMessage,
+                                AndroidUtils.getAndroidPlatformTools()
+                            )
                         )
                     );
                 } else {
                     return Promise.reject(
-                        util.format(
-                            this.unfulfilledMessage,
-                            PlatformConfig.androidConfig().minSupportedRuntime
+                        new SfdxError(
+                            util.format(
+                                this.unfulfilledMessage,
+                                PlatformConfig.androidConfig()
+                                    .minSupportedRuntime
+                            )
                         )
                     );
                 }
@@ -215,9 +227,11 @@ export class PlatformAPIPackageRequirement implements Requirement {
             )
             .catch((error) =>
                 Promise.reject(
-                    util.format(
-                        this.unfulfilledMessage,
-                        PlatformConfig.androidConfig().minSupportedRuntime
+                    new SfdxError(
+                        util.format(
+                            this.unfulfilledMessage,
+                            PlatformConfig.androidConfig().minSupportedRuntime
+                        )
                     )
                 )
             );
@@ -251,9 +265,13 @@ export class EmulatorImagesRequirement implements Requirement {
             )
             .catch((error) =>
                 Promise.reject(
-                    util.format(
-                        this.unfulfilledMessage,
-                        PlatformConfig.androidConfig().supportedImages.join(',')
+                    new SfdxError(
+                        util.format(
+                            this.unfulfilledMessage,
+                            PlatformConfig.androidConfig().supportedImages.join(
+                                ','
+                            )
+                        )
                     )
                 )
             );

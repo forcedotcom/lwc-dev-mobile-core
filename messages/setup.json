@@ -30,6 +30,7 @@
     "android:reqs:cmdlinetools:fulfilledMessage" : "Android command line tools were detected at %s",
     "android:reqs:cmdlinetools:unfulfilledMessage" : "Android command line tools not found.",
     "android:reqs:platformtools:title" : "Checking SDK Platform Tools",
+    "android:reqs:platformtools:notFound" : "Platform tools not found. Expected at $s.",
     "android:reqs:platformtools:fulfilledMessage" : "Android Platform tools were detected at %s.",
     "android:reqs:platformtools:unfulfilledMessage" : "No supported Android platform tools found. Minimum supported Android platform tools version is %s.",
     "android:reqs:platformapi:title" : "Checking SDK Platform API",
