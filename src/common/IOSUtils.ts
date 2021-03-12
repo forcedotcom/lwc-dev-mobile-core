@@ -4,13 +4,24 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
+import util from 'util';
 import { Version } from '../common/Common';
 import { CommonUtils } from './CommonUtils';
 import { IOSSimulatorDevice } from './IOSTypes';
 import { PlatformConfig } from './PlatformConfig';
 import { LaunchArgument } from './PreviewConfigFile';
 import { PreviewUtils } from './PreviewUtils';
+
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
 
 const XCRUN_CMD = '/usr/bin/xcrun';
 const DEVICE_TYPE_PREFIX = 'com.apple.CoreSimulator.SimDeviceType';
@@ -48,7 +59,7 @@ export class IOSUtils {
             .catch((error) => {
                 if (!IOSUtils.isDeviceAlreadyBootedError(error)) {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `The command '${command}' failed to execute ${error}`
                         )
                     );
@@ -75,7 +86,7 @@ export class IOSUtils {
             .then((result) => Promise.resolve(result.stdout.trim()))
             .catch((error) =>
                 Promise.reject(
-                    new Error(
+                    new SfdxError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )
@@ -147,9 +158,8 @@ export class IOSUtils {
      * @returns An array of strings containing the supported device types.
      */
     public static async getSupportedDevices(): Promise<string[]> {
-        return CommonUtils.executeCommandAsync(
-            `${XCRUN_CMD} simctl list  --json devicetypes`
-        )
+        const cmd = `${XCRUN_CMD} simctl list --json devicetypes`;
+        return CommonUtils.executeCommandAsync(cmd)
             .then((result) => {
                 const identifier = 'identifier';
                 const deviceTypesKey = 'devicetypes';
@@ -171,15 +181,17 @@ export class IOSUtils {
                     );
                 } else {
                     return Promise.reject(
-                        new Error(
-                            `Could not find any available devices. 'xcrun simctl list devicestypes' command returned an empty list.`
+                        new SfdxError(
+                            `Could not find any available devices. Command '${cmd}' returned an empty list.`
                         )
                     );
                 }
             })
             .catch((error) =>
                 Promise.reject(
-                    new Error(`Could not find any available devices. ${error}`)
+                    new SfdxError(
+                        `Could not find any available devices. ${error}`
+                    )
                 )
             );
     }
@@ -245,7 +257,7 @@ export class IOSUtils {
                     return Promise.resolve(filteredRuntimes);
                 } else {
                     return Promise.reject(
-                        new Error(
+                        new SfdxError(
                             `The command '${runtimesCmd}' could not find any available runtimes`
                         )
                     );
@@ -253,7 +265,7 @@ export class IOSUtils {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new Error(
+                    new SfdxError(
                         `The command '${runtimesCmd}' failed: ${error}, error code: ${error.code}`
                     )
                 );
@@ -269,7 +281,7 @@ export class IOSUtils {
             .then(() => Promise.resolve())
             .catch((error) =>
                 Promise.reject(
-                    new Error(
+                    new SfdxError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )
@@ -285,7 +297,7 @@ export class IOSUtils {
             .then(() => Promise.resolve())
             .catch((error) =>
                 Promise.reject(
-                    new Error(
+                    new SfdxError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )
@@ -304,14 +316,14 @@ export class IOSUtils {
     ): Promise<void> {
         const command = `${XCRUN_CMD} simctl openurl "${udid}" ${url}`;
         CommonUtils.startCliAction(
-            'Launching',
-            `Opening browser with url ${url}`
+            messages.getMessage('launchBrowserAction'),
+            util.format(messages.getMessage('openBrowserWithUrlStatus'), url)
         );
         return CommonUtils.executeCommandAsync(command)
             .then(() => Promise.resolve())
             .catch((error) =>
                 Promise.reject(
-                    new Error(
+                    new SfdxError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )
@@ -342,9 +354,15 @@ export class IOSUtils {
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
-            const installMsg = `Installing app ${appBundlePath.trim()} to simulator`;
+            const installMsg = util.format(
+                messages.getMessage('installAppStatus'),
+                appBundlePath.trim()
+            );
             IOSUtils.logger.info(installMsg);
-            CommonUtils.startCliAction('Launching', installMsg);
+            CommonUtils.startCliAction(
+                messages.getMessage('launchAppAction'),
+                installMsg
+            );
             const installCommand = `${XCRUN_CMD} simctl install ${udid} '${appBundlePath.trim()}'`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
         } else {
@@ -375,17 +393,23 @@ export class IOSUtils {
                 // attempt at terminating the app first (in case it is already running) and then try to launch it again with new arguments.
                 // if we hit issues with terminating, just ignore and continue.
                 try {
-                    const terminateMsg = `Terminating app ${targetApp} in simulator`;
+                    const terminateMsg = util.format(
+                        messages.getMessage('terminateAppStatus'),
+                        targetApp
+                    );
                     IOSUtils.logger.info(terminateMsg);
-                    CommonUtils.startCliAction('Launching', terminateMsg);
+                    CommonUtils.updateCliAction(terminateMsg);
                     await CommonUtils.executeCommandAsync(terminateCommand);
                 } catch {
                     // ignore and continue
                 }
 
-                const launchMsg = `Launching app ${targetApp} in simulator`;
+                const launchMsg = util.format(
+                    messages.getMessage('launchAppStatus'),
+                    targetApp
+                );
                 IOSUtils.logger.info(launchMsg);
-                CommonUtils.startCliAction('Launching', launchMsg);
+                CommonUtils.updateCliAction(launchMsg);
                 return CommonUtils.executeCommandAsync(launchCommand);
             })
             .then(() => Promise.resolve());
