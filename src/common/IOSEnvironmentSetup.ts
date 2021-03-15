@@ -47,6 +47,10 @@ export class SupportedEnvironmentRequirement implements Requirement {
         this.logger = logger;
     }
 
+    /**
+     * Verifies that user environment is MacOS.
+     * @returns True if user environment is MacOS.
+     */
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for supported environment');
         const unameCommand: string = '/usr/bin/uname';
@@ -94,6 +98,10 @@ export class XcodeInstalledRequirement implements Requirement {
         this.logger = logger;
     }
 
+    /**
+     * Verifies that user has installed the full Xcode and not just the command line tools.
+     * @returns True if user has installed the full Xcode.
+     */
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for Xcode environment');
         const xcodeBuildCommand: string = 'xcodebuild -version';
@@ -148,6 +156,10 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
         this.logger = logger;
     }
 
+    /**
+     * Verifies that user has at least one runtime that is supported.
+     * @returns True if user has at least one runtime that is supported.
+     */
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for iOS runtimes');
         return IOSUtils.getSupportedRuntimes()

@@ -57,6 +57,9 @@ export class AndroidSDKRootSetRequirement implements Requirement {
         this.logger = logger;
     }
 
+    /**
+     * Verifies that the root directory path for Android SDK is set.
+     */
     public async checkFunction(): Promise<string> {
         const root = AndroidUtils.getAndroidSdkRoot();
         if (root) {
@@ -95,6 +98,9 @@ export class Java8AvailableRequirement implements Requirement {
         this.logger = logger;
     }
 
+    /**
+     * Verifies that prerequisites for Android SDK are met and that Java 8 is installed.
+     */
     public async checkFunction(): Promise<string> {
         return AndroidUtils.androidSDKPrerequisitesCheck()
             .then((result) => Promise.resolve(this.fulfilledMessage))
@@ -126,6 +132,9 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
         this.logger = logger;
     }
 
+    /**
+     * Verifies that user has Android command line tools installed.
+     */
     public async checkFunction(): Promise<string> {
         return AndroidUtils.fetchAndroidCmdLineToolsLocation()
             .then((result) =>
@@ -164,6 +173,9 @@ export class AndroidSDKPlatformToolsInstalledRequirement
         this.logger = logger;
     }
 
+    /**
+     * Verifies that user has Android platform tools installed.
+     */
     public async checkFunction(): Promise<string> {
         return AndroidUtils.fetchAndroidSDKPlatformToolsLocation()
             .then((result) =>
@@ -218,6 +230,9 @@ export class PlatformAPIPackageRequirement implements Requirement {
         this.apiLevel = apiLevel;
     }
 
+    /**
+     * Verifies that user has a supported Android API package that also has matching supported emulator images installed.
+     */
     public async checkFunction(): Promise<string> {
         return AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel)
             .then((result) =>
@@ -258,6 +273,9 @@ export class EmulatorImagesRequirement implements Requirement {
         this.apiLevel = apiLevel;
     }
 
+    /**
+     * Verifies that user has at least one Android package with any of the supported emulator image targets (e.g. Google APIs, default, Google Play).
+     */
     public async checkFunction(): Promise<string> {
         return AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel)
             .then((result) =>
