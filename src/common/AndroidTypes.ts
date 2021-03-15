@@ -88,7 +88,7 @@ export class AndroidPackages {
 
     /**
      * Checks to see if the object is empty (i.e the platforms and system images are both empty)
-     * @returns True if empty, False otherwise.
+     * @returns True if empty, false otherwise.
      */
     public isEmpty(): boolean {
         return this.platforms.length < 1 && this.systemImages.length < 1;
