@@ -6,6 +6,13 @@
  */
 
 export class IOSSimulatorDevice {
+    /**
+     * Attempts to parse the output of `simctl list --json devices available` command.
+     *
+     * @param jsonString The JSON string blob that is the output of `simctl list --json devices available` command.
+     * @param supportedRuntimes String array including the runtimes that are supported.
+     * @returns An array of IOSSimulatorDevice objects containing information about each simulator.
+     */
     public static parseJSONString(
         jsonString: string,
         supportedRuntimes: string[]
@@ -71,6 +78,9 @@ export class IOSSimulatorDevice {
         this.isAvailable = isAvailable;
     }
 
+    /**
+     * A string representation of an IOSSimulatorDevice which includes Name, Runtime Id
+     */
     public toString(): string {
         return `${this.name}, ${this.runtimeId}`;
     }

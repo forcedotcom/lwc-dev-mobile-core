@@ -27,12 +27,23 @@ export class PreviewUtils {
     public static SERVER_PORT_PREFIX = `${NAMESPACE}.serverport`;
     public static SERVER_ADDRESS_PREFIX = `${NAMESPACE}.serveraddress`;
 
+    /**
+     * Checks to see if browser is the target for previewing an LWC.
+     * @param targetApp The desired target app ('browser' or app bundle id).
+     * @returns True if targetApp is browser.
+     */
     public static isTargetingBrowser(targetApp: string): boolean {
         return (
             targetApp.trim().toLowerCase() === PreviewUtils.BROWSER_TARGET_APP
         );
     }
 
+    /**
+     * Checks to see if an LWC local dev server is needed for previewing an LWC for a provided target app.
+     * @param targetApp The target app.
+     * @param appConfig A preview configuration file.
+     * @returns True if local dev server is needed for previewing.
+     */
     public static useLwcServerForPreviewing(
         targetApp: string,
         appConfig: IOSAppPreviewConfig | AndroidAppPreviewConfig | undefined
@@ -44,6 +55,11 @@ export class PreviewUtils {
         );
     }
 
+    /**
+     * Checks to see if a component route needs to be prefixed.
+     * @param compName a component route or name.
+     * @returns The updated route which now starts with `c/` if compName did not start with `c/` already.
+     */
     public static prefixRouteIfNeeded(compName: string): string {
         if (compName.toLowerCase().startsWith('c/')) {
             return compName;
@@ -51,6 +67,12 @@ export class PreviewUtils {
         return 'c/' + compName;
     }
 
+    /**
+     * Validates a preview configuration file against a schema.
+     * @param configFile The path to the preview configuration file.
+     * @param schema The schema object to be used for validation.
+     * @returns A ValidationResult object containing a boolean to indicate pass/fail, and a string containing an error message (if any).
+     */
     public static async validateConfigFileWithSchema(
         configFile: string,
         schema: object
@@ -75,12 +97,23 @@ export class PreviewUtils {
         }
     }
 
+    /**
+     * Loads a preview configuration file.
+     * @param file The path to a preview configuration file.
+     * @returns The content of the file parsed into a PreviewConfigFile object.
+     */
     public static loadConfigFile(file: string): PreviewConfigFile {
         const json = CommonUtils.loadJsonFromFile(file);
         const configFile = Object.assign(new PreviewConfigFile(), json);
         return configFile;
     }
 
+    /**
+     * Attempts to obtain the app bundle path from an app preview config.
+     * @param basePath Path to the directory that contains the preview configuration file.
+     * @param appConfig An app preview configuration.
+     * @returns A string representing the app bundle path.
+     */
     public static getAppBundlePath(
         basePath: string,
         appConfig: IOSAppPreviewConfig | AndroidAppPreviewConfig

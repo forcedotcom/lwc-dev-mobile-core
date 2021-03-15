@@ -39,11 +39,15 @@ export interface RequirementList {
     executeSetup(): Promise<SetupTestResult>;
 }
 
-// This function wraps existing promises with the intention to allow the collection of promises
-// to settle when used in conjunction with Promise.all(). Promise.all() by default executes until the first
-// rejection. We are looking for the equivalent of Promise.allSettled() which is scheduled for ES2020.
-// Once the functionality is  available  in the near future this function can be removed.
-// See https://github.com/tc39/proposal-promise-allSettled
+/**
+ * This function wraps existing promises with the intention to allow the collection of promises
+ * to settle when used in conjunction with Promise.all(). Promise.all() by default executes until the first
+ * rejection. We are looking for the equivalent of Promise.allSettled() which is scheduled for ES2020.
+ * Once the functionality is  available  in the near future this function can be removed.
+ * See https://github.com/tc39/proposal-promise-allSettled
+ * @param requirement A requirement object
+ * @returns A Promise object that runs the requirement check and returns a RequirementResult object.
+ */
 export function WrappedPromise(
     requirement: Requirement
 ): Promise<RequirementResult> {
@@ -116,6 +120,10 @@ export abstract class BaseSetup implements RequirementList {
         this.additionalRequirements = [];
     }
 
+    /**
+     * Executes all of the base and additional requirement steps.
+     * @returns A SetupTestResult containing all of the result of the requirement tests
+     */
     public async executeSetup(): Promise<SetupTestResult> {
         const testResult: SetupTestResult = {
             hasMetAllRequirements: true,
@@ -201,12 +209,20 @@ export abstract class BaseSetup implements RequirementList {
         return Promise.resolve(testResult);
     }
 
+    /**
+     * Adds a new base requirement to the list of the base requirements to be verified.
+     * @param reqs The new base requirement to be added.
+     */
     public addBaseRequirements(reqs: Requirement[]) {
         if (reqs) {
             this.requirements = this.requirements.concat(reqs);
         }
     }
 
+    /**
+     * Adds a new additional requirement to the list of the additional requirements to be verified.
+     * @param reqs The new additional requirement to be added.
+     */
     public addAdditionalRequirements(reqs: Requirement[]) {
         if (reqs) {
             this.additionalRequirements = this.additionalRequirements.concat(

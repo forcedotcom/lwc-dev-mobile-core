@@ -8,6 +8,12 @@ import { Version } from './Common';
 import fs from 'fs';
 
 export class AndroidPackages {
+    /**
+     * Attempts to parse the output of `sdkmanager --list` command.
+     *
+     * @param rawStringInput The string blob that is the output of `sdkmanager --list` command.
+     * @returns An AndroidPackages object containing an array of platforms and system images.
+     */
     public static parseRawPackagesString(
         rawStringInput: string
     ): AndroidPackages {
@@ -80,6 +86,10 @@ export class AndroidPackages {
     public platforms: AndroidPackage[] = [];
     public systemImages: AndroidPackage[] = [];
 
+    /**
+     * Checks to see if the object is empty (i.e the platforms and system images are both empty)
+     * @returns True if empty, false otherwise.
+     */
     public isEmpty(): boolean {
         return this.platforms.length < 1 && this.systemImages.length < 1;
     }
@@ -122,6 +132,12 @@ export class AndroidPackage {
 
 // tslint:disable-next-line: max-classes-per-file
 export class AndroidVirtualDevice {
+    /**
+     * Attempts to parse the output of `avdmanager list avd` command.
+     *
+     * @param rawStringInput The string blob that is the output of `avdmanager list avd` command.
+     * @returns An array of AndroidVirtualDevice objects containing information about each AVD.
+     */
     public static parseRawString(rawString: string): AndroidVirtualDevice[] {
         const avds = AndroidVirtualDevice.getAvdDefinitions(rawString);
         const devices: AndroidVirtualDevice[] = [];
@@ -258,6 +274,9 @@ export class AndroidVirtualDevice {
         this.apiLevel = apiLevel;
     }
 
+    /**
+     * A string representation of an AndroidVirtualDevice which includes Display Name, Device Name, API
+     */
     public toString(): string {
         return `${this.displayName}, ${this.deviceName}, ${this.api}`;
     }
