@@ -17,9 +17,39 @@ describe('Preview utils tests', () => {
         jest.restoreAllMocks();
     });
 
-    test('Checks for targetting browser or app', async () => {
+    test('Checks for targeting browser or app', async () => {
         expect(PreviewUtils.isTargetingBrowser('browser')).toBe(true);
         expect(PreviewUtils.isTargetingBrowser('com.mock.app')).toBe(false);
+    });
+
+    test('Checks for using Lwc Server for Previewing', async () => {
+        expect(
+            PreviewUtils.useLwcServerForPreviewing('browser', undefined)
+        ).toBe(true);
+
+        const iOSAppConfig = new IOSAppPreviewConfig();
+        iOSAppConfig.preview_server_enabled = true;
+        expect(
+            PreviewUtils.useLwcServerForPreviewing('com.mock.app', iOSAppConfig)
+        ).toBe(iOSAppConfig.preview_server_enabled);
+
+        const androidAppConfig = new IOSAppPreviewConfig();
+        androidAppConfig.preview_server_enabled = false;
+        expect(
+            PreviewUtils.useLwcServerForPreviewing(
+                'com.mock.app',
+                androidAppConfig
+            )
+        ).toBe(androidAppConfig.preview_server_enabled);
+    });
+
+    test('Checks for adding prefix to component route', async () => {
+        expect(PreviewUtils.prefixRouteIfNeeded('helloWorld')).toBe(
+            'c/helloWorld'
+        );
+        expect(PreviewUtils.prefixRouteIfNeeded('c/helloWorld')).toBe(
+            'c/helloWorld'
+        );
     });
 
     test('Config validation fails when app id is not defined', async () => {
@@ -176,5 +206,18 @@ describe('Preview utils tests', () => {
         ) as AndroidAppPreviewConfig;
 
         expect(appConfig.activity).toBe('.MyActivity');
+    });
+
+    test('Checks for obtaining app bundle path', async () => {
+        const iOSAppConfig = new IOSAppPreviewConfig();
+        iOSAppConfig.get_app_bundle = undefined;
+        expect(PreviewUtils.getAppBundlePath('', iOSAppConfig)).toBe(undefined);
+
+        iOSAppConfig.get_app_bundle = 'testGetAppBundleScript';
+        const bundlePath = PreviewUtils.getAppBundlePath(
+            __dirname,
+            iOSAppConfig
+        );
+        expect(bundlePath).toBe('sample/path/to/app/bundle');
     });
 });

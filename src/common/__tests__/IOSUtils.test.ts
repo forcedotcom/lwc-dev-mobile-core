@@ -5,8 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 // tslint:disable: no-unused-expression
-import 'jest-chain';
-import 'jest-extended';
 import { CommonUtils } from '../CommonUtils';
 import { IOSUtils } from '../IOSUtils';
 import { PreviewUtils } from '../PreviewUtils';
@@ -17,13 +15,19 @@ const RUNTIME_TYPE_PREFIX = 'com.apple.CoreSimulator.SimRuntime';
 
 const myCommandRouterBlock = jest.fn(
     (command: string): Promise<{ stdout: string; stderr: string }> => {
+        let output = '';
+        if (command.endsWith('simctl list --json devicetypes')) {
+            output = JSON.stringify(IOSMockData.mockRuntimeDeviceTypes);
+        } else if (command.endsWith('simctl list --json devices available')) {
+            output = JSON.stringify(IOSMockData.mockRuntimeDevices);
+        } else {
+            output = JSON.stringify(IOSMockData.mockRuntimes);
+        }
+
         return new Promise((resolve) => {
             resolve({
                 stderr: 'mockError',
-                stdout:
-                    command.indexOf('devicetypes') < 0
-                        ? JSON.stringify(IOSMockData.mockRuntimes)
-                        : JSON.stringify(IOSMockData.mockRuntimeDeviceTypes)
+                stdout: output
             });
         });
     }
@@ -47,26 +51,18 @@ const launchCommandMock = jest.fn(
         });
     }
 );
+
 const launchCommandThrowsMock = jest.fn(
     (): Promise<{ stdout: string; stderr: string }> => {
         throw new Error(' Mock Error');
     }
 );
 
-const launchCommandThrowsAlreadryBootedMock = jest.fn(
+const launchCommandThrowsAlreadyBootedMock = jest.fn(
     (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve) => {
-            resolve({
-                stderr: 'The device is cannot boot state: booted',
-                stdout: 'Done'
-            });
-        });
-    }
-);
-
-const resolvedBoolPromiseBlock = jest.fn(
-    (): Promise<boolean> => {
-        return Promise.resolve(true);
+        return Promise.reject(
+            new Error('The device is cannot boot state: booted')
+        );
     }
 );
 
@@ -128,7 +124,7 @@ describe('IOS utils tests', () => {
 
     test('Should attempt to invoke xcrun to boot device but resolve if device is already Booted', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
-            launchCommandThrowsAlreadryBootedMock
+            launchCommandThrowsAlreadyBootedMock
         );
         const udid = 'MOCKUDID';
         const aPromise = IOSUtils.bootDevice(udid);
@@ -323,7 +319,7 @@ describe('IOS utils tests', () => {
         });
     });
 
-    test('Should attempt to invoke the xcrun for fetching sim runtimes and return white listed values', async () => {
+    test('Should attempt to invoke the xcrun for fetching supported runtimes and return whitelisted values', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandRouterBlock
         );
@@ -334,7 +330,7 @@ describe('IOS utils tests', () => {
         });
     });
 
-    test('Should attempt to invoke the xcrun for fetching sim runtimes and return white listed values', async () => {
+    test('Should attempt to invoke the xcrun for fetching supported devices and return whitelisted values', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandRouterBlock
         );
@@ -343,6 +339,28 @@ describe('IOS utils tests', () => {
                 returnedValues !== null && returnedValues.length > 0
             ).toBeTruthy();
         });
+    });
+
+    test('Should attempt to invoke the xcrun for fetching supported sims', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandRouterBlock
+        );
+        return IOSUtils.getSupportedSimulators().then((returnedValues) => {
+            expect(
+                returnedValues !== null && returnedValues.length > 0
+            ).toBeTruthy();
+        });
+    });
+
+    test('Should attempt to fetch a sim', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandRouterBlock
+        );
+
+        const found = await IOSUtils.getSimulator('iPhone 11 Pro');
+        const notFound = await IOSUtils.getSimulator('blah');
+        expect(found && found.name === 'iPhone 11 Pro').toBe(true);
+        expect(notFound === null).toBe(true);
     });
 
     test('Should handle Bad JSON', async () => {

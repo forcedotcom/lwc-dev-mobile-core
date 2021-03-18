@@ -86,16 +86,14 @@ export class IOSLauncher {
             deviceUDID = currentSimulatorUDID;
         }
 
-        return IOSUtils.launchSimulatorApp()
-            .then(() => {
-                CommonUtils.updateCliAction(
-                    util.format(
-                        messages.getMessage('startDeviceStatus'),
-                        `${this.simulatorName} (${deviceUDID})`
-                    )
-                );
-                return IOSUtils.bootDevice(deviceUDID);
-            })
+        CommonUtils.updateCliAction(
+            util.format(
+                messages.getMessage('startDeviceStatus'),
+                `${this.simulatorName} (${deviceUDID})`
+            )
+        );
+        return IOSUtils.bootDevice(deviceUDID)
+            .then(() => IOSUtils.launchSimulatorApp())
             .then(() => {
                 const useServer = PreviewUtils.useLwcServerForPreviewing(
                     targetApp,

@@ -102,7 +102,7 @@ export class IOSMockData {
         ]
     };
 
-    protected static mockRuntimeDevices = {
+    public static mockRuntimeDevices = {
         devices: {
             'com.apple.CoreSimulator.SimRuntime.iOS-13-4': [
                 {
@@ -137,7 +137,7 @@ export class IOSMockData {
                         'com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro',
                     isAvailable: true,
                     logPath: 'mockLogPath',
-                    name: 'iPhone 11 Pro ',
+                    name: 'iPhone 11 Pro',
                     state: 'Shutdown',
                     udid: 'F2B4097F-F33E-4D8A-8FFF-CE49F8D6C178'
                 }
@@ -150,7 +150,7 @@ export class IOSMockData {
                         'com.apple.CoreSimulator.SimDeviceType.iPhone-X',
                     isAvailable: true,
                     logPath: 'mockLogPath',
-                    name: 'iPhone iPhone X',
+                    name: 'iPhone X',
                     state: 'Shutdown',
                     udid: 'F2B4097F-F33E-4D8A-8FFF-CE49F8D6C168'
                 },
@@ -170,7 +170,7 @@ export class IOSMockData {
                         'com.apple.CoreSimulator.SimDeviceType.iPhone-XS',
                     isAvailable: true,
                     logPath: 'mockLogPath',
-                    name: 'iPhone Xs',
+                    name: 'iPhone XS',
                     state: 'Shutdown',
                     udid: 'F2B4097F-F33E-4D8A-8FFF-CF49F8D6D168'
                 }

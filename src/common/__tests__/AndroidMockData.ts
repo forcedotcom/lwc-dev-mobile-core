@@ -34,4 +34,46 @@ export class AndroidMockData {
         'Installed packages:=====================]';
 
     public static mockRawStringPackageLength = 13;
+
+    public static avdList = `
+      Available Android Virtual Devices:
+          Name: Nexus_6_API_30
+        Device: Nexus 6 (Google)
+          Path: /Users/test/.android/avd/Nexus_6_API_30.avd
+        Target: Google APIs (Google Inc.)
+                Based on: Android 11.0 (R) Tag/ABI: google_apis/x86
+          Skin: nexus_6
+        Sdcard: 512M
+      ---------
+          Name: Pixel_3_API_29
+        Device: pixel_3 (Google)
+          Path: /Users/test/.android/avd/Pixel_3_API_29.avd
+        Target: Google Play (Google Inc.)
+                Based on: Android 10.0 (Q) Tag/ABI: google_apis_playstore/x86_64
+          Skin: pixel_3
+        Sdcard: 512M
+      ---------
+          Name: Pixel_4_XL_API_29
+        Device: pixel_4_xl (Google)
+          Path: /Users/test/.android/avd/Pixel_4_XL_API_29.avd
+        Target: Google APIs (Google Inc.)
+                Based on: Android 10.0 (Q) Tag/ABI: google_apis/x86_64
+          Skin: pixel_4_xl
+        Sdcard: 512M
+      ---------
+          Name: Pixel_XL_API_28
+        Device: pixel_xl (Google)
+          Path: /Users/test/.android/avd/Pixel_XL_API_28.avd
+        Target: Google APIs (Google Inc.)
+                Based on: Android 9.0 (Pie) Tag/ABI: google_apis/x86_64
+          Skin: pixel_xl_silver
+        Sdcard: 512M
+    `;
+
+    public static emuNames = `
+      Nexus_6_API_30
+      Pixel_3_API_29
+      Pixel_4_XL_API_29
+      Pixel_XL_API_28
+    `;
 }

@@ -1263,13 +1263,13 @@ export class AndroidUtils {
         return AndroidUtils.fetchEmulator(emulatorName).then((device) => {
             if (!device) {
                 return Promise.reject(
-                    new SfdxError(
-                        'Devices targeting Google Play are not supported. Please use a device that is targeting Google APIs instead.'
-                    )
+                    new SfdxError(`Device ${emulatorName} not found.`)
                 );
             } else if (device.target.toLowerCase().includes('play')) {
                 return Promise.reject(
-                    new SfdxError(`Device ${emulatorName} not found.`)
+                    new SfdxError(
+                        'Devices targeting Google Play are not supported. Please use a device that is targeting Google APIs instead.'
+                    )
                 );
             } else {
                 return Promise.resolve();

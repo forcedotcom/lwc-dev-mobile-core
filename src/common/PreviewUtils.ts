@@ -57,7 +57,7 @@ export class PreviewUtils {
 
     /**
      * Checks to see if a component route needs to be prefixed.
-     * @param compName a component route or name.
+     * @param compName A component route or name.
      * @returns The updated route which now starts with `c/` if compName did not start with `c/` already.
      */
     public static prefixRouteIfNeeded(compName: string): string {
@@ -71,7 +71,7 @@ export class PreviewUtils {
      * Validates a preview configuration file against a schema.
      * @param configFile The path to the preview configuration file.
      * @param schema The schema object to be used for validation.
-     * @returns A ValidationResult object containing a boolean to indicate pass/fail, and a string containing an error message (if any).
+     * @returns A ValidationResult object containing a pass/fail boolean and, for failure, an error message string.
      */
     public static async validateConfigFileWithSchema(
         configFile: string,
