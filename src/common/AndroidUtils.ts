@@ -1415,7 +1415,7 @@ export class AndroidUtils {
             `${AndroidUtils.getEmulatorCommand()} -list-avds`
         )
             .then((result) => {
-                const listOfAVDs = result.stdout.split(os.EOL);
+                const listOfAVDs = result.stdout.split('\n');
                 for (const avd of listOfAVDs) {
                     const avdDisplayName = avd.replace(/[_-]/gi, ' ').trim();
 

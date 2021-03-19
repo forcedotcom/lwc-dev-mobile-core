@@ -655,4 +655,27 @@ describe('Android utils', () => {
 
         expect(err instanceof SfdxError).toBe(true);
     });
+
+    test('Gets the latest version of cmdline tools', async () => {
+        jest.restoreAllMocks();
+
+        jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(() => {
+            return {
+                rootLocation: mockAndroidHome,
+                rootSource: AndroidSDKRootSource.androidHome
+            };
+        });
+
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+        const directories = ['1.0', '2.1', '3.0', '4.0-beta01', 'latest'];
+        spyOn(fs, 'readdirSync').and.returnValue(directories);
+
+        const binPath = AndroidUtils.getAndroidCmdLineToolsBin();
+        expect(binPath).toBe(`${mockAndroidHome}/cmdline-tools/latest/bin`);
+    });
 });
