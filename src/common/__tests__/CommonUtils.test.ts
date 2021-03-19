@@ -48,4 +48,89 @@ describe('CommonUtils', () => {
             expect(error.message.includes(message)).toBeTruthy();
         }
     });
+
+    test('Resolves the server port when it is running with multiple processes', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockReturnValue(
+            Promise.resolve({
+                stdout: `
+                86659 ttys002    0:00.01 bash /usr/local/bin/sfdx force:lightning:lwc:start -p 3456
+                86670 ttys002    0:00.00 bash /Users/test/.local/share/sfdx/client/bin/sfdx force:lightning:lwc:start -p 3456
+                86675 ttys002    0:00.01 bash /Users/test/.local/share/sfdx/client/bin/../7.91.0-6a6ed69ebe/bin/sfdx force:lightning:lwc:start -p 3456
+                86681 ttys002    0:05.81 /Users/test/.local/share/sfdx/client/7.91.0-6a6ed69ebe/bin/node /Users/test/.local/share/sfdx/client/7.91.0-6a6ed69ebe/bin/sfdx.js force:lightning:lwc:start -p 3456
+                `,
+                stderr: ''
+            })
+        );
+
+        const port = await CommonUtils.getLwcServerPort();
+        expect(port).toBe('3456');
+    });
+
+    test('Resolves the server port when it is running with a single process', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockReturnValue(
+            Promise.resolve({
+                stdout: `86659 ttys002    0:00.01 bash /usr/local/bin/sfdx force:lightning:lwc:start -p 3456`,
+                stderr: ''
+            })
+        );
+
+        const port = await CommonUtils.getLwcServerPort();
+        expect(port).toBe('3456');
+    });
+
+    test('Cannot resolve the server port when it not running', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockReturnValue(
+            Promise.reject('')
+        );
+
+        const port = await CommonUtils.getLwcServerPort();
+        expect(port === undefined).toBe(true);
+    });
+
+    test('Opens a URL in desktop browser', async () => {
+        let launchCommand = '';
+        const url = 'http://my.domain.com';
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            (cmd) => {
+                launchCommand = cmd;
+                return Promise.resolve({ stdout: '', stderr: '' });
+            }
+        );
+
+        await CommonUtils.launchUrlInDesktopBrowser(url);
+        expect(launchCommand.endsWith(url)).toBe(true);
+    });
+
+    test('Promise resolves before timeout', async () => {
+        const innerPromise = CommonUtils.delay(50); // a quick task that finishes in 50 milliseconds
+        const promiseWithTimeout = CommonUtils.promiseWithTimeout(
+            1000,
+            innerPromise,
+            'timed out'
+        );
+
+        try {
+            await promiseWithTimeout;
+        } catch (error) {
+            fail(
+                `Should have resolved b/c innerPromise should finish before timeout: ${error}`
+            );
+        }
+    });
+
+    test('Promise rejects after timeout', async () => {
+        const innerPromise = CommonUtils.delay(1000);
+        const promiseWithTimeout = CommonUtils.promiseWithTimeout(
+            50,
+            innerPromise,
+            'timed out'
+        );
+
+        expect.assertions(1);
+        try {
+            await promiseWithTimeout;
+        } catch (error) {
+            expect(error.message === 'timed out').toBe(true);
+        }
+    });
 });

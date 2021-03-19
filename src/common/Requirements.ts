@@ -43,9 +43,9 @@ export interface RequirementList {
  * This function wraps existing promises with the intention to allow the collection of promises
  * to settle when used in conjunction with Promise.all(). Promise.all() by default executes until the first
  * rejection. We are looking for the equivalent of Promise.allSettled() which is scheduled for ES2020.
- * Once the functionality is  available  in the near future this function can be removed.
+ * When the functionality is available this function can be removed.
  * See https://github.com/tc39/proposal-promise-allSettled
- * @param requirement A requirement object
+ * @param requirement A Requirement object
  * @returns A Promise object that runs the requirement check and returns a RequirementResult object.
  */
 export function WrappedPromise(
@@ -122,7 +122,7 @@ export abstract class BaseSetup implements RequirementList {
 
     /**
      * Executes all of the base and additional requirement steps.
-     * @returns A SetupTestResult containing all of the result of the requirement tests
+     * @returns A SetupTestResult containing all of the results of the requirement tests
      */
     public async executeSetup(): Promise<SetupTestResult> {
         const testResult: SetupTestResult = {
@@ -221,7 +221,7 @@ export abstract class BaseSetup implements RequirementList {
 
     /**
      * Adds a new additional requirement to the list of the additional requirements to be verified.
-     * @param reqs The new additional requirement to be added.
+     * @param reqs Array of Requirement object to be added as additional requirements.
      */
     public addAdditionalRequirements(reqs: Requirement[]) {
         if (reqs) {

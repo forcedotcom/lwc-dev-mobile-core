@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { SfdxError } from '@salesforce/core';
 import fs from 'fs';
 import path from 'path';
 import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
@@ -30,11 +31,27 @@ const myGenericVersionsCommandBlockMockThrows = jest.fn(
 );
 
 const myCommandBlockMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> =>
-        Promise.resolve({
+    (command: string): Promise<{ stdout: string; stderr: string }> => {
+        let output = '';
+        if (command.endsWith('avdmanager list avd')) {
+            output = AndroidMockData.avdList;
+        } else if (command.endsWith('emulator -list-avds')) {
+            output = AndroidMockData.emuNames;
+        } else if (command.endsWith('adb devices')) {
+            output = 'emulator-5572';
+        } else if (command.endsWith('emu avd name')) {
+            output = 'Pixel_4_XL_API_29';
+        } else if (command.endsWith('emu avd path')) {
+            output = '/User/test/.android/avd/Pixel_4_XL_API_29.avd';
+        } else {
+            output = AndroidMockData.mockRawPackagesString;
+        }
+
+        return Promise.resolve({
             stderr: '',
-            stdout: AndroidMockData.mockRawPackagesString
-        })
+            stdout: output
+        });
+    }
 );
 
 const badBlockMock = jest.fn(
@@ -71,6 +88,7 @@ describe('Android utils', () => {
     beforeEach(() => {
         // tslint:disable-next-line: no-empty
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
+        jest.spyOn(CommonUtils, 'delay').mockReturnValue(Promise.resolve());
         jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(() => {
             return {
                 rootLocation: mockAndroidHome,
@@ -106,7 +124,7 @@ describe('Android utils', () => {
         );
     });
 
-    test('Should attempt to look for android sdk tools (sdkmanager)', async () => {
+    test('Should attempt to look for and find android sdk tools (sdkmanager)', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMock
         );
@@ -116,7 +134,7 @@ describe('Android utils', () => {
         );
     });
 
-    test('Should attempt to look for android sdk tools (sdkmanager)', async () => {
+    test('Should attempt to look for and not find android sdk tools (sdkmanager)', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMockThrows
         );
@@ -125,7 +143,7 @@ describe('Android utils', () => {
         });
     });
 
-    test('Should attempt to look for android sdk platform tools', async () => {
+    test('Should attempt to look for and find android sdk platform tools', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMock
         );
@@ -135,7 +153,7 @@ describe('Android utils', () => {
         );
     });
 
-    test('Should attempt to look for android sdk platform tools', async () => {
+    test('Should attempt to look for and not find android sdk platform tools', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMockThrows
         );
@@ -191,17 +209,6 @@ describe('Android utils', () => {
         packages = await AndroidUtils.fetchInstalledPackages();
         packages = await AndroidUtils.fetchInstalledPackages();
         expect(myCommandBlockMock).toHaveBeenCalledTimes(1);
-    });
-
-    test('Should rebuild cache after clear in subsequent calls', async () => {
-        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
-            myCommandBlockMock
-        );
-        let packages = await AndroidUtils.fetchInstalledPackages();
-        packages = await AndroidUtils.fetchInstalledPackages();
-        AndroidUtils.clearCaches();
-        packages = await AndroidUtils.fetchInstalledPackages();
-        expect(myCommandBlockMock).toHaveBeenCalledTimes(2);
     });
 
     test('Should rebuild cache after clear in subsequent calls', async () => {
@@ -547,5 +554,128 @@ describe('Android utils', () => {
         const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         const rootPath = (sdkRoot && sdkRoot.rootLocation) || '';
         expect(rootPath).toBe(mockAndroidHome);
+    });
+
+    test('Should attempt to fetch an emulator', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+
+        const found = await AndroidUtils.fetchEmulator('Pixel_XL_API_28');
+        const notFound = await AndroidUtils.fetchEmulator('blah');
+        expect(found && found.name === 'Pixel_XL_API_28').toBe(true);
+        expect(notFound === undefined).toBe(true);
+    });
+
+    test('Checks whether emulator exists', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+
+        const found = await AndroidUtils.hasEmulator('Pixel_XL_API_28');
+        const notFound = await AndroidUtils.hasEmulator('blah');
+        expect(found).toBe(true);
+        expect(notFound).toBe(false);
+    });
+
+    test('Should start an emulator on a new port when another emulator is already running', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+        readFileSpy.mockReturnValue('');
+
+        // mocks are set up to show that Pixel_4_XL_API_29 is running on 5572
+        // so Pixel_XL_API_28 should not start on 5574
+        const port = await AndroidUtils.startEmulator('Pixel_XL_API_28');
+        expect(port).toBe(5574);
+    });
+
+    test('Should restart an emulator that is already running but not in writable system mode', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+        readFileSpy.mockReturnValue('');
+
+        const port = await AndroidUtils.startEmulator(
+            'Pixel_4_XL_API_29',
+            true
+        );
+        expect(port).toBe(5572);
+    });
+
+    test('Should remount as root with writable system access on API 29', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+
+        jest.spyOn(fs, 'readFileSync').mockImplementation(
+            (filePath: any, encoding: any) => {
+                if (filePath.endsWith('Pixel_4_XL_API_29.ini')) {
+                    return 'target=android-29';
+                } else {
+                    return '';
+                }
+            }
+        );
+
+        const port = await AndroidUtils.mountAsRootWritableSystem(
+            'Pixel_4_XL_API_29'
+        );
+        expect(port).toBe(5572);
+    });
+
+    test('Resolves when device is not a Google Play device', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+        readFileSpy.mockReturnValue('');
+
+        try {
+            await AndroidUtils.ensureDeviceIsNotGooglePlay('Pixel_4_XL_API_29');
+        } catch (error) {
+            fail(
+                `Should have resolved b/c device is not Google Play: ${error}`
+            );
+        }
+    });
+
+    test('Rejects when device is a Google Play device', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+        readFileSpy.mockReturnValue('');
+
+        expect.assertions(1);
+        try {
+            await AndroidUtils.ensureDeviceIsNotGooglePlay('Pixel_3_API_29');
+        } catch (error) {
+            expect(error instanceof SfdxError).toBe(true);
+        }
+    });
+
+    test('Gets the latest version of cmdline tools', async () => {
+        jest.restoreAllMocks();
+
+        jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(() => {
+            return {
+                rootLocation: mockAndroidHome,
+                rootSource: AndroidSDKRootSource.androidHome
+            };
+        });
+
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandBlockMock
+        );
+
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+        const directories = ['1.0', '2.1', '3.0', '4.0-beta01', 'latest'];
+        spyOn(fs, 'readdirSync').and.returnValue(directories);
+
+        const binPath = AndroidUtils.getAndroidCmdLineToolsBin();
+        const expectedPath = path.normalize(
+            `${mockAndroidHome}/cmdline-tools/latest/bin`
+        );
+        expect(binPath).toBe(expectedPath);
     });
 });

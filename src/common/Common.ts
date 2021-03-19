@@ -91,8 +91,8 @@ export class CommandLineUtils {
      * Helper method for resolving flag values.
      * @param flag The input flag.
      * @param defaultValue The default value for a flag.
-     * @returns If the input flag can be casted to a string that is not undefined/null/empty then
-     * the string value will be returned otherwise the provided default value will be returned.
+     * @returns If the input flag can be cast to a string that is not undefined/null/empty then
+     * the string value will be returned. Otherwise, the provided default value will be returned.
      */
     public static resolveFlag(flag: any, defaultValue: string): string {
         const resolvedFlag = flag as string;

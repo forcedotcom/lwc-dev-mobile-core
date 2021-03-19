@@ -7,6 +7,7 @@
 import { AndroidUtils } from './AndroidUtils';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
+import { MacNetworkUtils } from './MacNetworkUtils';
 
 export class LoggerSetup {
     /**
@@ -16,6 +17,7 @@ export class LoggerSetup {
         await AndroidUtils.initializeLogger();
         await IOSUtils.initializeLogger();
         await CommonUtils.initializeLogger();
+        await MacNetworkUtils.initializeLogger();
         return Promise.resolve();
     }
 }
