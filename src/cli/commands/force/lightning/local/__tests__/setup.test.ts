@@ -57,39 +57,38 @@ describe('Setup Tests', () => {
 
     test('Checks that Setup fails for invalid Platform flag', async () => {
         const setup = makeSetup('someplatform');
-        let err: any;
-
+        expect.assertions(2);
         try {
             await setup.run(true);
         } catch (error) {
-            err = error;
+            expect(error instanceof SfdxError).toBe(true);
+            expect((error as SfdxError).message).toBe(
+                messages.getMessage('error:invalidInputFlagsDescription')
+            );
         }
-
-        expect(err instanceof SfdxError).toBe(true);
-        expect((err as SfdxError).message).toBe(
-            messages.getMessage('error:invalidInputFlagsDescription')
-        );
     });
 
     test('Checks that Setup fails for invalid API Level flag', async () => {
         const setup = makeSetup(PlatformType.android, 'not-a-number');
-        let err: any;
 
+        expect.assertions(2);
         try {
             await setup.run(true);
         } catch (error) {
-            err = error;
+            const expectedMsg = util
+                .format(
+                    messages.getMessage(
+                        'error:invalidApiLevelFlagsDescription'
+                    ),
+                    ''
+                )
+                .trim();
+
+            expect(error instanceof SfdxError).toBe(true);
+            expect((error as SfdxError).message.includes(expectedMsg)).toBe(
+                true
+            );
         }
-
-        const expectedMsg = util
-            .format(
-                messages.getMessage('error:invalidApiLevelFlagsDescription'),
-                ''
-            )
-            .trim();
-
-        expect(err instanceof SfdxError).toBe(true);
-        expect((err as SfdxError).message.includes(expectedMsg)).toBe(true);
     });
 
     test('Checks that Setup ignores API Level flag for iOS platform', async () => {
@@ -149,7 +148,7 @@ describe('Setup Tests', () => {
 });
 
 // tslint:disable-next-line: max-classes-per-file
-export class AdditionalSetup extends Setup {
+class AdditionalSetup extends Setup {
     public async run(direct: boolean = false): Promise<any> {
         await this.init();
         this.addAdditionalRequirements([new MyAdditionalRequirement()]);
@@ -160,7 +159,7 @@ export class AdditionalSetup extends Setup {
 }
 
 // tslint:disable-next-line: max-classes-per-file
-export class MyAdditionalRequirement implements Requirement {
+class MyAdditionalRequirement implements Requirement {
     public title = 'Additional Requirement Check';
     public fulfilledMessage = 'Passed';
     public unfulfilledMessage = 'Failed';

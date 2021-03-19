@@ -124,7 +124,7 @@ describe('Android utils', () => {
         );
     });
 
-    test('Should attempt to look for and android sdk tools (sdkmanager)', async () => {
+    test('Should attempt to look for and find android sdk tools (sdkmanager)', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myGenericVersionsCommandBlockMock
         );
@@ -630,14 +630,13 @@ describe('Android utils', () => {
         );
         readFileSpy.mockReturnValue('');
 
-        let err: any;
         try {
             await AndroidUtils.ensureDeviceIsNotGooglePlay('Pixel_4_XL_API_29');
         } catch (error) {
-            err = error;
+            fail(
+                `Should have resolved b/c device is not Google Play: ${error}`
+            );
         }
-
-        expect(err === undefined).toBe(true);
     });
 
     test('Rejects when device is a Google Play device', async () => {
@@ -646,14 +645,12 @@ describe('Android utils', () => {
         );
         readFileSpy.mockReturnValue('');
 
-        let err: any;
+        expect.assertions(1);
         try {
             await AndroidUtils.ensureDeviceIsNotGooglePlay('Pixel_3_API_29');
         } catch (error) {
-            err = error;
+            expect(error instanceof SfdxError).toBe(true);
         }
-
-        expect(err instanceof SfdxError).toBe(true);
     });
 
     test('Gets the latest version of cmdline tools', async () => {
@@ -676,6 +673,9 @@ describe('Android utils', () => {
         spyOn(fs, 'readdirSync').and.returnValue(directories);
 
         const binPath = AndroidUtils.getAndroidCmdLineToolsBin();
-        expect(binPath).toBe(`${mockAndroidHome}/cmdline-tools/latest/bin`);
+        const expectedPath = path.normalize(
+            `${mockAndroidHome}/cmdline-tools/latest/bin`
+        );
+        expect(binPath).toBe(expectedPath);
     });
 });

@@ -109,14 +109,13 @@ describe('CommonUtils', () => {
             'timed out'
         );
 
-        let err: any;
         try {
             await promiseWithTimeout;
         } catch (error) {
-            err = error;
+            fail(
+                `Should have resolved b/c innerPromise should finish before timeout: ${error}`
+            );
         }
-
-        expect(err === undefined).toBe(true);
     });
 
     test('Promise rejects after timeout', async () => {
@@ -127,13 +126,11 @@ describe('CommonUtils', () => {
             'timed out'
         );
 
-        let err: any;
+        expect.assertions(1);
         try {
             await promiseWithTimeout;
         } catch (error) {
-            err = error;
+            expect(error.message === 'timed out').toBe(true);
         }
-
-        expect(err && err.message === 'timed out').toBe(true);
     });
 });
