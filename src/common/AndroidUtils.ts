@@ -502,7 +502,7 @@ export class AndroidUtils {
             } catch (error) {
                 reject(new SfdxError(`Could not create emulator. ${error}`));
             }
-        }).then((resolve) => AndroidUtils.updateEmulatorConfig(emulatorName));
+        }).then((resolve) => AndroidUtils.updateEmulatorConfig(resolvedName));
     }
 
     /**
