@@ -9,10 +9,10 @@ import util from 'util';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { BaseSetup, Requirement } from './Requirements';
+import { CommandRequirement, Requirement } from './Requirements';
 
-export class IOSEnvironmentSetup extends BaseSetup {
-    constructor(logger: Logger) {
+export class IOSEnvironmentSetup extends CommandRequirement {
+    constructor(logger: Logger, platform: string) {
         super(logger);
         const requirements = [
             new SupportedEnvironmentRequirement(
@@ -25,7 +25,17 @@ export class IOSEnvironmentSetup extends BaseSetup {
                 this.logger
             )
         ];
-        super.addBaseRequirements(requirements);
+        this.baseRequirements.requirements = requirements;
+        this.baseRequirements.enabled = true;
+
+        this.requirementsCheckFailureMessage = util.format(
+            this.setupMessages.getMessage('error:setupFailed'),
+            platform
+        );
+
+        this.requirementsCheckRecommendationMessage = this.setupMessages.getMessage(
+            'error:setupFailed:recommendation'
+        );
     }
 }
 
