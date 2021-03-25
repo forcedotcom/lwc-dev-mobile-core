@@ -71,13 +71,5 @@ workflows:
   version: 2
   pr-test:
     jobs:
-      - run-tests-linux:
-          filters:
-            branches:
-              only:
-                - /pull.*/
-      - run-tests-windows:
-          filters:
-            branches:
-              only:
-                - /pull.*/
+      - run-tests-linux
+      - run-tests-windows
