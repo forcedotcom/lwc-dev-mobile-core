@@ -40,7 +40,7 @@ describe('Android enviroment setup tests', () => {
     let androidEnvironment: AndroidEnvironmentSetup;
 
     beforeEach(() => {
-        androidEnvironment = new AndroidEnvironmentSetup(logger);
+        androidEnvironment = new AndroidEnvironmentSetup(logger, 'Android');
     });
 
     afterEach(() => {

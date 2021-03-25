@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
 import chalk from 'chalk';
+import util from 'util';
 import { Listr } from 'listr2';
 import { performance, PerformanceObserver } from 'perf_hooks';
 import { PerformanceMarkers } from './PerformanceMarkers';
@@ -36,7 +37,7 @@ export interface SetupTestResult {
 
 export interface RequirementList {
     requirements: Requirement[];
-    executeSetup(): Promise<SetupTestResult>;
+    enabled: boolean;
 }
 
 /**
@@ -103,11 +104,12 @@ export function WrappedPromise(
         });
 }
 
-export abstract class BaseSetup implements RequirementList {
-    public skipBaseRequirements: boolean = false;
-    public skipAdditionalRequirements: boolean = false;
-    public requirements: Requirement[];
-    public additionalRequirements: Requirement[];
+export class CommandRequirement {
+    public baseRequirements: RequirementList;
+    public commandRequirements: RequirementList;
+    public requirementsCheckFailureMessage: string;
+    public requirementsCheckRecommendationMessage: string;
+
     public logger: Logger;
     public setupMessages = Messages.loadMessages(
         '@salesforce/lwc-dev-mobile-core',
@@ -116,15 +118,16 @@ export abstract class BaseSetup implements RequirementList {
 
     constructor(logger: Logger) {
         this.logger = logger;
-        this.requirements = [];
-        this.additionalRequirements = [];
+        this.baseRequirements = { requirements: [], enabled: true };
+        this.commandRequirements = { requirements: [], enabled: true };
+        this.requirementsCheckFailureMessage = '';
+        this.requirementsCheckRecommendationMessage = '';
     }
 
     /**
      * Executes all of the base and additional requirement steps.
-     * @returns A SetupTestResult containing all of the results of the requirement tests
      */
-    public async executeSetup(): Promise<SetupTestResult> {
+    public async executeSetup(): Promise<void> {
         const testResult: SetupTestResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -132,23 +135,27 @@ export abstract class BaseSetup implements RequirementList {
 
         let totalDuration = 0;
         let allRequirements: Requirement[] = [];
-        if (!this.skipBaseRequirements) {
-            allRequirements = allRequirements.concat(this.requirements);
-        }
-        if (!this.skipAdditionalRequirements) {
+
+        if (this.baseRequirements.enabled) {
             allRequirements = allRequirements.concat(
-                this.additionalRequirements
+                this.baseRequirements.requirements
+            );
+        }
+
+        if (this.commandRequirements.enabled) {
+            allRequirements = allRequirements.concat(
+                this.commandRequirements.requirements
             );
         }
 
         if (allRequirements.length === 0) {
-            return Promise.resolve(testResult);
+            return Promise.resolve();
         }
 
         const rootTaskTitle = this.setupMessages.getMessage('rootTaskTitle');
         const setupTasks = new Listr(
             {
-                task: (rootCtx, rootTask): Listr => {
+                task: (_rootCtx, rootTask): Listr => {
                     const subTasks = new Listr([], {
                         concurrent: true,
                         exitOnError: false
@@ -156,7 +163,7 @@ export abstract class BaseSetup implements RequirementList {
                     for (const requirement of allRequirements) {
                         subTasks.add({
                             options: { persistentOutput: true },
-                            task: (subCtx, subTask): Promise<void> =>
+                            task: (_subCtx, subTask): Promise<void> =>
                                 WrappedPromise(requirement).then((result) => {
                                     testResult.tests.push(result);
                                     if (!result.hasPassed) {
@@ -201,32 +208,26 @@ export abstract class BaseSetup implements RequirementList {
 
         try {
             await setupTasks.run();
+
+            if (!testResult.hasMetAllRequirements) {
+                return Promise.reject(
+                    new SfdxError(
+                        this.requirementsCheckFailureMessage,
+                        'lwc-dev-mobile-core',
+                        [this.requirementsCheckRecommendationMessage]
+                    )
+                );
+            }
+
+            return Promise.resolve();
         } catch (error) {
             this.logger.error(error);
-            testResult.hasMetAllRequirements = false;
-        }
 
-        return Promise.resolve(testResult);
-    }
-
-    /**
-     * Adds a new base requirement to the list of the base requirements to be verified.
-     * @param reqs The new base requirement to be added.
-     */
-    public addBaseRequirements(reqs: Requirement[]) {
-        if (reqs) {
-            this.requirements = this.requirements.concat(reqs);
-        }
-    }
-
-    /**
-     * Adds a new additional requirement to the list of the additional requirements to be verified.
-     * @param reqs Array of Requirement object to be added as additional requirements.
-     */
-    public addAdditionalRequirements(reqs: Requirement[]) {
-        if (reqs) {
-            this.additionalRequirements = this.additionalRequirements.concat(
-                reqs
+            return Promise.reject(
+                new SfdxError(
+                    util.format('unexpected error %s', error),
+                    'lwc-dev-mobile-core'
+                )
             );
         }
     }

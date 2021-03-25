@@ -11,11 +11,7 @@ import { AndroidEnvironmentSetup } from '../../../../../common/AndroidEnvironmen
 import { CommandLineUtils, Version } from '../../../../../common/Common';
 import { IOSEnvironmentSetup } from '../../../../../common/IOSEnvironmentSetup';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
-import {
-    BaseSetup,
-    Requirement,
-    SetupTestResult
-} from '../../../../../common/Requirements';
+import { CommandRequirement } from '../../../../../common/Requirements';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -28,6 +24,8 @@ const messages = Messages.loadMessages(
 );
 
 export class Setup extends SfdxCommand {
+    public commandRequirement: CommandRequirement | undefined;
+
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
@@ -50,40 +48,13 @@ export class Setup extends SfdxCommand {
         `sfdx force:lightning:local:setup -p Android`
     ];
 
-    public skipBaseRequirements = false;
-    public skipAdditionalRequirements = false;
-
-    private setupSteps: BaseSetup | undefined;
-
-    public async run(direct: boolean = false): Promise<any> {
-        if (direct) {
-            await this.init(); // ensure init first
-        }
+    public async run(): Promise<any> {
+        await this.init(); // ensure init first
 
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
         return this.validateInputParameters() // validate input
-            .then(() => this.executeSetup(this.setup())) // verify requirements
-            .then((result) => {
-                if (!result.hasMetAllRequirements) {
-                    return Promise.reject(
-                        new SfdxError(
-                            util.format(
-                                messages.getMessage('error:setupFailed'),
-                                this.flags.platform
-                            ),
-                            'lwc-dev-mobile-core',
-                            [
-                                messages.getMessage(
-                                    'error:setupFailed:recommendation'
-                                )
-                            ]
-                        )
-                    );
-                } else {
-                    return Promise.resolve(result);
-                }
-            });
+            .then(() => this.setup().executeSetup()); // verify requirements
     }
 
     protected async init(): Promise<void> {
@@ -99,10 +70,6 @@ export class Setup extends SfdxCommand {
                 this.logger = logger;
                 return LoggerSetup.initializePluginLoggers();
             });
-    }
-
-    protected addAdditionalRequirements(reqs: Requirement[]) {
-        this.setup().addAdditionalRequirements(reqs);
     }
 
     protected async validateInputParameters(): Promise<void> {
@@ -145,21 +112,19 @@ export class Setup extends SfdxCommand {
         return Promise.resolve();
     }
 
-    private async executeSetup(setup: BaseSetup): Promise<SetupTestResult> {
-        setup.skipBaseRequirements = this.skipBaseRequirements;
-        setup.skipAdditionalRequirements = this.skipAdditionalRequirements;
-        return setup.executeSetup();
-    }
-
-    private setup(): BaseSetup {
-        if (!this.setupSteps) {
-            this.setupSteps = CommandLineUtils.platformFlagIsAndroid(
+    public setup(): CommandRequirement {
+        if (!this.commandRequirement) {
+            this.commandRequirement = CommandLineUtils.platformFlagIsAndroid(
                 this.flags.platform
             )
-                ? new AndroidEnvironmentSetup(this.logger, this.flags.apilevel)
-                : new IOSEnvironmentSetup(this.logger);
+                ? new AndroidEnvironmentSetup(
+                      this.logger,
+                      this.flags.platform,
+                      this.flags.apilevel
+                  )
+                : new IOSEnvironmentSetup(this.logger, this.flags.platform);
         }
 
-        return this.setupSteps;
+        return this.commandRequirement;
     }
 }

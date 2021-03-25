@@ -57,7 +57,7 @@ describe('IOS Environment Setup tests', () => {
     let iosEnvironment: IOSEnvironmentSetup;
 
     beforeEach(() => {
-        iosEnvironment = new IOSEnvironmentSetup(logger);
+        iosEnvironment = new IOSEnvironmentSetup(logger, 'iOS');
         myUnameMock.mockClear();
         badBadMock.mockClear();
         myXcodeSelectMock.mockClear();

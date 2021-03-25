@@ -8,10 +8,10 @@ import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { BaseSetup, Requirement } from './Requirements';
+import { CommandRequirement, Requirement } from './Requirements';
 
-export class AndroidEnvironmentSetup extends BaseSetup {
-    constructor(logger: Logger, apiLevel?: string) {
+export class AndroidEnvironmentSetup extends CommandRequirement {
+    constructor(logger: Logger, platform: string, apiLevel?: string) {
         super(logger);
         const requirements = [
             new AndroidSDKRootSetRequirement(this.setupMessages, this.logger),
@@ -35,7 +35,17 @@ export class AndroidEnvironmentSetup extends BaseSetup {
                 apiLevel
             )
         ];
-        super.addBaseRequirements(requirements);
+        this.baseRequirements.requirements = requirements;
+        this.baseRequirements.enabled = true;
+
+        this.requirementsCheckFailureMessage = util.format(
+            this.setupMessages.getMessage('error:setupFailed'),
+            platform
+        );
+
+        this.requirementsCheckRecommendationMessage = this.setupMessages.getMessage(
+            'error:setupFailed:recommendation'
+        );
     }
 }
 
