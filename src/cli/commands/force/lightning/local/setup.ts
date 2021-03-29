@@ -7,9 +7,9 @@
 import { flags, FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
-import { AndroidEnvironmentSetup } from '../../../../../common/AndroidEnvironmentSetup';
+import { AndroidEnvironmentRequirement } from '../../../../../common/AndroidEnvironmentRequirement';
 import { CommandLineUtils, Version } from '../../../../../common/Common';
-import { IOSEnvironmentSetup } from '../../../../../common/IOSEnvironmentSetup';
+import { IOSEnvironmentRequirement } from '../../../../../common/IOSEnvironmentRequirement';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
 import { CommandRequirement } from '../../../../../common/Requirements';
 
@@ -24,7 +24,7 @@ const messages = Messages.loadMessages(
 );
 
 export class Setup extends SfdxCommand {
-    public commandRequirement: CommandRequirement | undefined;
+    private _requirement: CommandRequirement | undefined;
 
     public static description = messages.getMessage('commandDescription');
 
@@ -54,7 +54,7 @@ export class Setup extends SfdxCommand {
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
         return this.validateInputParameters() // validate input
-            .then(() => this.setup().executeSetup()); // verify requirements
+            .then(() => this.requirement.executeChecks()); // verify requirements
     }
 
     protected async init(): Promise<void> {
@@ -86,7 +86,7 @@ export class Setup extends SfdxCommand {
         if (this.flags.apilevel) {
             if (CommandLineUtils.platformFlagIsIOS(this.flags.platform)) {
                 this.logger.warn(
-                    'The apiLevel flag does not apply to the iOS platform... ignoring.'
+                    messages.getMessage('error:doesNotApplyToIOS')
                 );
                 return Promise.resolve();
             }
@@ -112,19 +112,18 @@ export class Setup extends SfdxCommand {
         return Promise.resolve();
     }
 
-    public setup(): CommandRequirement {
-        if (!this.commandRequirement) {
-            this.commandRequirement = CommandLineUtils.platformFlagIsAndroid(
+    public get requirement(): CommandRequirement {
+        if (!this._requirement) {
+            this._requirement = CommandLineUtils.platformFlagIsAndroid(
                 this.flags.platform
             )
-                ? new AndroidEnvironmentSetup(
+                ? new AndroidEnvironmentRequirement(
                       this.logger,
-                      this.flags.platform,
                       this.flags.apilevel
                   )
-                : new IOSEnvironmentSetup(this.logger, this.flags.platform);
+                : new IOSEnvironmentRequirement(this.logger);
         }
 
-        return this.commandRequirement;
+        return this._requirement;
     }
 }

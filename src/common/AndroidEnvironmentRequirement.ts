@@ -7,30 +7,37 @@
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
+import { CommandLineUtils } from './Common';
 import { PlatformConfig } from './PlatformConfig';
 import { CommandRequirement, Requirement } from './Requirements';
 
-export class AndroidEnvironmentSetup extends CommandRequirement {
-    constructor(logger: Logger, platform: string, apiLevel?: string) {
+export class AndroidEnvironmentRequirement extends CommandRequirement {
+    constructor(logger: Logger, apiLevel?: string) {
         super(logger);
         const requirements = [
-            new AndroidSDKRootSetRequirement(this.setupMessages, this.logger),
-            new Java8AvailableRequirement(this.setupMessages, this.logger),
+            new AndroidSDKRootSetRequirement(
+                this.requirementMessages,
+                this.logger
+            ),
+            new Java8AvailableRequirement(
+                this.requirementMessages,
+                this.logger
+            ),
             new AndroidSDKToolsInstalledRequirement(
-                this.setupMessages,
+                this.requirementMessages,
                 this.logger
             ),
             new AndroidSDKPlatformToolsInstalledRequirement(
-                this.setupMessages,
+                this.requirementMessages,
                 this.logger
             ),
             new PlatformAPIPackageRequirement(
-                this.setupMessages,
+                this.requirementMessages,
                 this.logger,
                 apiLevel
             ),
             new EmulatorImagesRequirement(
-                this.setupMessages,
+                this.requirementMessages,
                 this.logger,
                 apiLevel
             )
@@ -38,13 +45,13 @@ export class AndroidEnvironmentSetup extends CommandRequirement {
         this.baseRequirements.requirements = requirements;
         this.baseRequirements.enabled = true;
 
-        this.requirementsCheckFailureMessage = util.format(
-            this.setupMessages.getMessage('error:setupFailed'),
-            platform
+        this.checkFailureMessage = util.format(
+            this.requirementMessages.getMessage('error:requirementCheckFailed'),
+            CommandLineUtils.ANDROID_FLAG
         );
 
-        this.requirementsCheckRecommendationMessage = this.setupMessages.getMessage(
-            'error:setupFailed:recommendation'
+        this.checkRecommendationMessage = this.requirementMessages.getMessage(
+            'error:requirementCheckFailed:recommendation'
         );
     }
 }

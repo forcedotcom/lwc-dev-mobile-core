@@ -6,35 +6,39 @@
  */
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
+import { CommandLineUtils } from './Common';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
 import { PlatformConfig } from './PlatformConfig';
 import { CommandRequirement, Requirement } from './Requirements';
 
-export class IOSEnvironmentSetup extends CommandRequirement {
-    constructor(logger: Logger, platform: string) {
+export class IOSEnvironmentRequirement extends CommandRequirement {
+    constructor(logger: Logger) {
         super(logger);
         const requirements = [
             new SupportedEnvironmentRequirement(
-                this.setupMessages,
+                this.requirementMessages,
                 this.logger
             ),
-            new XcodeInstalledRequirement(this.setupMessages, this.logger),
+            new XcodeInstalledRequirement(
+                this.requirementMessages,
+                this.logger
+            ),
             new SupportedSimulatorRuntimeRequirement(
-                this.setupMessages,
+                this.requirementMessages,
                 this.logger
             )
         ];
         this.baseRequirements.requirements = requirements;
         this.baseRequirements.enabled = true;
 
-        this.requirementsCheckFailureMessage = util.format(
-            this.setupMessages.getMessage('error:setupFailed'),
-            platform
+        this.checkFailureMessage = util.format(
+            this.requirementMessages.getMessage('error:requirementCheckFailed'),
+            CommandLineUtils.IOS_FLAG
         );
 
-        this.requirementsCheckRecommendationMessage = this.setupMessages.getMessage(
-            'error:setupFailed:recommendation'
+        this.checkRecommendationMessage = this.requirementMessages.getMessage(
+            'error:requirementCheckFailed:recommendation'
         );
     }
 }

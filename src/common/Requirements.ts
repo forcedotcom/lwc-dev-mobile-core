@@ -23,14 +23,14 @@ export interface Requirement {
     logger: Logger;
 }
 
-export interface RequirementResult {
+interface RequirementResult {
     duration: number;
     hasPassed: boolean;
     message: string;
     title: string;
 }
 
-export interface SetupTestResult {
+interface RequirementCheckResult {
     hasMetAllRequirements: boolean;
     tests: RequirementResult[];
 }
@@ -105,30 +105,50 @@ export function WrappedPromise(
 }
 
 export class CommandRequirement {
-    public baseRequirements: RequirementList;
-    public commandRequirements: RequirementList;
-    public requirementsCheckFailureMessage: string;
-    public requirementsCheckRecommendationMessage: string;
+    public baseRequirements: RequirementList = {
+        requirements: [],
+        enabled: true
+    };
+    public commandRequirements: RequirementList = {
+        requirements: [],
+        enabled: true
+    };
+    public checkFailureMessage: string = '';
+    public checkRecommendationMessage: string = '';
 
     public logger: Logger;
-    public setupMessages = Messages.loadMessages(
+    public requirementMessages = Messages.loadMessages(
         '@salesforce/lwc-dev-mobile-core',
-        'setup'
+        'requirement'
     );
 
-    constructor(logger: Logger) {
+    constructor(
+        logger: Logger,
+        baseRequirements?: RequirementList,
+        commandRequirements?: RequirementList,
+        checkFailureMessage?: string,
+        checkRecommendationMessage?: string
+    ) {
         this.logger = logger;
-        this.baseRequirements = { requirements: [], enabled: true };
-        this.commandRequirements = { requirements: [], enabled: true };
-        this.requirementsCheckFailureMessage = '';
-        this.requirementsCheckRecommendationMessage = '';
+        if (baseRequirements) {
+            this.baseRequirements = baseRequirements;
+        }
+        if (commandRequirements) {
+            this.commandRequirements = commandRequirements;
+        }
+        if (checkFailureMessage) {
+            this.checkFailureMessage = checkFailureMessage;
+        }
+        if (checkRecommendationMessage) {
+            this.checkRecommendationMessage = checkRecommendationMessage;
+        }
     }
 
     /**
-     * Executes all of the base and additional requirement steps.
+     * Executes all of the base and command requirement checks.
      */
-    public async executeSetup(): Promise<void> {
-        const testResult: SetupTestResult = {
+    public async executeChecks(): Promise<void> {
+        const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
         };
@@ -152,8 +172,10 @@ export class CommandRequirement {
             return Promise.resolve();
         }
 
-        const rootTaskTitle = this.setupMessages.getMessage('rootTaskTitle');
-        const setupTasks = new Listr(
+        const rootTaskTitle = this.requirementMessages.getMessage(
+            'rootTaskTitle'
+        );
+        const requirementTasks = new Listr(
             {
                 task: (_rootCtx, rootTask): Listr => {
                     const subTasks = new Listr([], {
@@ -207,14 +229,14 @@ export class CommandRequirement {
         );
 
         try {
-            await setupTasks.run();
+            await requirementTasks.run();
 
             if (!testResult.hasMetAllRequirements) {
                 return Promise.reject(
                     new SfdxError(
-                        this.requirementsCheckFailureMessage,
+                        this.checkFailureMessage,
                         'lwc-dev-mobile-core',
-                        [this.requirementsCheckRecommendationMessage]
+                        [this.checkRecommendationMessage]
                     )
                 );
             }
@@ -234,8 +256,8 @@ export class CommandRequirement {
 
     private getFormattedTitle(testCaseResult: RequirementResult): string {
         const statusMsg = testCaseResult.hasPassed
-            ? this.setupMessages.getMessage('passed')
-            : this.setupMessages.getMessage('failed');
+            ? this.requirementMessages.getMessage('passed')
+            : this.requirementMessages.getMessage('failed');
 
         const title = `${statusMsg}: ${
             testCaseResult.title
