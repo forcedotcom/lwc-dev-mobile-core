@@ -10,8 +10,7 @@ import util from 'util';
 import { LoggerSetup } from '../../../../../../common/LoggerSetup';
 import {
     CommandRequirement,
-    Requirement,
-    SetupTestResult
+    Requirement
 } from '../../../../../../common/Requirements';
 import { Setup } from '../setup';
 
@@ -36,7 +35,7 @@ describe('Setup Tests', () => {
     beforeEach(() => {
         jest.spyOn(
             CommandRequirement.prototype,
-            'executeSetup'
+            'executeChecks'
         ).mockImplementation(executeSetupMock);
     });
 
@@ -98,15 +97,6 @@ describe('Setup Tests', () => {
         expect(executeSetupMock).toHaveBeenCalled();
     });
 
-    // test('Checks that Setup runs additional requirements', async () => {
-    //     jest.restoreAllMocks();
-    //     const additionalSetup = makeAdditionalSetup(PlatformType.ios);
-    //     const result = (await additionalSetup.run()) as SetupTestResult;
-    //     expect(result.hasMetAllRequirements).toBe(true);
-    //     expect(result.tests.length).toBe(1);
-    //     expect(result.tests[0].title).toBe('Additional Requirement Check');
-    // });
-
     test('Logger must be initialized and invoked', async () => {
         const logger = new Logger('test-logger');
         const loggerSpy = jest.spyOn(logger, 'info');
@@ -139,35 +129,35 @@ describe('Setup Tests', () => {
         return setup;
     }
 
-    function makeAdditionalSetup(platform: PlatformType): Setup {
-        const additionalSetup = new AdditionalSetup(
+    function makeSetupWithCommandRequirement(platform: PlatformType): Setup {
+        const setup = new SetupWithCommandRequirement(
             ['-p', platform],
             new Config.Config(({} as any) as Config.Options)
         );
-        return additionalSetup;
+        return setup;
     }
 });
 
 // tslint:disable-next-line: max-classes-per-file
-class AdditionalSetup extends Setup {
+class SetupWithCommandRequirement extends Setup {
     public async run(): Promise<any> {
         await this.init();
-        this.setup().commandRequirements.requirements = [
-            new MyAdditionalRequirement()
+        this.requirement.commandRequirements.requirements = [
+            new MyCommandRequirement()
         ];
-        this.setup().commandRequirements.enabled = true;
-        this.setup().baseRequirements.enabled = false;
+        this.requirement.commandRequirements.enabled = true;
+        this.requirement.baseRequirements.enabled = false;
 
         return super.run();
     }
 }
 
 // tslint:disable-next-line: max-classes-per-file
-class MyAdditionalRequirement implements Requirement {
-    public title = 'Additional Requirement Check';
+class MyCommandRequirement implements Requirement {
+    public title = 'Command Requirement Check';
     public fulfilledMessage = 'Passed';
     public unfulfilledMessage = 'Failed';
-    public logger = new Logger('MyAdditionalRequirement');
+    public logger = new Logger('MyCommandRequirement');
 
     public async checkFunction(): Promise<string> {
         return Promise.resolve(this.fulfilledMessage);

@@ -5,6 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, Messages } from '@salesforce/core';
+import { CommandLineUtils } from '../Common';
 import { CommonUtils } from '../CommonUtils';
 
 const myUnameMock = jest.fn(
@@ -43,21 +44,21 @@ const runtimesMockBlock = jest.fn(
 );
 
 import {
-    IOSEnvironmentSetup,
+    IOSEnvironmentRequirement,
     SupportedEnvironmentRequirement,
     SupportedSimulatorRuntimeRequirement,
     XcodeInstalledRequirement
-} from '../IOSEnvironmentSetup';
+} from '../IOSEnvironmentRequirement';
 import { IOSUtils } from '../IOSUtils';
 
 Messages.importMessagesDirectory(__dirname);
-const logger = new Logger('test-IOSEnvironmentSetup');
+const logger = new Logger('test-IOSEnvironmentRequirement');
 
-describe('IOS Environment Setup tests', () => {
-    let iosEnvironment: IOSEnvironmentSetup;
+describe('IOS Environment Requirement tests', () => {
+    let iosEnvironment: IOSEnvironmentRequirement;
 
     beforeEach(() => {
-        iosEnvironment = new IOSEnvironmentSetup(logger, 'iOS');
+        iosEnvironment = new IOSEnvironmentRequirement(logger);
         myUnameMock.mockClear();
         badBadMock.mockClear();
         myXcodeSelectMock.mockClear();
@@ -73,7 +74,7 @@ describe('IOS Environment Setup tests', () => {
             myUnameMock
         );
         const requirement = new SupportedEnvironmentRequirement(
-            iosEnvironment.setupMessages,
+            iosEnvironment.requirementMessages,
             logger
         );
         await requirement.checkFunction();
@@ -85,7 +86,7 @@ describe('IOS Environment Setup tests', () => {
             badBadMock
         );
         const requirement = new SupportedEnvironmentRequirement(
-            iosEnvironment.setupMessages,
+            iosEnvironment.requirementMessages,
             logger
         );
         return requirement.checkFunction().catch((error) => {
@@ -99,7 +100,7 @@ describe('IOS Environment Setup tests', () => {
             myUnameMock
         );
         const requirement = new SupportedEnvironmentRequirement(
-            iosEnvironment.setupMessages,
+            iosEnvironment.requirementMessages,
             logger
         );
         await requirement.checkFunction();
@@ -111,7 +112,7 @@ describe('IOS Environment Setup tests', () => {
             myXcodeSelectMock
         );
         const requirement = new XcodeInstalledRequirement(
-            iosEnvironment.setupMessages,
+            iosEnvironment.requirementMessages,
             logger
         );
         await requirement.checkFunction();
@@ -123,7 +124,7 @@ describe('IOS Environment Setup tests', () => {
             badBadMock
         );
         const requirement = new XcodeInstalledRequirement(
-            iosEnvironment.setupMessages,
+            iosEnvironment.requirementMessages,
             logger
         );
         return requirement.checkFunction().catch((error) => {
@@ -136,7 +137,7 @@ describe('IOS Environment Setup tests', () => {
             runtimesMockBlock
         );
         const requirement = new SupportedSimulatorRuntimeRequirement(
-            iosEnvironment.setupMessages,
+            iosEnvironment.requirementMessages,
             logger
         );
         await requirement.checkFunction();
@@ -153,7 +154,7 @@ describe('IOS Environment Setup tests', () => {
             badMock
         );
         const requirement = new SupportedSimulatorRuntimeRequirement(
-            iosEnvironment.setupMessages,
+            iosEnvironment.requirementMessages,
             logger
         );
         return requirement.checkFunction().catch((error) => {

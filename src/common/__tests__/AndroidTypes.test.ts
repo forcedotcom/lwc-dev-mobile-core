@@ -11,13 +11,13 @@ process.env.ANDROID_HOME = MOCK_ANDROID_HOME;
 import { AndroidPackages } from '../AndroidTypes';
 import { AndroidMockData } from './AndroidMockData';
 
-const myCommandBlockMock = jest.fn((): string => {
-    return AndroidMockData.mockRawPackagesString;
-});
+// const myCommandBlockMock = jest.fn((): string => {
+//     return AndroidMockData.mockRawPackagesString;
+// });
 
-const badBlockMock = jest.fn((): string => {
-    return AndroidMockData.badMockRawPackagesString;
-});
+// const badBlockMock = jest.fn((): string => {
+//     return AndroidMockData.badMockRawPackagesString;
+// });
 
 describe('Android types tests', () => {
     beforeEach(() => {
