@@ -35,7 +35,7 @@ interface RequirementCheckResult {
     tests: RequirementResult[];
 }
 
-export interface RequirementList {
+interface RequirementList {
     requirements: Requirement[];
     enabled: boolean;
 }
