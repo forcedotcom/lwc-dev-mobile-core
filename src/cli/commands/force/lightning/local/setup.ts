@@ -86,7 +86,7 @@ export class Setup extends SfdxCommand {
         if (this.flags.apilevel) {
             if (CommandLineUtils.platformFlagIsIOS(this.flags.platform)) {
                 this.logger.warn(
-                    messages.getMessage('error:doesNotApplyToIOS')
+                    'The apiLevel flag does not apply to the iOS platform... ignoring.'
                 );
                 return Promise.resolve();
             }
