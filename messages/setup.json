@@ -3,7 +3,6 @@
     "platformFlagDescription": "Specify platform ('iOS' or 'Android').",
     "apiLevelFlagDescription": "Specify Android API level. Defaults to the latest API level installed.",
     "error:invalidInputFlagsDescription": "Invalid input value for platform.",
-    "error:invalidApiLevelFlagsDescription": "Invalid input value for API level: %s",
-    "error:doesNotApplyToIOS": "The apiLevel flag does not apply to the iOS platform... ignoring."
+    "error:invalidApiLevelFlagsDescription": "Invalid input value for API level: %s"
 }
     
