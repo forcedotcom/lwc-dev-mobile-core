@@ -9,9 +9,9 @@ import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { CommandLineUtils } from './Common';
 import { PlatformConfig } from './PlatformConfig';
-import { CommandRequirement, Requirement } from './Requirements';
+import { CommandChecks, Requirement } from './Requirements';
 
-export class AndroidEnvironmentRequirement extends CommandRequirement {
+export class AndroidEnvironmentChecks extends CommandChecks {
     constructor(logger: Logger, apiLevel?: string) {
         super(logger);
         const requirements = [
@@ -42,8 +42,10 @@ export class AndroidEnvironmentRequirement extends CommandRequirement {
                 apiLevel
             )
         ];
-        this.baseRequirements.requirements = requirements;
-        this.baseRequirements.enabled = true;
+        this.checks.baseRequirements = {
+            requirements,
+            enabled: true
+        };
 
         this.checkFailureMessage = util.format(
             this.requirementMessages.getMessage('error:requirementCheckFailed'),

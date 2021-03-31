@@ -8,8 +8,9 @@ import * as Config from '@oclif/config';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { LoggerSetup } from '../../../../../../common/LoggerSetup';
+import { CommandLineUtils } from '../../../../../../common/Common';
 import {
-    CommandRequirement,
+    CommandChecks,
     Requirement
 } from '../../../../../../common/Requirements';
 import { Setup } from '../setup';
@@ -33,10 +34,9 @@ const executeSetupMock = jest.fn(
 
 describe('Setup Tests', () => {
     beforeEach(() => {
-        jest.spyOn(
-            CommandRequirement.prototype,
-            'executeChecks'
-        ).mockImplementation(executeSetupMock);
+        jest.spyOn(CommandChecks.prototype, 'execute').mockImplementation(
+            executeSetupMock
+        );
     });
 
     afterEach(() => {
@@ -128,38 +128,4 @@ describe('Setup Tests', () => {
         );
         return setup;
     }
-
-    function makeSetupWithCommandRequirement(platform: PlatformType): Setup {
-        const setup = new SetupWithCommandRequirement(
-            ['-p', platform],
-            new Config.Config(({} as any) as Config.Options)
-        );
-        return setup;
-    }
 });
-
-// tslint:disable-next-line: max-classes-per-file
-class SetupWithCommandRequirement extends Setup {
-    public async run(): Promise<any> {
-        await this.init();
-        this.requirement.commandRequirements.requirements = [
-            new MyCommandRequirement()
-        ];
-        this.requirement.commandRequirements.enabled = true;
-        this.requirement.baseRequirements.enabled = false;
-
-        return super.run();
-    }
-}
-
-// tslint:disable-next-line: max-classes-per-file
-class MyCommandRequirement implements Requirement {
-    public title = 'Command Requirement Check';
-    public fulfilledMessage = 'Passed';
-    public unfulfilledMessage = 'Failed';
-    public logger = new Logger('MyCommandRequirement');
-
-    public async checkFunction(): Promise<string> {
-        return Promise.resolve(this.fulfilledMessage);
-    }
-}

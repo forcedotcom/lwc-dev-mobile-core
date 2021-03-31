@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, Messages, SfdxError } from '@salesforce/core';
-import { CommandRequirement } from '../Requirements';
+import { CommandChecks } from '../Requirements';
 
 const logger = new Logger('test');
 
@@ -34,7 +34,7 @@ async function checkRejectFunctionTwo(): Promise<undefined> {
     return Promise.reject();
 }
 
-class TruthyBaseRequirement extends CommandRequirement {
+class TruthyChecks extends CommandChecks {
     constructor() {
         super(logger);
         const requirements = [
@@ -54,13 +54,15 @@ class TruthyBaseRequirement extends CommandRequirement {
                 unfulfilledMessage: 'You must setup ANDROID_HOME.'
             }
         ];
-        this.baseRequirements.requirements = requirements;
-        this.baseRequirements.enabled = true;
+        this.checks.baseRequirements = {
+            requirements,
+            enabled: true
+        };
     }
 }
 
 // tslint:disable-next-line: max-classes-per-file
-class FalsyBaseRequirement extends CommandRequirement {
+class FalsyChecks extends CommandChecks {
     constructor() {
         super(logger);
         const requirements = [
@@ -95,8 +97,10 @@ class FalsyBaseRequirement extends CommandRequirement {
                     'Install at least one Android Platform tools package (23 - 30).'
             }
         ];
-        this.baseRequirements.requirements = requirements;
-        this.baseRequirements.enabled = true;
+        this.checks.baseRequirements = {
+            requirements,
+            enabled: true
+        };
 
         this.checkFailureMessage = checkFailureMessage;
         this.checkRecommendationMessage = checkRecommendationMessage;
@@ -104,108 +108,39 @@ class FalsyBaseRequirement extends CommandRequirement {
 }
 
 // tslint:disable-next-line: max-classes-per-file
-class TruthyBaseFalsyCommandRequirement extends CommandRequirement {
+class TwoFalsyOneTruthyChecks extends CommandChecks {
     constructor() {
         super(logger);
-        const requirements = [
-            {
-                checkFunction: checkResolveFunctionOne,
-                fulfilledMessage: 'Android SDK was detected.',
-                logger,
-                title: 'SDK Check',
-                unfulfilledMessage:
-                    'You must install Android SDK add it to the path.'
-            },
-            {
-                checkFunction: checkRejectFunctionTwo,
-                fulfilledMessage: 'ANDROID_HOME has been detected.',
-                logger,
-                title: 'ANDROID_HOME check',
-                unfulfilledMessage: 'You must setup ANDROID_HOME.'
-            }
-        ];
-        this.baseRequirements.requirements = requirements;
-        this.baseRequirements.enabled = true;
-
-        const commandRequirements = [
-            {
-                checkFunction: checkRejectFunctionOne,
-                fulfilledMessage: 'Command requirement test passed.',
-                logger,
-                title: 'Command requirement test',
-                unfulfilledMessage: 'Command requirement test failed.'
-            }
-        ];
-        this.commandRequirements.requirements = commandRequirements;
-        this.commandRequirements.enabled = true;
-
-        this.checkFailureMessage = checkFailureMessage;
-        this.checkRecommendationMessage = checkRecommendationMessage;
-    }
-}
-
-// tslint:disable-next-line: max-classes-per-file
-class FalsyBaseTruthyCommandRequirement extends CommandRequirement {
-    constructor() {
-        super(logger);
-        const requirements = [
-            {
-                checkFunction: checkRejectFunctionOne,
-                fulfilledMessage: 'Android SDK was detected.',
-                logger,
-                title: 'SDK Check',
-                unfulfilledMessage:
-                    'You must install Android SDK add it to the path.'
-            }
-        ];
-        this.baseRequirements.requirements = requirements;
-        this.baseRequirements.enabled = true;
-
-        const commandRequirements = [
-            {
-                checkFunction: checkResolveFunctionOne,
-                fulfilledMessage: 'Command requirement test passed.',
-                logger,
-                title: 'Command requirement test',
-                unfulfilledMessage: 'Command requirement test failed.'
-            }
-        ];
-        this.commandRequirements.requirements = commandRequirements;
-        this.commandRequirements.enabled = true;
-
-        this.checkFailureMessage = checkFailureMessage;
-        this.checkRecommendationMessage = checkRecommendationMessage;
-    }
-}
-
-// tslint:disable-next-line: max-classes-per-file
-class FalsyBaseFalsyCommandRequirement extends CommandRequirement {
-    constructor() {
-        super(logger);
-        const requirements = [
-            {
-                checkFunction: checkRejectFunctionOne,
-                fulfilledMessage: 'Android SDK was detected.',
-                logger,
-                title: 'SDK Check',
-                unfulfilledMessage:
-                    'You must install Android SDK add it to the path.'
-            }
-        ];
-        this.baseRequirements.requirements = requirements;
-        this.baseRequirements.enabled = true;
-
-        const commandRequirements = [
-            {
-                checkFunction: checkRejectFunctionTwo,
-                fulfilledMessage: 'Command requirement test passed.',
-                logger,
-                title: 'Command requirement test',
-                unfulfilledMessage: 'Command requirement test failed.'
-            }
-        ];
-        this.commandRequirements.requirements = commandRequirements;
-        this.commandRequirements.enabled = true;
+        this.checks.falsyRequirementOne = {
+            requirements: [
+                {
+                    title: 'title1',
+                    checkFunction: checkRejectFunctionOne,
+                    logger
+                }
+            ],
+            enabled: true
+        };
+        this.checks.falsyRequirementTwo = {
+            requirements: [
+                {
+                    title: 'title2',
+                    checkFunction: checkRejectFunctionTwo,
+                    logger
+                }
+            ],
+            enabled: true
+        };
+        this.checks.truthyRequirement = {
+            requirements: [
+                {
+                    title: 'title3',
+                    checkFunction: checkResolveFunctionOne,
+                    logger
+                }
+            ],
+            enabled: true
+        };
 
         this.checkFailureMessage = checkFailureMessage;
         this.checkRecommendationMessage = checkRecommendationMessage;
@@ -215,14 +150,14 @@ class FalsyBaseFalsyCommandRequirement extends CommandRequirement {
 describe('Requirements Processing', () => {
     test('Meets all requirements', async () => {
         expect.assertions(1);
-        await new TruthyBaseRequirement().executeChecks();
+        await new TruthyChecks().execute();
         expect(true).toBeTruthy();
     });
 
-    test('Throws when any base requirement fails', async () => {
+    test('Throws when any requirement fails', async () => {
         expect.assertions(4);
         try {
-            await new FalsyBaseRequirement().executeChecks();
+            await new FalsyChecks().execute();
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
@@ -232,19 +167,19 @@ describe('Requirements Processing', () => {
         }
     });
 
-    test('Skips all base requirements and only executes command requirements', async () => {
-        const requirement = new FalsyBaseTruthyCommandRequirement();
-        requirement.baseRequirements.enabled = false;
-        await requirement.executeChecks();
+    test('Skips all requirements that would fail and only executes a requirement that succeeds', async () => {
+        const commandChecks = new TwoFalsyOneTruthyChecks();
+        commandChecks.checks.falsyRequirementOne.enabled = false;
+        commandChecks.checks.falsyRequirementTwo.enabled = false;
+        await commandChecks.execute();
         expect(true).toBeTruthy();
     });
 
-    test('Skips all base requirements and only executes and fails with command requirements', async () => {
+    test('Fails when there is a failed requirement check in combo checks', async () => {
         expect.assertions(4);
-        const requirement = new TruthyBaseFalsyCommandRequirement();
-        requirement.baseRequirements.enabled = false;
+        const commandChecks = new TwoFalsyOneTruthyChecks();
         try {
-            await requirement.executeChecks();
+            await commandChecks.execute();
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
@@ -254,11 +189,10 @@ describe('Requirements Processing', () => {
         }
     });
 
-    test('Skips all base and command requirements', async () => {
-        const requirement = new FalsyBaseFalsyCommandRequirement();
-        requirement.baseRequirements.enabled = false;
-        requirement.commandRequirements.enabled = false;
-        await requirement.executeChecks();
+    test('Skips all checks and check will ', async () => {
+        const commandChecks = new FalsyChecks();
+        commandChecks.checks.baseRequirements.enabled = false;
+        await commandChecks.execute();
         expect(true).toBeTruthy();
     });
 });

@@ -44,21 +44,21 @@ const runtimesMockBlock = jest.fn(
 );
 
 import {
-    IOSEnvironmentRequirement,
+    IOSEnvironmentChecks,
     SupportedEnvironmentRequirement,
     SupportedSimulatorRuntimeRequirement,
     XcodeInstalledRequirement
-} from '../IOSEnvironmentRequirement';
+} from '../IOSEnvironmentChecks';
 import { IOSUtils } from '../IOSUtils';
 
 Messages.importMessagesDirectory(__dirname);
 const logger = new Logger('test-IOSEnvironmentRequirement');
 
 describe('IOS Environment Requirement tests', () => {
-    let iosEnvironment: IOSEnvironmentRequirement;
+    let iosEnvironment: IOSEnvironmentChecks;
 
     beforeEach(() => {
-        iosEnvironment = new IOSEnvironmentRequirement(logger);
+        iosEnvironment = new IOSEnvironmentChecks(logger);
         myUnameMock.mockClear();
         badBadMock.mockClear();
         myXcodeSelectMock.mockClear();

@@ -7,11 +7,11 @@
 import { flags, FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
-import { AndroidEnvironmentRequirement } from '../../../../../common/AndroidEnvironmentRequirement';
+import { AndroidEnvironmentChecks } from '../../../../../common/AndroidEnvironmentChecks';
 import { CommandLineUtils, Version } from '../../../../../common/Common';
-import { IOSEnvironmentRequirement } from '../../../../../common/IOSEnvironmentRequirement';
+import { IOSEnvironmentChecks } from '../../../../../common/IOSEnvironmentChecks';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
-import { CommandRequirement } from '../../../../../common/Requirements';
+import { CommandChecks } from '../../../../../common/Requirements';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -24,7 +24,7 @@ const messages = Messages.loadMessages(
 );
 
 export class Setup extends SfdxCommand {
-    private _requirement: CommandRequirement | undefined;
+    private _commandChecks: CommandChecks | undefined;
 
     public static description = messages.getMessage('commandDescription');
 
@@ -54,7 +54,7 @@ export class Setup extends SfdxCommand {
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
         return this.validateInputParameters() // validate input
-            .then(() => this.requirement.executeChecks()); // verify requirements
+            .then(() => this.commandChecks.execute()); // verify requirements
     }
 
     protected async init(): Promise<void> {
@@ -112,18 +112,15 @@ export class Setup extends SfdxCommand {
         return Promise.resolve();
     }
 
-    public get requirement(): CommandRequirement {
-        if (!this._requirement) {
-            this._requirement = CommandLineUtils.platformFlagIsAndroid(
+    public get commandChecks(): CommandChecks {
+        if (!this._commandChecks) {
+            this._commandChecks = CommandLineUtils.platformFlagIsAndroid(
                 this.flags.platform
             )
-                ? new AndroidEnvironmentRequirement(
-                      this.logger,
-                      this.flags.apilevel
-                  )
-                : new IOSEnvironmentRequirement(this.logger);
+                ? new AndroidEnvironmentChecks(this.logger, this.flags.apilevel)
+                : new IOSEnvironmentChecks(this.logger);
         }
 
-        return this._requirement;
+        return this._commandChecks;
     }
 }

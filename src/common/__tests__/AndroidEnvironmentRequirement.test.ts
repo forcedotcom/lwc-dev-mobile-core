@@ -11,14 +11,14 @@ process.env.ANDROID_HOME = MOCK_ANDROID_HOME;
 
 import { Logger, Messages } from '@salesforce/core';
 import {
-    AndroidEnvironmentRequirement,
+    AndroidEnvironmentChecks,
     AndroidSDKPlatformToolsInstalledRequirement,
     AndroidSDKRootSetRequirement,
     AndroidSDKToolsInstalledRequirement,
     EmulatorImagesRequirement,
     Java8AvailableRequirement,
     PlatformAPIPackageRequirement
-} from '../AndroidEnvironmentRequirement';
+} from '../AndroidEnvironmentChecks';
 import { AndroidPackage } from '../AndroidTypes';
 import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
 import { Version } from '../Common';
@@ -37,10 +37,10 @@ Messages.importMessagesDirectory(__dirname);
 const logger = new Logger('test');
 
 describe('Android enviroment requirement tests', () => {
-    let androidEnvironment: AndroidEnvironmentRequirement;
+    let androidEnvironment: AndroidEnvironmentChecks;
 
     beforeEach(() => {
-        androidEnvironment = new AndroidEnvironmentRequirement(logger);
+        androidEnvironment = new AndroidEnvironmentChecks(logger);
     });
 
     afterEach(() => {

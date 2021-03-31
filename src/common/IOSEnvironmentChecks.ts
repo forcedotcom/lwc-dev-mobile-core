@@ -10,9 +10,9 @@ import { CommandLineUtils } from './Common';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { CommandRequirement, Requirement } from './Requirements';
+import { CommandChecks, Requirement } from './Requirements';
 
-export class IOSEnvironmentRequirement extends CommandRequirement {
+export class IOSEnvironmentChecks extends CommandChecks {
     constructor(logger: Logger) {
         super(logger);
         const requirements = [
@@ -29,8 +29,10 @@ export class IOSEnvironmentRequirement extends CommandRequirement {
                 this.logger
             )
         ];
-        this.baseRequirements.requirements = requirements;
-        this.baseRequirements.enabled = true;
+        this.checks.baseRequirements = {
+            requirements,
+            enabled: true
+        };
 
         this.checkFailureMessage = util.format(
             this.requirementMessages.getMessage('error:requirementCheckFailed'),

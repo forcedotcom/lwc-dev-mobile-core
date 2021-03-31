@@ -40,6 +40,10 @@ interface RequirementList {
     enabled: boolean;
 }
 
+interface Checks {
+    [key: string]: RequirementList;
+}
+
 /**
  * This function wraps existing promises with the intention to allow the collection of promises
  * to settle when used in conjunction with Promise.all(). Promise.all() by default executes until the first
@@ -104,15 +108,8 @@ export function WrappedPromise(
         });
 }
 
-export class CommandRequirement {
-    public baseRequirements: RequirementList = {
-        requirements: [],
-        enabled: true
-    };
-    public commandRequirements: RequirementList = {
-        requirements: [],
-        enabled: true
-    };
+export class CommandChecks {
+    public checks: Checks = {};
     public checkFailureMessage: string = '';
     public checkRecommendationMessage: string = '';
 
@@ -124,17 +121,13 @@ export class CommandRequirement {
 
     constructor(
         logger: Logger,
-        baseRequirements?: RequirementList,
-        commandRequirements?: RequirementList,
+        checks?: Checks,
         checkFailureMessage?: string,
         checkRecommendationMessage?: string
     ) {
         this.logger = logger;
-        if (baseRequirements) {
-            this.baseRequirements = baseRequirements;
-        }
-        if (commandRequirements) {
-            this.commandRequirements = commandRequirements;
+        if (checks) {
+            this.checks = checks;
         }
         if (checkFailureMessage) {
             this.checkFailureMessage = checkFailureMessage;
@@ -147,7 +140,7 @@ export class CommandRequirement {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public async executeChecks(): Promise<void> {
+    public async execute(): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -156,17 +149,13 @@ export class CommandRequirement {
         let totalDuration = 0;
         let allRequirements: Requirement[] = [];
 
-        if (this.baseRequirements.enabled) {
-            allRequirements = allRequirements.concat(
-                this.baseRequirements.requirements
-            );
-        }
-
-        if (this.commandRequirements.enabled) {
-            allRequirements = allRequirements.concat(
-                this.commandRequirements.requirements
-            );
-        }
+        Object.entries(this.checks).forEach(([_, requirementList]) => {
+            if (requirementList.enabled) {
+                allRequirements = allRequirements.concat(
+                    requirementList.requirements
+                );
+            }
+        });
 
         if (allRequirements.length === 0) {
             return Promise.resolve();
