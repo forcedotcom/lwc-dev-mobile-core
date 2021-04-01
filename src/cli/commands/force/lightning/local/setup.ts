@@ -7,11 +7,16 @@
 import { flags, FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
-import { AndroidEnvironmentChecks } from '../../../../../common/AndroidEnvironmentChecks';
+import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
 import { CommandLineUtils, Version } from '../../../../../common/Common';
-import { IOSEnvironmentChecks } from '../../../../../common/IOSEnvironmentChecks';
+import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
-import { CommandChecks } from '../../../../../common/Requirements';
+import {
+    RequirementProcessor,
+    HasRequirements,
+    CommandRequirements,
+    requirementMessages
+} from '../../../../../common/Requirements';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -23,8 +28,8 @@ const messages = Messages.loadMessages(
     'setup'
 );
 
-export class Setup extends SfdxCommand {
-    private _commandChecks: CommandChecks | undefined;
+export class Setup extends SfdxCommand implements HasRequirements {
+    private _commandRequirements: CommandRequirements = {};
 
     public static description = messages.getMessage('commandDescription');
 
@@ -54,7 +59,18 @@ export class Setup extends SfdxCommand {
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
         return this.validateInputParameters() // validate input
-            .then(() => this.commandChecks.execute()); // verify requirements
+            .then(() =>
+                RequirementProcessor.execute(
+                    this.logger,
+                    this.commandRequirements,
+                    requirementMessages.getMessage(
+                        'error:requirementCheckFailed'
+                    ),
+                    requirementMessages.getMessage(
+                        'error:requirementCheckFailed:recommendation'
+                    )
+                )
+            ); // verify requirements
     }
 
     protected async init(): Promise<void> {
@@ -112,15 +128,20 @@ export class Setup extends SfdxCommand {
         return Promise.resolve();
     }
 
-    public get commandChecks(): CommandChecks {
-        if (!this._commandChecks) {
-            this._commandChecks = CommandLineUtils.platformFlagIsAndroid(
+    public get commandRequirements(): CommandRequirements {
+        if (Object.keys(this._commandRequirements).length === 0) {
+            const requirements = CommandLineUtils.platformFlagIsAndroid(
                 this.flags.platform
             )
-                ? new AndroidEnvironmentChecks(this.logger, this.flags.apilevel)
-                : new IOSEnvironmentChecks(this.logger);
+                ? new AndroidEnvironmentRequirements(
+                      this.logger,
+                      this.flags.apilevel
+                  )
+                : new IOSEnvironmentRequirements(this.logger);
+
+            this._commandRequirements.setup = requirements;
         }
 
-        return this._commandChecks;
+        return this._commandRequirements;
     }
 }

@@ -4,44 +4,26 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, SfdxError } from '@salesforce/core';
 import util from 'util';
-import { CommandLineUtils } from './Common';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { CommandChecks, Requirement } from './Requirements';
+import {
+    Requirement,
+    RequirementList,
+    requirementMessages
+} from './Requirements';
 
-export class IOSEnvironmentChecks extends CommandChecks {
+export class IOSEnvironmentRequirements implements RequirementList {
+    public requirements: Requirement[] = [];
+    public enabled = true;
     constructor(logger: Logger) {
-        super(logger);
-        const requirements = [
-            new SupportedEnvironmentRequirement(
-                this.requirementMessages,
-                this.logger
-            ),
-            new XcodeInstalledRequirement(
-                this.requirementMessages,
-                this.logger
-            ),
-            new SupportedSimulatorRuntimeRequirement(
-                this.requirementMessages,
-                this.logger
-            )
+        this.requirements = [
+            new SupportedEnvironmentRequirement(logger),
+            new XcodeInstalledRequirement(logger),
+            new SupportedSimulatorRuntimeRequirement(logger)
         ];
-        this.checks.baseRequirements = {
-            requirements,
-            enabled: true
-        };
-
-        this.checkFailureMessage = util.format(
-            this.requirementMessages.getMessage('error:requirementCheckFailed'),
-            CommandLineUtils.IOS_FLAG
-        );
-
-        this.checkRecommendationMessage = this.requirementMessages.getMessage(
-            'error:requirementCheckFailed:recommendation'
-        );
     }
 }
 
@@ -52,12 +34,12 @@ export class SupportedEnvironmentRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage('ios:reqs:macos:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger) {
+        this.title = requirementMessages.getMessage('ios:reqs:macos:title');
+        this.fulfilledMessage = requirementMessages.getMessage(
             'ios:reqs:macos:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'ios:reqs:macos:unfulfilledMessage'
         );
         this.logger = logger;
@@ -103,12 +85,12 @@ export class XcodeInstalledRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage('ios:reqs:xcode:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger) {
+        this.title = requirementMessages.getMessage('ios:reqs:xcode:title');
+        this.fulfilledMessage = requirementMessages.getMessage(
             'ios:reqs:xcode:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'ios:reqs:xcode:unfulfilledMessage'
         );
         this.logger = logger;
@@ -161,12 +143,12 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage('ios:reqs:simulator:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger) {
+        this.title = requirementMessages.getMessage('ios:reqs:simulator:title');
+        this.fulfilledMessage = requirementMessages.getMessage(
             'ios:reqs:simulator:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'ios:reqs:simulator:unfulfilledMessage'
         );
         this.logger = logger;

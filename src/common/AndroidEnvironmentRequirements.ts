@@ -4,57 +4,28 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
-import { CommandLineUtils } from './Common';
 import { PlatformConfig } from './PlatformConfig';
-import { CommandChecks, Requirement } from './Requirements';
+import {
+    Requirement,
+    RequirementList,
+    requirementMessages
+} from './Requirements';
 
-export class AndroidEnvironmentChecks extends CommandChecks {
+export class AndroidEnvironmentRequirements implements RequirementList {
+    public requirements: Requirement[] = [];
+    public enabled = true;
     constructor(logger: Logger, apiLevel?: string) {
-        super(logger);
-        const requirements = [
-            new AndroidSDKRootSetRequirement(
-                this.requirementMessages,
-                this.logger
-            ),
-            new Java8AvailableRequirement(
-                this.requirementMessages,
-                this.logger
-            ),
-            new AndroidSDKToolsInstalledRequirement(
-                this.requirementMessages,
-                this.logger
-            ),
-            new AndroidSDKPlatformToolsInstalledRequirement(
-                this.requirementMessages,
-                this.logger
-            ),
-            new PlatformAPIPackageRequirement(
-                this.requirementMessages,
-                this.logger,
-                apiLevel
-            ),
-            new EmulatorImagesRequirement(
-                this.requirementMessages,
-                this.logger,
-                apiLevel
-            )
+        this.requirements = [
+            new AndroidSDKRootSetRequirement(logger),
+            new Java8AvailableRequirement(logger),
+            new AndroidSDKToolsInstalledRequirement(logger),
+            new AndroidSDKPlatformToolsInstalledRequirement(logger),
+            new PlatformAPIPackageRequirement(logger, apiLevel),
+            new EmulatorImagesRequirement(logger, apiLevel)
         ];
-        this.checks.baseRequirements = {
-            requirements,
-            enabled: true
-        };
-
-        this.checkFailureMessage = util.format(
-            this.requirementMessages.getMessage('error:requirementCheckFailed'),
-            CommandLineUtils.ANDROID_FLAG
-        );
-
-        this.checkRecommendationMessage = this.requirementMessages.getMessage(
-            'error:requirementCheckFailed:recommendation'
-        );
     }
 }
 
@@ -65,12 +36,14 @@ export class AndroidSDKRootSetRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage('android:reqs:androidhome:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger) {
+        this.title = requirementMessages.getMessage(
+            'android:reqs:androidhome:title'
+        );
+        this.fulfilledMessage = requirementMessages.getMessage(
             'android:reqs:androidhome:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'android:reqs:androidhome:unfulfilledMessage'
         );
         this.logger = logger;
@@ -104,14 +77,14 @@ export class Java8AvailableRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage(
+    constructor(logger: Logger) {
+        this.title = requirementMessages.getMessage(
             'android:reqs:androidsdkprerequisitescheck:title'
         );
-        this.fulfilledMessage = messages.getMessage(
+        this.fulfilledMessage = requirementMessages.getMessage(
             'android:reqs:androidsdkprerequisitescheck:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'android:reqs:androidsdkprerequisitescheck:unfulfilledMessage'
         );
         this.logger = logger;
@@ -140,12 +113,14 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage('android:reqs:cmdlinetools:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger) {
+        this.title = requirementMessages.getMessage(
+            'android:reqs:cmdlinetools:title'
+        );
+        this.fulfilledMessage = requirementMessages.getMessage(
             'android:reqs:cmdlinetools:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'android:reqs:cmdlinetools:unfulfilledMessage'
         );
         this.logger = logger;
@@ -178,15 +153,17 @@ export class AndroidSDKPlatformToolsInstalledRequirement
     private notFoundMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
-        this.title = messages.getMessage('android:reqs:platformtools:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger) {
+        this.title = requirementMessages.getMessage(
+            'android:reqs:platformtools:title'
+        );
+        this.fulfilledMessage = requirementMessages.getMessage(
             'android:reqs:platformtools:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'android:reqs:platformtools:unfulfilledMessage'
         );
-        this.notFoundMessage = messages.getMessage(
+        this.notFoundMessage = requirementMessages.getMessage(
             'android:reqs:platformtools:notFound'
         );
         this.logger = logger;
@@ -237,12 +214,14 @@ export class PlatformAPIPackageRequirement implements Requirement {
     public logger: Logger;
     private apiLevel?: string;
 
-    constructor(messages: Messages, logger: Logger, apiLevel?: string) {
-        this.title = messages.getMessage('android:reqs:platformapi:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger, apiLevel?: string) {
+        this.title = requirementMessages.getMessage(
+            'android:reqs:platformapi:title'
+        );
+        this.fulfilledMessage = requirementMessages.getMessage(
             'android:reqs:platformapi:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'android:reqs:platformapi:unfulfilledMessage'
         );
         this.logger = logger;
@@ -280,12 +259,14 @@ export class EmulatorImagesRequirement implements Requirement {
     public logger: Logger;
     private apiLevel?: string;
 
-    constructor(messages: Messages, logger: Logger, apiLevel?: string) {
-        this.title = messages.getMessage('android:reqs:emulatorimages:title');
-        this.fulfilledMessage = messages.getMessage(
+    constructor(logger: Logger, apiLevel?: string) {
+        this.title = requirementMessages.getMessage(
+            'android:reqs:emulatorimages:title'
+        );
+        this.fulfilledMessage = requirementMessages.getMessage(
             'android:reqs:emulatorimages:fulfilledMessage'
         );
-        this.unfulfilledMessage = messages.getMessage(
+        this.unfulfilledMessage = requirementMessages.getMessage(
             'android:reqs:emulatorimages:unfulfilledMessage'
         );
         this.logger = logger;

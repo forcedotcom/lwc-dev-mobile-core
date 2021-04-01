@@ -35,13 +35,15 @@ interface RequirementCheckResult {
     tests: RequirementResult[];
 }
 
-interface RequirementList {
+export interface RequirementList {
     requirements: Requirement[];
     enabled: boolean;
 }
 
-interface Checks {
-    [key: string]: RequirementList;
+export type CommandRequirements = { [key: string]: RequirementList };
+
+export interface HasRequirements {
+    commandRequirements: CommandRequirements;
 }
 
 /**
@@ -108,39 +110,21 @@ export function WrappedPromise(
         });
 }
 
-export class CommandChecks {
-    public checks: Checks = {};
-    public checkFailureMessage: string = '';
-    public checkRecommendationMessage: string = '';
+export const requirementMessages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement'
+);
 
-    public logger: Logger;
-    public requirementMessages = Messages.loadMessages(
-        '@salesforce/lwc-dev-mobile-core',
-        'requirement'
-    );
-
-    constructor(
-        logger: Logger,
-        checks?: Checks,
-        checkFailureMessage?: string,
-        checkRecommendationMessage?: string
-    ) {
-        this.logger = logger;
-        if (checks) {
-            this.checks = checks;
-        }
-        if (checkFailureMessage) {
-            this.checkFailureMessage = checkFailureMessage;
-        }
-        if (checkRecommendationMessage) {
-            this.checkRecommendationMessage = checkRecommendationMessage;
-        }
-    }
-
+export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public async execute(): Promise<void> {
+    public static async execute(
+        logger: Logger,
+        requirements: { [key: string]: RequirementList },
+        checkFailureMessage = '',
+        checkRecommendationMessage = ''
+    ): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -149,7 +133,7 @@ export class CommandChecks {
         let totalDuration = 0;
         let allRequirements: Requirement[] = [];
 
-        Object.entries(this.checks).forEach(([_, requirementList]) => {
+        Object.entries(requirements).forEach(([_, requirementList]) => {
             if (requirementList.enabled) {
                 allRequirements = allRequirements.concat(
                     requirementList.requirements
@@ -161,9 +145,7 @@ export class CommandChecks {
             return Promise.resolve();
         }
 
-        const rootTaskTitle = this.requirementMessages.getMessage(
-            'rootTaskTitle'
-        );
+        const rootTaskTitle = requirementMessages.getMessage('rootTaskTitle');
         const requirementTasks = new Listr(
             {
                 task: (_rootCtx, rootTask): Listr => {
@@ -181,13 +163,13 @@ export class CommandChecks {
                                         testResult.hasMetAllRequirements = false;
                                     }
 
-                                    subTask.title = this.getFormattedTitle(
+                                    subTask.title = RequirementProcessor.getFormattedTitle(
                                         result
                                     );
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;
-                                    rootTask.title = `${rootTaskTitle} (${this.formatDurationAsSeconds(
+                                    rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
                                         totalDuration
                                     )})`;
 
@@ -222,17 +204,15 @@ export class CommandChecks {
 
             if (!testResult.hasMetAllRequirements) {
                 return Promise.reject(
-                    new SfdxError(
-                        this.checkFailureMessage,
-                        'lwc-dev-mobile-core',
-                        [this.checkRecommendationMessage]
-                    )
+                    new SfdxError(checkFailureMessage, 'lwc-dev-mobile-core', [
+                        checkRecommendationMessage
+                    ])
                 );
             }
 
             return Promise.resolve();
         } catch (error) {
-            this.logger.error(error);
+            logger.error(error);
 
             return Promise.reject(
                 new SfdxError(
@@ -243,21 +223,25 @@ export class CommandChecks {
         }
     }
 
-    private getFormattedTitle(testCaseResult: RequirementResult): string {
+    private static getFormattedTitle(
+        testCaseResult: RequirementResult
+    ): string {
         const statusMsg = testCaseResult.hasPassed
-            ? this.requirementMessages.getMessage('passed')
-            : this.requirementMessages.getMessage('failed');
+            ? requirementMessages.getMessage('passed')
+            : requirementMessages.getMessage('failed');
 
         const title = `${statusMsg}: ${
             testCaseResult.title
-        } (${this.formatDurationAsSeconds(testCaseResult.duration)})`;
+        } (${RequirementProcessor.formatDurationAsSeconds(
+            testCaseResult.duration
+        )})`;
 
         return testCaseResult.hasPassed
             ? chalk.bold.green(title)
             : chalk.bold.red(title);
     }
 
-    private formatDurationAsSeconds(duration: number): string {
+    private static formatDurationAsSeconds(duration: number): string {
         return `${duration.toFixed(3)} sec`;
     }
 }

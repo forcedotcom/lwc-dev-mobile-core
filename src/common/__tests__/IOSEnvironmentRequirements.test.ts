@@ -7,10 +7,22 @@
 import { Logger, Messages } from '@salesforce/core';
 import { CommandLineUtils } from '../Common';
 import { CommonUtils } from '../CommonUtils';
+import {
+    IOSEnvironmentRequirements,
+    SupportedEnvironmentRequirement,
+    SupportedSimulatorRuntimeRequirement,
+    XcodeInstalledRequirement
+} from '../IOSEnvironmentRequirements';
+import { requirementMessages } from '../Requirements';
+
+import { IOSUtils } from '../IOSUtils';
+
+Messages.importMessagesDirectory(__dirname);
+const logger = new Logger('test-IOSEnvironmentRequirement');
 
 const myUnameMock = jest.fn(
     (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _) => {
             resolve({ stdout: 'Darwin', stderr: 'mockError' });
         });
     }
@@ -18,7 +30,7 @@ const myUnameMock = jest.fn(
 
 const badBadMock = jest.fn(
     (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve, reject) => {
+        return new Promise((_, reject) => {
             reject(new Error('Bad bad mock!'));
         });
     }
@@ -26,7 +38,7 @@ const badBadMock = jest.fn(
 
 const myXcodeSelectMock = jest.fn(
     (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _) => {
             resolve({
                 stderr: 'mockError',
                 stdout: '/Applications/Xcode.app/Contents/Developer'
@@ -43,22 +55,11 @@ const runtimesMockBlock = jest.fn(
     }
 );
 
-import {
-    IOSEnvironmentChecks,
-    SupportedEnvironmentRequirement,
-    SupportedSimulatorRuntimeRequirement,
-    XcodeInstalledRequirement
-} from '../IOSEnvironmentChecks';
-import { IOSUtils } from '../IOSUtils';
-
-Messages.importMessagesDirectory(__dirname);
-const logger = new Logger('test-IOSEnvironmentRequirement');
-
 describe('IOS Environment Requirement tests', () => {
-    let iosEnvironment: IOSEnvironmentChecks;
+    let iosEnvironment: IOSEnvironmentRequirements;
 
     beforeEach(() => {
-        iosEnvironment = new IOSEnvironmentChecks(logger);
+        iosEnvironment = new IOSEnvironmentRequirements(logger);
         myUnameMock.mockClear();
         badBadMock.mockClear();
         myXcodeSelectMock.mockClear();
@@ -73,10 +74,7 @@ describe('IOS Environment Requirement tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myUnameMock
         );
-        const requirement = new SupportedEnvironmentRequirement(
-            iosEnvironment.requirementMessages,
-            logger
-        );
+        const requirement = new SupportedEnvironmentRequirement(logger);
         await requirement.checkFunction();
         expect(myUnameMock).toHaveBeenCalledWith('/usr/bin/uname');
     });
@@ -85,10 +83,7 @@ describe('IOS Environment Requirement tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             badBadMock
         );
-        const requirement = new SupportedEnvironmentRequirement(
-            iosEnvironment.requirementMessages,
-            logger
-        );
+        const requirement = new SupportedEnvironmentRequirement(logger);
         return requirement.checkFunction().catch((error) => {
             expect(error).toBeTruthy();
         });
@@ -99,10 +94,7 @@ describe('IOS Environment Requirement tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myUnameMock
         );
-        const requirement = new SupportedEnvironmentRequirement(
-            iosEnvironment.requirementMessages,
-            logger
-        );
+        const requirement = new SupportedEnvironmentRequirement(logger);
         await requirement.checkFunction();
         expect(logInfo).toHaveBeenCalled();
     });
@@ -111,10 +103,7 @@ describe('IOS Environment Requirement tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myXcodeSelectMock
         );
-        const requirement = new XcodeInstalledRequirement(
-            iosEnvironment.requirementMessages,
-            logger
-        );
+        const requirement = new XcodeInstalledRequirement(logger);
         await requirement.checkFunction();
         expect(myXcodeSelectMock).toHaveBeenCalledWith('xcodebuild -version');
     });
@@ -123,10 +112,7 @@ describe('IOS Environment Requirement tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             badBadMock
         );
-        const requirement = new XcodeInstalledRequirement(
-            iosEnvironment.requirementMessages,
-            logger
-        );
+        const requirement = new XcodeInstalledRequirement(logger);
         return requirement.checkFunction().catch((error) => {
             expect(error).toBeTruthy();
         });
@@ -136,10 +122,7 @@ describe('IOS Environment Requirement tests', () => {
         jest.spyOn(IOSUtils, 'getSimulatorRuntimes').mockImplementation(
             runtimesMockBlock
         );
-        const requirement = new SupportedSimulatorRuntimeRequirement(
-            iosEnvironment.requirementMessages,
-            logger
-        );
+        const requirement = new SupportedSimulatorRuntimeRequirement(logger);
         await requirement.checkFunction();
         expect(runtimesMockBlock).toHaveBeenCalled();
     });
@@ -153,10 +136,7 @@ describe('IOS Environment Requirement tests', () => {
         jest.spyOn(IOSUtils, 'getSimulatorRuntimes').mockImplementation(
             badMock
         );
-        const requirement = new SupportedSimulatorRuntimeRequirement(
-            iosEnvironment.requirementMessages,
-            logger
-        );
+        const requirement = new SupportedSimulatorRuntimeRequirement(logger);
         return requirement.checkFunction().catch((error) => {
             expect(error).toBeTruthy();
         });

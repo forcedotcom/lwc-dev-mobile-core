@@ -5,7 +5,11 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, Messages, SfdxError } from '@salesforce/core';
-import { CommandChecks } from '../Requirements';
+import {
+    RequirementProcessor,
+    HasRequirements,
+    CommandRequirements
+} from '../Requirements';
 
 const logger = new Logger('test');
 
@@ -34,9 +38,9 @@ async function checkRejectFunctionTwo(): Promise<undefined> {
     return Promise.reject();
 }
 
-class TruthyChecks extends CommandChecks {
+class TruthyRequirements implements HasRequirements {
+    public commandRequirements: CommandRequirements = {};
     constructor() {
-        super(logger);
         const requirements = [
             {
                 checkFunction: checkResolveFunctionOne,
@@ -54,7 +58,7 @@ class TruthyChecks extends CommandChecks {
                 unfulfilledMessage: 'You must setup ANDROID_HOME.'
             }
         ];
-        this.checks.baseRequirements = {
+        this.commandRequirements.baseRequirements = {
             requirements,
             enabled: true
         };
@@ -62,9 +66,9 @@ class TruthyChecks extends CommandChecks {
 }
 
 // tslint:disable-next-line: max-classes-per-file
-class FalsyChecks extends CommandChecks {
+class FalsyRequirements implements HasRequirements {
+    public commandRequirements: CommandRequirements = {};
     constructor() {
-        super(logger);
         const requirements = [
             {
                 checkFunction: checkResolveFunctionOne,
@@ -97,21 +101,18 @@ class FalsyChecks extends CommandChecks {
                     'Install at least one Android Platform tools package (23 - 30).'
             }
         ];
-        this.checks.baseRequirements = {
+        this.commandRequirements.baseRequirements = {
             requirements,
             enabled: true
         };
-
-        this.checkFailureMessage = checkFailureMessage;
-        this.checkRecommendationMessage = checkRecommendationMessage;
     }
 }
 
 // tslint:disable-next-line: max-classes-per-file
-class TwoFalsyOneTruthyChecks extends CommandChecks {
+class TwoFalsyOneTruthyRequirements implements HasRequirements {
+    public commandRequirements: CommandRequirements = {};
     constructor() {
-        super(logger);
-        this.checks.falsyRequirementOne = {
+        this.commandRequirements.falsyRequirementOne = {
             requirements: [
                 {
                     title: 'title1',
@@ -121,7 +122,7 @@ class TwoFalsyOneTruthyChecks extends CommandChecks {
             ],
             enabled: true
         };
-        this.checks.falsyRequirementTwo = {
+        this.commandRequirements.falsyRequirementTwo = {
             requirements: [
                 {
                     title: 'title2',
@@ -131,7 +132,7 @@ class TwoFalsyOneTruthyChecks extends CommandChecks {
             ],
             enabled: true
         };
-        this.checks.truthyRequirement = {
+        this.commandRequirements.truthyRequirement = {
             requirements: [
                 {
                     title: 'title3',
@@ -141,23 +142,28 @@ class TwoFalsyOneTruthyChecks extends CommandChecks {
             ],
             enabled: true
         };
-
-        this.checkFailureMessage = checkFailureMessage;
-        this.checkRecommendationMessage = checkRecommendationMessage;
     }
 }
 
 describe('Requirements Processing', () => {
     test('Meets all requirements', async () => {
         expect.assertions(1);
-        await new TruthyChecks().execute();
+        await RequirementProcessor.execute(
+            logger,
+            new TruthyRequirements().commandRequirements
+        );
         expect(true).toBeTruthy();
     });
 
     test('Throws when any requirement fails', async () => {
         expect.assertions(4);
         try {
-            await new FalsyChecks().execute();
+            await RequirementProcessor.execute(
+                logger,
+                new FalsyRequirements().commandRequirements,
+                checkFailureMessage,
+                checkRecommendationMessage
+            );
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
@@ -168,18 +174,26 @@ describe('Requirements Processing', () => {
     });
 
     test('Skips all requirements that would fail and only executes a requirement that succeeds', async () => {
-        const commandChecks = new TwoFalsyOneTruthyChecks();
-        commandChecks.checks.falsyRequirementOne.enabled = false;
-        commandChecks.checks.falsyRequirementTwo.enabled = false;
-        await commandChecks.execute();
+        const requirements = new TwoFalsyOneTruthyRequirements();
+        requirements.commandRequirements.falsyRequirementOne.enabled = false;
+        requirements.commandRequirements.falsyRequirementTwo.enabled = false;
+        await RequirementProcessor.execute(
+            logger,
+            requirements.commandRequirements
+        );
         expect(true).toBeTruthy();
     });
 
     test('Fails when there is a failed requirement check in combo checks', async () => {
         expect.assertions(4);
-        const commandChecks = new TwoFalsyOneTruthyChecks();
+        const requirements = new TwoFalsyOneTruthyRequirements();
         try {
-            await commandChecks.execute();
+            await RequirementProcessor.execute(
+                logger,
+                requirements.commandRequirements,
+                checkFailureMessage,
+                checkRecommendationMessage
+            );
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
@@ -190,9 +204,12 @@ describe('Requirements Processing', () => {
     });
 
     test('Skips all checks and check will ', async () => {
-        const commandChecks = new FalsyChecks();
-        commandChecks.checks.baseRequirements.enabled = false;
-        await commandChecks.execute();
+        const requirements = new FalsyRequirements();
+        requirements.commandRequirements.baseRequirements.enabled = false;
+        await RequirementProcessor.execute(
+            logger,
+            requirements.commandRequirements
+        );
         expect(true).toBeTruthy();
     });
 });

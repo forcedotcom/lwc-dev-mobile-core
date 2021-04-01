@@ -8,11 +8,7 @@ import * as Config from '@oclif/config';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { LoggerSetup } from '../../../../../../common/LoggerSetup';
-import { CommandLineUtils } from '../../../../../../common/Common';
-import {
-    CommandChecks,
-    Requirement
-} from '../../../../../../common/Requirements';
+import { RequirementProcessor } from '../../../../../../common/Requirements';
 import { Setup } from '../setup';
 
 Messages.importMessagesDirectory(__dirname);
@@ -34,7 +30,7 @@ const executeSetupMock = jest.fn(
 
 describe('Setup Tests', () => {
     beforeEach(() => {
-        jest.spyOn(CommandChecks.prototype, 'execute').mockImplementation(
+        jest.spyOn(RequirementProcessor, 'execute').mockImplementation(
             executeSetupMock
         );
     });
