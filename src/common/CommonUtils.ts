@@ -8,6 +8,8 @@ import { Logger, SfdxError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
 import fs from 'fs';
+import http from 'http';
+import https from 'https';
 import util from 'util';
 import path from 'path';
 import os from 'os';
@@ -319,6 +321,52 @@ export class CommonUtils {
                 );
                 return Promise.resolve(undefined);
             });
+    }
+
+    /**
+     * Downloads a resource from a given url into a destination file.
+     */
+    public static async downloadFile(url: string, dest: string): Promise<void> {
+        const finalUrl = url.toLowerCase().startsWith('http')
+            ? url
+            : `http://${url}`;
+
+        const protocol = finalUrl.toLowerCase().startsWith('https')
+            ? https
+            : http;
+
+        return new Promise((resolve, reject) => {
+            const destFile = fs.createWriteStream(dest);
+
+            const request = protocol.get(finalUrl, (response) => {
+                if (response.statusCode !== 200) {
+                    const msg = `Error downloading ${finalUrl} - ${response.socket}: ${response.statusMessage}`;
+                    this.logger.error(msg);
+                    fs.unlink(dest, () => reject(new Error(msg)));
+                    return;
+                }
+                response.pipe(destFile);
+            });
+
+            destFile.on('finish', () => {
+                destFile.close();
+                resolve();
+            });
+
+            destFile.on('error', (err) => {
+                const msg = `Error saving ${finalUrl} to file ${dest} - ${err}`;
+                this.logger.error(msg);
+                fs.unlink(dest, () => reject(new Error(msg)));
+            });
+
+            request.on('error', (err) => {
+                const msg = `Error downloading ${finalUrl} - ${err}`;
+                this.logger.error(msg);
+                fs.unlink(dest, () => reject(new Error(msg)));
+            });
+
+            request.end();
+        });
     }
 
     private static logger: Logger = new Logger(LOGGER_NAME);

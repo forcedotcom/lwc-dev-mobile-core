@@ -133,4 +133,51 @@ describe('CommonUtils', () => {
             expect(error.message === 'timed out').toBe(true);
         }
     });
+
+    test('downloadFile function', async () => {
+        const dest = path.join(os.tmpdir(), 'ca.crt');
+
+        // should fail and not create a destination file
+        try {
+            await CommonUtils.downloadFile('badurl', dest);
+        } catch (error) {
+            expect(error instanceof Error).toBe(true);
+            expect(fs.existsSync(dest)).toBe(false);
+        }
+
+        // should fail and not create a destination file
+        try {
+            await CommonUtils.downloadFile('http://badurl', dest);
+        } catch (error) {
+            expect(error instanceof Error).toBe(true);
+            expect(fs.existsSync(dest)).toBe(false);
+        }
+
+        // should fail and not create a destination file
+        try {
+            await CommonUtils.downloadFile('https://badurl', dest);
+        } catch (error) {
+            expect(error instanceof Error).toBe(true);
+            expect(fs.existsSync(dest)).toBe(false);
+        }
+
+        // should fail and not create a destination file
+        try {
+            await CommonUtils.downloadFile(
+                'https://www.google.com/badurl',
+                dest
+            );
+        } catch (error) {
+            expect(error instanceof Error).toBe(true);
+            expect(fs.existsSync(dest)).toBe(false);
+        }
+
+        // For now don't run this part on Windows b/c our CircleCI
+        // environment does not give file write permission.
+        if (process.platform !== 'win32') {
+            // should pass and create a destination file
+            await CommonUtils.downloadFile('https://www.google.com', dest);
+            expect(fs.existsSync(dest)).toBe(true);
+        }
+    });
 });
