@@ -34,6 +34,10 @@ const badBlockMock = jest.fn((): string => {
 });
 
 Messages.importMessagesDirectory(__dirname);
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement-android'
+);
 const logger = new Logger('test');
 
 describe('Android enviroment requirement tests', () => {

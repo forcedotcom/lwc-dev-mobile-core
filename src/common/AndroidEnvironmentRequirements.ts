@@ -4,15 +4,17 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
-import {
-    Requirement,
-    RequirementList,
-    requirementMessages
-} from './Requirements';
+import { Requirement, RequirementList } from './Requirements';
+
+Messages.importMessagesDirectory(__dirname);
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement-android'
+);
 
 export class AndroidEnvironmentRequirements implements RequirementList {
     public requirements: Requirement[] = [];
@@ -37,13 +39,11 @@ export class AndroidSDKRootSetRequirement implements Requirement {
     public logger: Logger;
 
     constructor(logger: Logger) {
-        this.title = requirementMessages.getMessage(
-            'android:reqs:androidhome:title'
-        );
-        this.fulfilledMessage = requirementMessages.getMessage(
+        this.title = messages.getMessage('android:reqs:androidhome:title');
+        this.fulfilledMessage = messages.getMessage(
             'android:reqs:androidhome:fulfilledMessage'
         );
-        this.unfulfilledMessage = requirementMessages.getMessage(
+        this.unfulfilledMessage = messages.getMessage(
             'android:reqs:androidhome:unfulfilledMessage'
         );
         this.logger = logger;
@@ -78,13 +78,13 @@ export class Java8AvailableRequirement implements Requirement {
     public logger: Logger;
 
     constructor(logger: Logger) {
-        this.title = requirementMessages.getMessage(
+        this.title = messages.getMessage(
             'android:reqs:androidsdkprerequisitescheck:title'
         );
-        this.fulfilledMessage = requirementMessages.getMessage(
+        this.fulfilledMessage = messages.getMessage(
             'android:reqs:androidsdkprerequisitescheck:fulfilledMessage'
         );
-        this.unfulfilledMessage = requirementMessages.getMessage(
+        this.unfulfilledMessage = messages.getMessage(
             'android:reqs:androidsdkprerequisitescheck:unfulfilledMessage'
         );
         this.logger = logger;
@@ -114,13 +114,11 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
     public logger: Logger;
 
     constructor(logger: Logger) {
-        this.title = requirementMessages.getMessage(
-            'android:reqs:cmdlinetools:title'
-        );
-        this.fulfilledMessage = requirementMessages.getMessage(
+        this.title = messages.getMessage('android:reqs:cmdlinetools:title');
+        this.fulfilledMessage = messages.getMessage(
             'android:reqs:cmdlinetools:fulfilledMessage'
         );
-        this.unfulfilledMessage = requirementMessages.getMessage(
+        this.unfulfilledMessage = messages.getMessage(
             'android:reqs:cmdlinetools:unfulfilledMessage'
         );
         this.logger = logger;
@@ -154,16 +152,14 @@ export class AndroidSDKPlatformToolsInstalledRequirement
     public logger: Logger;
 
     constructor(logger: Logger) {
-        this.title = requirementMessages.getMessage(
-            'android:reqs:platformtools:title'
-        );
-        this.fulfilledMessage = requirementMessages.getMessage(
+        this.title = messages.getMessage('android:reqs:platformtools:title');
+        this.fulfilledMessage = messages.getMessage(
             'android:reqs:platformtools:fulfilledMessage'
         );
-        this.unfulfilledMessage = requirementMessages.getMessage(
+        this.unfulfilledMessage = messages.getMessage(
             'android:reqs:platformtools:unfulfilledMessage'
         );
-        this.notFoundMessage = requirementMessages.getMessage(
+        this.notFoundMessage = messages.getMessage(
             'android:reqs:platformtools:notFound'
         );
         this.logger = logger;
@@ -215,13 +211,11 @@ export class PlatformAPIPackageRequirement implements Requirement {
     private apiLevel?: string;
 
     constructor(logger: Logger, apiLevel?: string) {
-        this.title = requirementMessages.getMessage(
-            'android:reqs:platformapi:title'
-        );
-        this.fulfilledMessage = requirementMessages.getMessage(
+        this.title = messages.getMessage('android:reqs:platformapi:title');
+        this.fulfilledMessage = messages.getMessage(
             'android:reqs:platformapi:fulfilledMessage'
         );
-        this.unfulfilledMessage = requirementMessages.getMessage(
+        this.unfulfilledMessage = messages.getMessage(
             'android:reqs:platformapi:unfulfilledMessage'
         );
         this.logger = logger;
@@ -260,13 +254,11 @@ export class EmulatorImagesRequirement implements Requirement {
     private apiLevel?: string;
 
     constructor(logger: Logger, apiLevel?: string) {
-        this.title = requirementMessages.getMessage(
-            'android:reqs:emulatorimages:title'
-        );
-        this.fulfilledMessage = requirementMessages.getMessage(
+        this.title = messages.getMessage('android:reqs:emulatorimages:title');
+        this.fulfilledMessage = messages.getMessage(
             'android:reqs:emulatorimages:fulfilledMessage'
         );
-        this.unfulfilledMessage = requirementMessages.getMessage(
+        this.unfulfilledMessage = messages.getMessage(
             'android:reqs:emulatorimages:unfulfilledMessage'
         );
         this.logger = logger;

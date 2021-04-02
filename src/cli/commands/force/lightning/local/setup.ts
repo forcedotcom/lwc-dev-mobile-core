@@ -14,8 +14,7 @@ import { LoggerSetup } from '../../../../../common/LoggerSetup';
 import {
     RequirementProcessor,
     HasRequirements,
-    CommandRequirements,
-    requirementMessages
+    CommandRequirements
 } from '../../../../../common/Requirements';
 
 // Initialize Messages with the current plugin directory
@@ -59,18 +58,7 @@ export class Setup extends SfdxCommand implements HasRequirements {
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
         return this.validateInputParameters() // validate input
-            .then(() =>
-                RequirementProcessor.execute(
-                    this.logger,
-                    this.commandRequirements,
-                    requirementMessages.getMessage(
-                        'error:requirementCheckFailed'
-                    ),
-                    requirementMessages.getMessage(
-                        'error:requirementCheckFailed:recommendation'
-                    )
-                )
-            ); // verify requirements
+            .then(() => RequirementProcessor.execute(this.commandRequirements)); // verify requirements
     }
 
     protected async init(): Promise<void> {

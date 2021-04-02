@@ -110,7 +110,7 @@ export function WrappedPromise(
         });
 }
 
-export const requirementMessages = Messages.loadMessages(
+const messages = Messages.loadMessages(
     '@salesforce/lwc-dev-mobile-core',
     'requirement'
 );
@@ -119,12 +119,9 @@ export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(
-        logger: Logger,
-        requirements: { [key: string]: RequirementList },
-        checkFailureMessage = '',
-        checkRecommendationMessage = ''
-    ): Promise<void> {
+    public static async execute(requirements: {
+        [key: string]: RequirementList;
+    }): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -145,7 +142,7 @@ export class RequirementProcessor {
             return Promise.resolve();
         }
 
-        const rootTaskTitle = requirementMessages.getMessage('rootTaskTitle');
+        const rootTaskTitle = messages.getMessage('rootTaskTitle');
         const requirementTasks = new Listr(
             {
                 task: (_rootCtx, rootTask): Listr => {
@@ -204,16 +201,20 @@ export class RequirementProcessor {
 
             if (!testResult.hasMetAllRequirements) {
                 return Promise.reject(
-                    new SfdxError(checkFailureMessage, 'lwc-dev-mobile-core', [
-                        checkRecommendationMessage
-                    ])
+                    new SfdxError(
+                        messages.getMessage('error:requirementCheckFailed'),
+                        'lwc-dev-mobile-core',
+                        [
+                            messages.getMessage(
+                                'error:requirementCheckFailed:recommendation'
+                            )
+                        ]
+                    )
                 );
             }
 
             return Promise.resolve();
         } catch (error) {
-            logger.error(error);
-
             return Promise.reject(
                 new SfdxError(
                     util.format('unexpected error %s', error),
@@ -227,8 +228,8 @@ export class RequirementProcessor {
         testCaseResult: RequirementResult
     ): string {
         const statusMsg = testCaseResult.hasPassed
-            ? requirementMessages.getMessage('passed')
-            : requirementMessages.getMessage('failed');
+            ? messages.getMessage('passed')
+            : messages.getMessage('failed');
 
         const title = `${statusMsg}: ${
             testCaseResult.title

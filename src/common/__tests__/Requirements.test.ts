@@ -19,8 +19,10 @@ const messages = Messages.loadMessages(
     'requirement'
 );
 
-const checkFailureMessage = 'Requirement check failed';
-const checkRecommendationMessage = 'Install tools to prepare your environment';
+const failureMessage = messages.getMessage('error:requirementCheckFailed');
+const recommendationMessage = messages.getMessage(
+    'error:requirementCheckFailed:recommendation'
+);
 
 async function checkResolveFunctionOne(): Promise<string> {
     return Promise.resolve('Done');
@@ -149,7 +151,6 @@ describe('Requirements Processing', () => {
     test('Meets all requirements', async () => {
         expect.assertions(1);
         await RequirementProcessor.execute(
-            logger,
             new TruthyRequirements().commandRequirements
         );
         expect(true).toBeTruthy();
@@ -159,17 +160,14 @@ describe('Requirements Processing', () => {
         expect.assertions(4);
         try {
             await RequirementProcessor.execute(
-                logger,
-                new FalsyRequirements().commandRequirements,
-                checkFailureMessage,
-                checkRecommendationMessage
+                new FalsyRequirements().commandRequirements
             );
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(checkFailureMessage);
+            expect(sfdxError.message).toBe(failureMessage);
             expect(sfdxError.actions?.length).toBe(1);
-            expect(sfdxError.actions?.[0]).toBe(checkRecommendationMessage);
+            expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
         }
     });
 
@@ -177,10 +175,7 @@ describe('Requirements Processing', () => {
         const requirements = new TwoFalsyOneTruthyRequirements();
         requirements.commandRequirements.falsyRequirementOne.enabled = false;
         requirements.commandRequirements.falsyRequirementTwo.enabled = false;
-        await RequirementProcessor.execute(
-            logger,
-            requirements.commandRequirements
-        );
+        await RequirementProcessor.execute(requirements.commandRequirements);
         expect(true).toBeTruthy();
     });
 
@@ -189,27 +184,21 @@ describe('Requirements Processing', () => {
         const requirements = new TwoFalsyOneTruthyRequirements();
         try {
             await RequirementProcessor.execute(
-                logger,
-                requirements.commandRequirements,
-                checkFailureMessage,
-                checkRecommendationMessage
+                requirements.commandRequirements
             );
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(checkFailureMessage);
+            expect(sfdxError.message).toBe(failureMessage);
             expect(sfdxError.actions?.length).toBe(1);
-            expect(sfdxError.actions?.[0]).toBe(checkRecommendationMessage);
+            expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
         }
     });
 
     test('Skips all checks and check will ', async () => {
         const requirements = new FalsyRequirements();
         requirements.commandRequirements.baseRequirements.enabled = false;
-        await RequirementProcessor.execute(
-            logger,
-            requirements.commandRequirements
-        );
+        await RequirementProcessor.execute(requirements.commandRequirements);
         expect(true).toBeTruthy();
     });
 });

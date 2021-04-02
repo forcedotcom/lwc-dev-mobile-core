@@ -5,7 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, Messages } from '@salesforce/core';
-import { CommandLineUtils } from '../Common';
 import { CommonUtils } from '../CommonUtils';
 import {
     IOSEnvironmentRequirements,
@@ -13,11 +12,13 @@ import {
     SupportedSimulatorRuntimeRequirement,
     XcodeInstalledRequirement
 } from '../IOSEnvironmentRequirements';
-import { requirementMessages } from '../Requirements';
-
 import { IOSUtils } from '../IOSUtils';
 
 Messages.importMessagesDirectory(__dirname);
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement-ios'
+);
 const logger = new Logger('test-IOSEnvironmentRequirement');
 
 const myUnameMock = jest.fn(
