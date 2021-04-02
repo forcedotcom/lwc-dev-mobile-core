@@ -119,26 +119,26 @@ export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(requirements: {
-        [key: string]: RequirementList;
-    }): Promise<void> {
+    public static async execute(
+        requirements: CommandRequirements
+    ): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
         };
 
         let totalDuration = 0;
-        let allRequirements: Requirement[] = [];
+        let enabledRequirements: Requirement[] = [];
 
         Object.entries(requirements).forEach(([_, requirementList]) => {
             if (requirementList.enabled) {
-                allRequirements = allRequirements.concat(
+                enabledRequirements = enabledRequirements.concat(
                     requirementList.requirements
                 );
             }
         });
 
-        if (allRequirements.length === 0) {
+        if (enabledRequirements.length === 0) {
             return Promise.resolve();
         }
 
@@ -150,7 +150,7 @@ export class RequirementProcessor {
                         concurrent: true,
                         exitOnError: false
                     });
-                    for (const requirement of allRequirements) {
+                    for (const requirement of enabledRequirements) {
                         subTasks.add({
                             options: { persistentOutput: true },
                             task: (_subCtx, subTask): Promise<void> =>
