@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
 import chalk from 'chalk';
+import util from 'util';
 import { Listr } from 'listr2';
 import { performance, PerformanceObserver } from 'perf_hooks';
 import { PerformanceMarkers } from './PerformanceMarkers';
@@ -22,21 +23,27 @@ export interface Requirement {
     logger: Logger;
 }
 
-export interface RequirementResult {
+interface RequirementResult {
     duration: number;
     hasPassed: boolean;
     message: string;
     title: string;
 }
 
-export interface SetupTestResult {
+interface RequirementCheckResult {
     hasMetAllRequirements: boolean;
     tests: RequirementResult[];
 }
 
 export interface RequirementList {
     requirements: Requirement[];
-    executeSetup(): Promise<SetupTestResult>;
+    enabled: boolean;
+}
+
+export type CommandRequirements = { [key: string]: RequirementList };
+
+export interface HasRequirements {
+    commandRequirements: CommandRequirements;
 }
 
 /**
@@ -103,73 +110,63 @@ export function WrappedPromise(
         });
 }
 
-export abstract class BaseSetup implements RequirementList {
-    public skipBaseRequirements: boolean = false;
-    public skipAdditionalRequirements: boolean = false;
-    public requirements: Requirement[];
-    public additionalRequirements: Requirement[];
-    public logger: Logger;
-    public setupMessages = Messages.loadMessages(
-        '@salesforce/lwc-dev-mobile-core',
-        'setup'
-    );
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement'
+);
 
-    constructor(logger: Logger) {
-        this.logger = logger;
-        this.requirements = [];
-        this.additionalRequirements = [];
-    }
-
+export class RequirementProcessor {
     /**
-     * Executes all of the base and additional requirement steps.
-     * @returns A SetupTestResult containing all of the results of the requirement tests
+     * Executes all of the base and command requirement checks.
      */
-    public async executeSetup(): Promise<SetupTestResult> {
-        const testResult: SetupTestResult = {
+    public static async execute(
+        requirements: CommandRequirements
+    ): Promise<void> {
+        const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
         };
 
         let totalDuration = 0;
-        let allRequirements: Requirement[] = [];
-        if (!this.skipBaseRequirements) {
-            allRequirements = allRequirements.concat(this.requirements);
-        }
-        if (!this.skipAdditionalRequirements) {
-            allRequirements = allRequirements.concat(
-                this.additionalRequirements
-            );
+        let enabledRequirements: Requirement[] = [];
+
+        Object.entries(requirements).forEach(([_, requirementList]) => {
+            if (requirementList.enabled) {
+                enabledRequirements = enabledRequirements.concat(
+                    requirementList.requirements
+                );
+            }
+        });
+
+        if (enabledRequirements.length === 0) {
+            return Promise.resolve();
         }
 
-        if (allRequirements.length === 0) {
-            return Promise.resolve(testResult);
-        }
-
-        const rootTaskTitle = this.setupMessages.getMessage('rootTaskTitle');
-        const setupTasks = new Listr(
+        const rootTaskTitle = messages.getMessage('rootTaskTitle');
+        const requirementTasks = new Listr(
             {
-                task: (rootCtx, rootTask): Listr => {
+                task: (_rootCtx, rootTask): Listr => {
                     const subTasks = new Listr([], {
                         concurrent: true,
                         exitOnError: false
                     });
-                    for (const requirement of allRequirements) {
+                    for (const requirement of enabledRequirements) {
                         subTasks.add({
                             options: { persistentOutput: true },
-                            task: (subCtx, subTask): Promise<void> =>
+                            task: (_subCtx, subTask): Promise<void> =>
                                 WrappedPromise(requirement).then((result) => {
                                     testResult.tests.push(result);
                                     if (!result.hasPassed) {
                                         testResult.hasMetAllRequirements = false;
                                     }
 
-                                    subTask.title = this.getFormattedTitle(
+                                    subTask.title = RequirementProcessor.getFormattedTitle(
                                         result
                                     );
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;
-                                    rootTask.title = `${rootTaskTitle} (${this.formatDurationAsSeconds(
+                                    rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
                                         totalDuration
                                     )})`;
 
@@ -200,52 +197,52 @@ export abstract class BaseSetup implements RequirementList {
         );
 
         try {
-            await setupTasks.run();
+            await requirementTasks.run();
+
+            if (!testResult.hasMetAllRequirements) {
+                return Promise.reject(
+                    new SfdxError(
+                        messages.getMessage('error:requirementCheckFailed'),
+                        'lwc-dev-mobile-core',
+                        [
+                            messages.getMessage(
+                                'error:requirementCheckFailed:recommendation'
+                            )
+                        ]
+                    )
+                );
+            }
+
+            return Promise.resolve();
         } catch (error) {
-            this.logger.error(error);
-            testResult.hasMetAllRequirements = false;
-        }
-
-        return Promise.resolve(testResult);
-    }
-
-    /**
-     * Adds a new base requirement to the list of the base requirements to be verified.
-     * @param reqs The new base requirement to be added.
-     */
-    public addBaseRequirements(reqs: Requirement[]) {
-        if (reqs) {
-            this.requirements = this.requirements.concat(reqs);
-        }
-    }
-
-    /**
-     * Adds a new additional requirement to the list of the additional requirements to be verified.
-     * @param reqs Array of Requirement object to be added as additional requirements.
-     */
-    public addAdditionalRequirements(reqs: Requirement[]) {
-        if (reqs) {
-            this.additionalRequirements = this.additionalRequirements.concat(
-                reqs
+            return Promise.reject(
+                new SfdxError(
+                    util.format('unexpected error %s', error),
+                    'lwc-dev-mobile-core'
+                )
             );
         }
     }
 
-    private getFormattedTitle(testCaseResult: RequirementResult): string {
+    private static getFormattedTitle(
+        testCaseResult: RequirementResult
+    ): string {
         const statusMsg = testCaseResult.hasPassed
-            ? this.setupMessages.getMessage('passed')
-            : this.setupMessages.getMessage('failed');
+            ? messages.getMessage('passed')
+            : messages.getMessage('failed');
 
         const title = `${statusMsg}: ${
             testCaseResult.title
-        } (${this.formatDurationAsSeconds(testCaseResult.duration)})`;
+        } (${RequirementProcessor.formatDurationAsSeconds(
+            testCaseResult.duration
+        )})`;
 
         return testCaseResult.hasPassed
             ? chalk.bold.green(title)
             : chalk.bold.red(title);
     }
 
-    private formatDurationAsSeconds(duration: number): string {
+    private static formatDurationAsSeconds(duration: number): string {
         return `${duration.toFixed(3)} sec`;
     }
 }

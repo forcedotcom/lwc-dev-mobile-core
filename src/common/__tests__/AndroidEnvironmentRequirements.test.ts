@@ -11,14 +11,14 @@ process.env.ANDROID_HOME = MOCK_ANDROID_HOME;
 
 import { Logger, Messages } from '@salesforce/core';
 import {
-    AndroidEnvironmentSetup,
+    AndroidEnvironmentRequirements,
     AndroidSDKPlatformToolsInstalledRequirement,
     AndroidSDKRootSetRequirement,
     AndroidSDKToolsInstalledRequirement,
     EmulatorImagesRequirement,
     Java8AvailableRequirement,
     PlatformAPIPackageRequirement
-} from '../AndroidEnvironmentSetup';
+} from '../AndroidEnvironmentRequirements';
 import { AndroidPackage } from '../AndroidTypes';
 import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
 import { Version } from '../Common';
@@ -34,13 +34,17 @@ const badBlockMock = jest.fn((): string => {
 });
 
 Messages.importMessagesDirectory(__dirname);
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement-android'
+);
 const logger = new Logger('test');
 
-describe('Android enviroment setup tests', () => {
-    let androidEnvironment: AndroidEnvironmentSetup;
+describe('Android enviroment requirement tests', () => {
+    let androidEnvironment: AndroidEnvironmentRequirements;
 
     beforeEach(() => {
-        androidEnvironment = new AndroidEnvironmentSetup(logger);
+        androidEnvironment = new AndroidEnvironmentRequirements(logger);
     });
 
     afterEach(() => {
@@ -55,10 +59,7 @@ describe('Android enviroment setup tests', () => {
                 rootSource: AndroidSDKRootSource.androidHome
             };
         });
-        const requirement = new AndroidSDKRootSetRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new AndroidSDKRootSetRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).resolves;
     });
@@ -67,10 +68,7 @@ describe('Android enviroment setup tests', () => {
         jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(
             () => undefined
         );
-        const requirement = new AndroidSDKRootSetRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new AndroidSDKRootSetRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).rejects;
     });
@@ -79,10 +77,7 @@ describe('Android enviroment setup tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandSync').mockImplementation(
             () => MOCK_ANDROID_HOME
         );
-        const requirement = new AndroidSDKToolsInstalledRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new AndroidSDKToolsInstalledRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).resolves;
     });
@@ -91,10 +86,7 @@ describe('Android enviroment setup tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandSync').mockImplementation(() => {
             throw new Error('None');
         });
-        const requirement = new AndroidSDKToolsInstalledRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new AndroidSDKToolsInstalledRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).rejects;
     });
@@ -104,7 +96,6 @@ describe('Android enviroment setup tests', () => {
             () => MOCK_ANDROID_HOME
         );
         const requirement = new AndroidSDKPlatformToolsInstalledRequirement(
-            androidEnvironment.setupMessages,
             logger
         );
         const aPromise = requirement.checkFunction().catch(() => undefined);
@@ -116,7 +107,6 @@ describe('Android enviroment setup tests', () => {
             throw new Error('None');
         });
         const requirement = new AndroidSDKPlatformToolsInstalledRequirement(
-            androidEnvironment.setupMessages,
             logger
         );
         const aPromise = requirement.checkFunction().catch(() => undefined);
@@ -128,10 +118,7 @@ describe('Android enviroment setup tests', () => {
             AndroidUtils,
             'androidSDKPrerequisitesCheck'
         ).mockImplementation(() => Promise.resolve(''));
-        const requirement = new Java8AvailableRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new Java8AvailableRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).resolves;
     });
@@ -141,10 +128,7 @@ describe('Android enviroment setup tests', () => {
             AndroidUtils,
             'androidSDKPrerequisitesCheck'
         ).mockImplementation(() => Promise.reject(''));
-        const requirement = new Java8AvailableRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new Java8AvailableRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).rejects;
     });
@@ -158,10 +142,7 @@ describe('Android enviroment setup tests', () => {
                 new AndroidPackage('', new Version(0, 0, 0), '', '')
             )
         );
-        const requirement = new PlatformAPIPackageRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new PlatformAPIPackageRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).resolves;
     });
@@ -171,10 +152,7 @@ describe('Android enviroment setup tests', () => {
             AndroidUtils,
             'fetchSupportedAndroidAPIPackage'
         ).mockImplementation(() => Promise.reject(''));
-        const requirement = new PlatformAPIPackageRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new PlatformAPIPackageRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).rejects;
     });
@@ -188,10 +166,7 @@ describe('Android enviroment setup tests', () => {
                 new AndroidPackage('', new Version(0, 0, 0), '', '')
             )
         );
-        const requirement = new EmulatorImagesRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new EmulatorImagesRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).resolves;
     });
@@ -201,10 +176,7 @@ describe('Android enviroment setup tests', () => {
             AndroidUtils,
             'fetchSupportedEmulatorImagePackage'
         ).mockImplementation(() => Promise.reject(''));
-        const requirement = new EmulatorImagesRequirement(
-            androidEnvironment.setupMessages,
-            logger
-        );
+        const requirement = new EmulatorImagesRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).rejects;
     });

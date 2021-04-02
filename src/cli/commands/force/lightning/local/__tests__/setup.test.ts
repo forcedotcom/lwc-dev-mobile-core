@@ -8,11 +8,7 @@ import * as Config from '@oclif/config';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { LoggerSetup } from '../../../../../../common/LoggerSetup';
-import {
-    BaseSetup,
-    Requirement,
-    SetupTestResult
-} from '../../../../../../common/Requirements';
+import { RequirementProcessor } from '../../../../../../common/Requirements';
 import { Setup } from '../setup';
 
 Messages.importMessagesDirectory(__dirname);
@@ -27,14 +23,14 @@ enum PlatformType {
 }
 
 const executeSetupMock = jest.fn(
-    (): Promise<SetupTestResult> => {
-        return Promise.resolve({ hasMetAllRequirements: true, tests: [] });
+    (): Promise<void> => {
+        return Promise.resolve();
     }
 );
 
 describe('Setup Tests', () => {
     beforeEach(() => {
-        jest.spyOn(BaseSetup.prototype, 'executeSetup').mockImplementation(
+        jest.spyOn(RequirementProcessor, 'execute').mockImplementation(
             executeSetupMock
         );
     });
@@ -45,13 +41,13 @@ describe('Setup Tests', () => {
 
     test('Checks that Setup is initialized correctly for iOS', async () => {
         const setup = makeSetup(PlatformType.ios);
-        await setup.run(true);
+        await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
     });
 
     test('Checks that Setup is initialized correctly for Android', async () => {
         const setup = makeSetup(PlatformType.android);
-        await setup.run(true);
+        await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
     });
 
@@ -59,7 +55,7 @@ describe('Setup Tests', () => {
         const setup = makeSetup('someplatform');
         expect.assertions(2);
         try {
-            await setup.run(true);
+            await setup.run();
         } catch (error) {
             expect(error instanceof SfdxError).toBe(true);
             expect((error as SfdxError).message).toBe(
@@ -73,7 +69,7 @@ describe('Setup Tests', () => {
 
         expect.assertions(2);
         try {
-            await setup.run(true);
+            await setup.run();
         } catch (error) {
             const expectedMsg = util
                 .format(
@@ -93,17 +89,8 @@ describe('Setup Tests', () => {
 
     test('Checks that Setup ignores API Level flag for iOS platform', async () => {
         const setup = makeSetup(PlatformType.ios, 'not-a-number');
-        await setup.run(true);
+        await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
-    });
-
-    test('Checks that Setup runs additional requirements', async () => {
-        jest.restoreAllMocks();
-        const additionalSetup = makeAdditionalSetup(PlatformType.ios);
-        const result = (await additionalSetup.run(true)) as SetupTestResult;
-        expect(result.hasMetAllRequirements).toBe(true);
-        expect(result.tests.length).toBe(1);
-        expect(result.tests[0].title).toBe('Additional Requirement Check');
     });
 
     test('Logger must be initialized and invoked', async () => {
@@ -115,7 +102,7 @@ describe('Setup Tests', () => {
             LoggerSetup,
             'initializePluginLoggers'
         );
-        await setup.run(true);
+        await setup.run();
         expect(loggerSpy).toHaveBeenCalled();
         expect(LoggerSetupSpy).toHaveBeenCalled();
     });
@@ -137,35 +124,4 @@ describe('Setup Tests', () => {
         );
         return setup;
     }
-
-    function makeAdditionalSetup(platform: PlatformType): Setup {
-        const additionalSetup = new AdditionalSetup(
-            ['-p', platform],
-            new Config.Config(({} as any) as Config.Options)
-        );
-        return additionalSetup;
-    }
 });
-
-// tslint:disable-next-line: max-classes-per-file
-class AdditionalSetup extends Setup {
-    public async run(direct: boolean = false): Promise<any> {
-        await this.init();
-        this.addAdditionalRequirements([new MyAdditionalRequirement()]);
-        this.skipBaseRequirements = true;
-        this.skipAdditionalRequirements = false;
-        return super.run(direct);
-    }
-}
-
-// tslint:disable-next-line: max-classes-per-file
-class MyAdditionalRequirement implements Requirement {
-    public title = 'Additional Requirement Check';
-    public fulfilledMessage = 'Passed';
-    public unfulfilledMessage = 'Failed';
-    public logger = new Logger('MyAdditionalRequirement');
-
-    public async checkFunction(): Promise<string> {
-        return Promise.resolve(this.fulfilledMessage);
-    }
-}

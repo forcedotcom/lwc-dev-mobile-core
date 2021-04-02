@@ -9,23 +9,23 @@ import util from 'util';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { BaseSetup, Requirement } from './Requirements';
+import { Requirement, RequirementList } from './Requirements';
 
-export class IOSEnvironmentSetup extends BaseSetup {
+Messages.importMessagesDirectory(__dirname);
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement-ios'
+);
+
+export class IOSEnvironmentRequirements implements RequirementList {
+    public requirements: Requirement[] = [];
+    public enabled = true;
     constructor(logger: Logger) {
-        super(logger);
-        const requirements = [
-            new SupportedEnvironmentRequirement(
-                this.setupMessages,
-                this.logger
-            ),
-            new XcodeInstalledRequirement(this.setupMessages, this.logger),
-            new SupportedSimulatorRuntimeRequirement(
-                this.setupMessages,
-                this.logger
-            )
+        this.requirements = [
+            new SupportedEnvironmentRequirement(logger),
+            new XcodeInstalledRequirement(logger),
+            new SupportedSimulatorRuntimeRequirement(logger)
         ];
-        super.addBaseRequirements(requirements);
     }
 }
 
@@ -36,7 +36,7 @@ export class SupportedEnvironmentRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
+    constructor(logger: Logger) {
         this.title = messages.getMessage('ios:reqs:macos:title');
         this.fulfilledMessage = messages.getMessage(
             'ios:reqs:macos:fulfilledMessage'
@@ -87,7 +87,7 @@ export class XcodeInstalledRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
+    constructor(logger: Logger) {
         this.title = messages.getMessage('ios:reqs:xcode:title');
         this.fulfilledMessage = messages.getMessage(
             'ios:reqs:xcode:fulfilledMessage'
@@ -145,7 +145,7 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(messages: Messages, logger: Logger) {
+    constructor(logger: Logger) {
         this.title = messages.getMessage('ios:reqs:simulator:title');
         this.fulfilledMessage = messages.getMessage(
             'ios:reqs:simulator:fulfilledMessage'

@@ -1,0 +1,8 @@
+{
+    "passed": "PASSED",
+    "failed": "FAILED",
+    "rootTaskTitle": "Requirements",
+    "error:requirementCheckFailed": "Requirement verifications for platform %s failed.",
+    "error:requirementCheckFailed:recommendation": "Please see the error messages above for details on resolving your requirement issues.",
+    "remedy:invalidInputFlagsDescription": "Specify a platform using ' -p [iOS|Android]'"    
+}

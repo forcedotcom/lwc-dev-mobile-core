@@ -7,14 +7,14 @@
 import { flags, FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
-import { AndroidEnvironmentSetup } from '../../../../../common/AndroidEnvironmentSetup';
+import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
 import { CommandLineUtils, Version } from '../../../../../common/Common';
-import { IOSEnvironmentSetup } from '../../../../../common/IOSEnvironmentSetup';
+import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
 import {
-    BaseSetup,
-    Requirement,
-    SetupTestResult
+    RequirementProcessor,
+    HasRequirements,
+    CommandRequirements
 } from '../../../../../common/Requirements';
 
 // Initialize Messages with the current plugin directory
@@ -27,7 +27,9 @@ const messages = Messages.loadMessages(
     'setup'
 );
 
-export class Setup extends SfdxCommand {
+export class Setup extends SfdxCommand implements HasRequirements {
+    private _commandRequirements: CommandRequirements = {};
+
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
@@ -50,40 +52,13 @@ export class Setup extends SfdxCommand {
         `sfdx force:lightning:local:setup -p Android`
     ];
 
-    public skipBaseRequirements = false;
-    public skipAdditionalRequirements = false;
-
-    private setupSteps: BaseSetup | undefined;
-
-    public async run(direct: boolean = false): Promise<any> {
-        if (direct) {
-            await this.init(); // ensure init first
-        }
+    public async run(): Promise<any> {
+        await this.init(); // ensure init first
 
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
         return this.validateInputParameters() // validate input
-            .then(() => this.executeSetup(this.setup())) // verify requirements
-            .then((result) => {
-                if (!result.hasMetAllRequirements) {
-                    return Promise.reject(
-                        new SfdxError(
-                            util.format(
-                                messages.getMessage('error:setupFailed'),
-                                this.flags.platform
-                            ),
-                            'lwc-dev-mobile-core',
-                            [
-                                messages.getMessage(
-                                    'error:setupFailed:recommendation'
-                                )
-                            ]
-                        )
-                    );
-                } else {
-                    return Promise.resolve(result);
-                }
-            });
+            .then(() => RequirementProcessor.execute(this.commandRequirements)); // verify requirements
     }
 
     protected async init(): Promise<void> {
@@ -99,10 +74,6 @@ export class Setup extends SfdxCommand {
                 this.logger = logger;
                 return LoggerSetup.initializePluginLoggers();
             });
-    }
-
-    protected addAdditionalRequirements(reqs: Requirement[]) {
-        this.setup().addAdditionalRequirements(reqs);
     }
 
     protected async validateInputParameters(): Promise<void> {
@@ -145,21 +116,20 @@ export class Setup extends SfdxCommand {
         return Promise.resolve();
     }
 
-    private async executeSetup(setup: BaseSetup): Promise<SetupTestResult> {
-        setup.skipBaseRequirements = this.skipBaseRequirements;
-        setup.skipAdditionalRequirements = this.skipAdditionalRequirements;
-        return setup.executeSetup();
-    }
-
-    private setup(): BaseSetup {
-        if (!this.setupSteps) {
-            this.setupSteps = CommandLineUtils.platformFlagIsAndroid(
+    public get commandRequirements(): CommandRequirements {
+        if (Object.keys(this._commandRequirements).length === 0) {
+            const requirements = CommandLineUtils.platformFlagIsAndroid(
                 this.flags.platform
             )
-                ? new AndroidEnvironmentSetup(this.logger, this.flags.apilevel)
-                : new IOSEnvironmentSetup(this.logger);
+                ? new AndroidEnvironmentRequirements(
+                      this.logger,
+                      this.flags.apilevel
+                  )
+                : new IOSEnvironmentRequirements(this.logger);
+
+            this._commandRequirements.setup = requirements;
         }
 
-        return this.setupSteps;
+        return this._commandRequirements;
     }
 }

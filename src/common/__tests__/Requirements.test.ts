@@ -4,17 +4,48 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger } from '@salesforce/core';
-import { BaseSetup } from '../Requirements';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
+import {
+    RequirementProcessor,
+    HasRequirements,
+    CommandRequirements
+} from '../Requirements';
 
 const logger = new Logger('test');
 
-class TruthyExtension extends BaseSetup {
+Messages.importMessagesDirectory(__dirname);
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'requirement'
+);
+
+const failureMessage = messages.getMessage('error:requirementCheckFailed');
+const recommendationMessage = messages.getMessage(
+    'error:requirementCheckFailed:recommendation'
+);
+
+async function checkResolveFunctionOne(): Promise<string> {
+    return Promise.resolve('Done');
+}
+
+async function checkResolveFunctionTwo(): Promise<string> {
+    return Promise.resolve('Done');
+}
+
+async function checkRejectFunctionOne(): Promise<undefined> {
+    return Promise.reject();
+}
+
+async function checkRejectFunctionTwo(): Promise<undefined> {
+    return Promise.reject();
+}
+
+class TruthyRequirements implements HasRequirements {
+    public commandRequirements: CommandRequirements = {};
     constructor() {
-        super(logger);
         const requirements = [
             {
-                checkFunction: this.testFunctionOne,
+                checkFunction: checkResolveFunctionOne,
                 fulfilledMessage: 'Android SDK was detected.',
                 logger,
                 title: 'SDK Check',
@@ -22,32 +53,27 @@ class TruthyExtension extends BaseSetup {
                     'You must install Android SDK add it to the path.'
             },
             {
-                checkFunction: this.testFunctionTwo,
+                checkFunction: checkResolveFunctionTwo,
                 fulfilledMessage: 'ANDROID_HOME has been detected.',
                 logger,
                 title: 'ANDROID_HOME check',
                 unfulfilledMessage: 'You must setup ANDROID_HOME.'
             }
         ];
-        super.addBaseRequirements(requirements);
-    }
-
-    public async testFunctionOne(): Promise<string> {
-        return new Promise((resolve, reject) => resolve('Done.'));
-    }
-
-    public async testFunctionTwo(): Promise<string> {
-        return new Promise((resolve, reject) => resolve('Done.'));
+        this.commandRequirements.baseRequirements = {
+            requirements,
+            enabled: true
+        };
     }
 }
 
 // tslint:disable-next-line: max-classes-per-file
-class FalsyExtension extends BaseSetup {
+class FalsyRequirements implements HasRequirements {
+    public commandRequirements: CommandRequirements = {};
     constructor() {
-        super(logger);
         const requirements = [
             {
-                checkFunction: this.testFunctionOne,
+                checkFunction: checkResolveFunctionOne,
                 fulfilledMessage: 'Android SDK was detected.',
                 logger,
                 title: 'SDK Check',
@@ -55,19 +81,19 @@ class FalsyExtension extends BaseSetup {
                     'You must install Android SDK add it to the path.'
             },
             {
-                checkFunction: this.testFunctionTwo,
+                checkFunction: checkRejectFunctionOne,
                 fulfilledMessage: 'ANDROID_HOME has been detected.',
                 logger,
                 title: 'ANDROID_HOME check',
                 unfulfilledMessage: 'You must setup ANDROID_HOME.'
             },
             {
-                checkFunction: this.testFunctionThree,
+                checkFunction: checkRejectFunctionTwo,
                 logger,
                 title: 'Checking SDK Tools'
             },
             {
-                checkFunction: this.testFunctionFour,
+                checkFunction: checkRejectFunctionTwo,
                 fulfilledMessage:
                     'Android Platform tools were detected at /usr/bin.',
                 logger,
@@ -77,150 +103,102 @@ class FalsyExtension extends BaseSetup {
                     'Install at least one Android Platform tools package (23 - 30).'
             }
         ];
-        super.addBaseRequirements(requirements);
-    }
-
-    public async testFunctionOne(): Promise<string> {
-        return new Promise((resolve, reject) => resolve('Done.'));
-    }
-
-    public async testFunctionTwo(): Promise<string> {
-        return new Promise((resolve, reject) => reject('Failed.'));
-    }
-
-    public async testFunctionThree(): Promise<undefined> {
-        return new Promise((resolve, reject) => reject());
-    }
-
-    public async testFunctionFour(): Promise<string> {
-        return new Promise((resolve, reject) => reject('Failed.'));
+        this.commandRequirements.baseRequirements = {
+            requirements,
+            enabled: true
+        };
     }
 }
 
 // tslint:disable-next-line: max-classes-per-file
-class AdditionalExtension extends BaseSetup {
+class TwoFalsyOneTruthyRequirements implements HasRequirements {
+    public commandRequirements: CommandRequirements = {};
     constructor() {
-        super(logger);
-        const requirements = [
-            {
-                checkFunction: this.testFunctionOne,
-                fulfilledMessage: 'Android SDK was detected.',
-                logger,
-                title: 'SDK Check',
-                unfulfilledMessage:
-                    'You must install Android SDK add it to the path.'
-            },
-            {
-                checkFunction: this.testFunctionTwo,
-                fulfilledMessage: 'ANDROID_HOME has been detected.',
-                logger,
-                title: 'ANDROID_HOME check',
-                unfulfilledMessage: 'You must setup ANDROID_HOME.'
-            }
-        ];
-        super.addBaseRequirements(requirements);
-
-        const additionalRequirements = [
-            {
-                checkFunction: this.testFunctionThree,
-                fulfilledMessage: 'Additional test passed.',
-                logger,
-                title: 'Additional test',
-                unfulfilledMessage: 'Additional test failed.'
-            }
-        ];
-        super.addAdditionalRequirements(additionalRequirements);
-    }
-
-    public async testFunctionOne(): Promise<string> {
-        return new Promise((resolve, reject) => resolve('Done.'));
-    }
-
-    public async testFunctionTwo(): Promise<string> {
-        return new Promise((resolve, reject) => resolve('Done.'));
-    }
-
-    public async testFunctionThree(): Promise<string> {
-        return new Promise((resolve, reject) => resolve('Done.'));
+        this.commandRequirements.falsyRequirementOne = {
+            requirements: [
+                {
+                    title: 'title1',
+                    checkFunction: checkRejectFunctionOne,
+                    logger
+                }
+            ],
+            enabled: true
+        };
+        this.commandRequirements.falsyRequirementTwo = {
+            requirements: [
+                {
+                    title: 'title2',
+                    checkFunction: checkRejectFunctionTwo,
+                    logger
+                }
+            ],
+            enabled: true
+        };
+        this.commandRequirements.truthyRequirement = {
+            requirements: [
+                {
+                    title: 'title3',
+                    checkFunction: checkResolveFunctionOne,
+                    logger
+                }
+            ],
+            enabled: true
+        };
     }
 }
 
 describe('Requirements Processing', () => {
     test('Meets all requirements', async () => {
         expect.assertions(1);
-        const setupResult = await new TruthyExtension().executeSetup();
-        expect(setupResult.hasMetAllRequirements).toBeTruthy();
-    });
-
-    test('Executes all true requirements', async () => {
-        expect.assertions(1);
-        const extension = new TruthyExtension();
-        const setupResult = await extension.executeSetup();
-        expect(
-            setupResult.tests.length === extension.requirements.length
-        ).toBeTruthy();
-    });
-
-    test('Executes all passed and failed requirements', async () => {
-        expect.assertions(1);
-        const setupResult = await new FalsyExtension().executeSetup();
-        expect(setupResult.hasMetAllRequirements).toBeFalsy();
-    });
-
-    test('Executes all passed and failed base requirements', async () => {
-        expect.assertions(1);
-        const setupResult = await new TruthyExtension().executeSetup();
-        expect(setupResult.hasMetAllRequirements).toBeTruthy();
-    });
-
-    test('Executes all passed and failed requirements', async () => {
-        expect.assertions(1);
-        const extension = new TruthyExtension();
-        const setupResult = await extension.executeSetup();
-        expect(
-            setupResult.tests.length === extension.requirements.length
-        ).toBeTruthy();
-    });
-
-    test('Skips all base requirements and only executes all additional requirements', async () => {
-        expect.assertions(1);
-        const extension = new AdditionalExtension();
-        extension.skipBaseRequirements = true;
-        const setupResult = await extension.executeSetup();
-        expect(setupResult.tests.length === 1).toBeTruthy();
-    });
-
-    test('Skips all base and additional requirements', async () => {
-        expect.assertions(1);
-        const extension = new AdditionalExtension();
-        extension.skipBaseRequirements = true;
-        extension.skipAdditionalRequirements = true;
-        const setupResult = await extension.executeSetup();
-        expect(setupResult.tests.length === 0).toBeTruthy();
-    });
-
-    test('There is only one test that failed with supplemental message', async () => {
-        expect.assertions(2);
-        const extension = new FalsyExtension();
-        const setupResult = await extension.executeSetup();
-        const testsResultWithMessages = setupResult.tests.filter(
-            (test) => test.hasPassed === false && test.message.length > 0
+        await RequirementProcessor.execute(
+            new TruthyRequirements().commandRequirements
         );
-        expect(testsResultWithMessages.length).toBe(2);
-        expect(
-            testsResultWithMessages[1].message ===
-                'Failed. Get Android platform tools!'
-        ).toBeTruthy();
+        expect(true).toBeTruthy();
     });
 
-    test('There is only one test without any message', async () => {
-        expect.assertions(2);
-        const extension = new FalsyExtension();
-        const setupResult = await extension.executeSetup();
-        const testsResultWithoutMessages = setupResult.tests.filter(
-            (test) => test.message.length === 0
-        );
-        expect(testsResultWithoutMessages.length).toBe(1);
-        expect(testsResultWithoutMessages[0].title).toBe('Checking SDK Tools');
+    test('Throws when any requirement fails', async () => {
+        expect.assertions(4);
+        try {
+            await RequirementProcessor.execute(
+                new FalsyRequirements().commandRequirements
+            );
+        } catch (error) {
+            expect(error instanceof SfdxError).toBeTruthy();
+            const sfdxError = error as SfdxError;
+            expect(sfdxError.message).toBe(failureMessage);
+            expect(sfdxError.actions?.length).toBe(1);
+            expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
+        }
+    });
+
+    test('Skips all requirements that would fail and only executes a requirement that succeeds', async () => {
+        const requirements = new TwoFalsyOneTruthyRequirements();
+        requirements.commandRequirements.falsyRequirementOne.enabled = false;
+        requirements.commandRequirements.falsyRequirementTwo.enabled = false;
+        await RequirementProcessor.execute(requirements.commandRequirements);
+        expect(true).toBeTruthy();
+    });
+
+    test('Fails when there is a failed requirement check in combo checks', async () => {
+        expect.assertions(4);
+        const requirements = new TwoFalsyOneTruthyRequirements();
+        try {
+            await RequirementProcessor.execute(
+                requirements.commandRequirements
+            );
+        } catch (error) {
+            expect(error instanceof SfdxError).toBeTruthy();
+            const sfdxError = error as SfdxError;
+            expect(sfdxError.message).toBe(failureMessage);
+            expect(sfdxError.actions?.length).toBe(1);
+            expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
+        }
+    });
+
+    test('Skips all checks and check will ', async () => {
+        const requirements = new FalsyRequirements();
+        requirements.commandRequirements.baseRequirements.enabled = false;
+        await RequirementProcessor.execute(requirements.commandRequirements);
+        expect(true).toBeTruthy();
     });
 });
