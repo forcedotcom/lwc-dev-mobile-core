@@ -172,8 +172,12 @@ describe('CommonUtils', () => {
             expect(fs.existsSync(dest)).toBe(false);
         }
 
-        // should pass and create a destination file
-        await CommonUtils.downloadFile('https://www.google.com', dest);
-        expect(fs.existsSync(dest)).toBe(true);
+        // For now don't run this part on Windows b/c our CircleCI
+        // environment does not give file write permission.
+        if (process.platform !== 'win32') {
+            // should pass and create a destination file
+            await CommonUtils.downloadFile('https://www.google.com', dest);
+            expect(fs.existsSync(dest)).toBe(true);
+        }
     });
 });

@@ -353,14 +353,14 @@ export class CommonUtils {
                 resolve();
             });
 
-            request.on('error', (err) => {
-                const msg = `Error downloading ${finalUrl} - ${err}`;
+            destFile.on('error', (err) => {
+                const msg = `Error saving ${finalUrl} to file ${dest} - ${err}`;
                 this.logger.error(msg);
                 fs.unlink(dest, () => reject(new Error(msg)));
             });
 
-            destFile.on('error', (err) => {
-                const msg = `Error saving ${finalUrl} to file ${dest} - ${err}`;
+            request.on('error', (err) => {
+                const msg = `Error downloading ${finalUrl} - ${err}`;
                 this.logger.error(msg);
                 fs.unlink(dest, () => reject(new Error(msg)));
             });
