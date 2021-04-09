@@ -33,8 +33,8 @@ export class Setup extends SfdxCommand implements HasRequirements {
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
-        ...CommonUtils.apiLevelFlagConfig,
-        ...CommonUtils.platformFlagConfig
+        ...CommandLineUtils.apiLevelFlagConfig,
+        ...CommandLineUtils.platformFlagConfig
     };
 
     public examples = [
@@ -47,9 +47,9 @@ export class Setup extends SfdxCommand implements HasRequirements {
 
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
-        return CommonUtils.validatePlatformFlag(this.flags, this.examples)
+        return CommandLineUtils.validatePlatformFlag(this.flags, this.examples)
             .then(() =>
-                CommonUtils.validateApiLevelFlag(this.flags, this.examples)
+                CommandLineUtils.validateApiLevelFlag(this.flags, this.examples)
             )
             .then(() => RequirementProcessor.execute(this.commandRequirements)); // verify requirements
     }
