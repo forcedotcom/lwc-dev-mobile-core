@@ -24,5 +24,10 @@
     "openBrowserWithUrlStatus": "Opening browser with url %s",
 
     "bootTimeOut": "Timeout waiting for %s to boot.",
-    "powerOffTimeOut": "Timeout waiting for %s to power off."
+    "powerOffTimeOut": "Timeout waiting for %s to power off.",
+
+    "platformFlagDescription": "Specify platform ('iOS' or 'Android').",
+    "apiLevelFlagDescription": "Specify Android API level. Defaults to the latest API level installed.",
+    "error:invalidInputFlagsDescription": "Invalid input value for platform.",
+    "error:invalidApiLevelFlagsDescription": "Invalid input value for API level: %s"
 }

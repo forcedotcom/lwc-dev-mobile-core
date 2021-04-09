@@ -4,10 +4,23 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { Messages, SfdxError } from '@salesforce/core';
 import { CommonUtils } from '../CommonUtils';
+import { CommandLineUtils } from '../Common';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
+import util from 'util';
+
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
 
 describe('CommonUtils', () => {
     test('replaceTokens function', async () => {
@@ -178,6 +191,103 @@ describe('CommonUtils', () => {
             // should pass and create a destination file
             await CommonUtils.downloadFile('https://www.google.com', dest);
             expect(fs.existsSync(dest)).toBe(true);
+        }
+    });
+
+    test('Platform flag config property returns expected flag', async () => {
+        const platformFlagConfig = CommonUtils.platformFlagConfig;
+        expect(platformFlagConfig.platform).toBeDefined();
+        expect(platformFlagConfig.platform!.longDescription).toBe(
+            messages.getMessage('platformFlagDescription')
+        );
+        expect(platformFlagConfig.platform!.description).toBe(
+            messages.getMessage('platformFlagDescription')
+        );
+    });
+
+    test('API level flag config property returns expected flag', async () => {
+        const apiLevelFlagConfig = CommonUtils.apiLevelFlagConfig;
+        expect(apiLevelFlagConfig.apilevel).toBeDefined();
+        expect(apiLevelFlagConfig.apilevel!.longDescription).toBe(
+            messages.getMessage('apiLevelFlagDescription')
+        );
+        expect(apiLevelFlagConfig.apilevel!.description).toBe(
+            messages.getMessage('apiLevelFlagDescription')
+        );
+    });
+
+    test('iOS does not require API level', async () => {
+        const mockFlag = {
+            platform: CommandLineUtils.IOS_FLAG
+        };
+        const resolved = await CommonUtils.validateApiLevelFlag(mockFlag, []);
+        expect(resolved).toBeUndefined();
+    });
+
+    test('API level validation fails on bad input', async () => {
+        const badInput = 'this is a string';
+        const recommendations = ['a recommendation message'];
+        const mockFlag = {
+            apilevel: badInput
+        };
+        expect.assertions(5);
+        try {
+            await CommonUtils.validateApiLevelFlag(mockFlag, recommendations);
+        } catch (error) {
+            expect(error instanceof SfdxError).toBe(true);
+            const sfdxError = error as SfdxError;
+            const message = util.format(
+                messages.getMessage('error:invalidApiLevelFlagsDescription'),
+                `Error: Invalid version string: ${badInput}`
+            );
+            expect(sfdxError.message).toBe(message);
+            expect(sfdxError.actions).toBeDefined();
+            expect(sfdxError.actions!.length).toBe(1);
+            expect(sfdxError.actions![0]).toBe(recommendations[0]);
+        }
+    });
+
+    test('API level validation succeeds', async () => {
+        const mockFlag = {
+            apilevel: '0.1.2'
+        };
+        const resolved = await CommonUtils.validateApiLevelFlag(mockFlag, []);
+        expect(resolved).toBeUndefined();
+    });
+
+    test('Platform validation for iOS succeeds', async () => {
+        const mockFlag = {
+            platform: CommandLineUtils.IOS_FLAG
+        };
+        const resolved = await CommonUtils.validatePlatformFlag(mockFlag, []);
+        expect(resolved).toBeUndefined();
+    });
+
+    test('Platform validation for Android succeeds', async () => {
+        const mockFlag = {
+            platform: CommandLineUtils.ANDROID_FLAG
+        };
+        const resolved = await CommonUtils.validatePlatformFlag(mockFlag, []);
+        expect(resolved).toBeUndefined();
+    });
+
+    test('Platform validation fails for unknown platform', async () => {
+        const recommendations = ['a recommendation message'];
+        const mockFlag = {
+            platform: 'Blackberry'
+        };
+        try {
+            await CommonUtils.validatePlatformFlag(mockFlag, recommendations);
+        } catch (error) {
+            expect(error instanceof SfdxError).toBe(true);
+            const sfdxError = error as SfdxError;
+            const message = messages.getMessage(
+                'error:invalidInputFlagsDescription'
+            );
+            expect(sfdxError.message).toBe(message);
+            expect(sfdxError.actions).toBeDefined();
+            expect(sfdxError.actions!.length).toBe(1);
+            expect(sfdxError.actions![0]).toBe(recommendations[0]);
         }
     });
 });

@@ -426,7 +426,7 @@
     terminal-link "^2.0.0"
     v8-to-istanbul "^7.0.0"
   optionalDependencies:
-    node-notifier "^8.0.1"
+    node-notifier "^8.0.0"
 
 "@jest/source-map@^24.9.0":
   version "24.9.0"
@@ -597,7 +597,7 @@
   resolved "https://registry.yarnpkg.com/@oclif/linewrap/-/linewrap-1.0.0.tgz#aedcb64b479d4db7be24196384897b5000901d91"
   integrity sha512-Ups2dShK52xXa8w6iBWLgcjPJWjais6KPJQq3gQ/88AY6BXoTX+MIGFPrWQO1KLMiQfoTpcLnUwloN4brrVUHw==
 
-"@oclif/parser@^3.8.0", "@oclif/parser@^3.8.3":
+"@oclif/parser@3.8.5", "@oclif/parser@^3.8.0", "@oclif/parser@^3.8.3":
   version "3.8.5"
   resolved "https://registry.yarnpkg.com/@oclif/parser/-/parser-3.8.5.tgz#c5161766a1efca7343e1f25d769efbefe09f639b"
   integrity sha512-yojzeEfmSxjjkAvMRj0KzspXlMjCfBzNRPkWw8ZwOSoNWoJn+OCS/m/S+yfV6BvAM4u2lTzX9Y5rCbrFIgkJLg==

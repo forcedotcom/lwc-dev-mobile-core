@@ -1,7 +1,7 @@
 {
   "name": "@salesforce/lwc-dev-mobile-core",
   "description": "Core module supporting Salesforce CLI mobile extension plug-ins",
-  "version": "1.0.0-beta9",
+  "version": "1.0.0-beta10",
   "author": {
     "name": "Meisam Seyed Aliroteh",
     "email": "maliroteh@salesforce.com",
@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.26.0",
+    "@oclif/parser": "3.8.5",
     "@types/jest": "^26.0.20",
     "@types/node": "^14.14.22",
     "@typescript-eslint/eslint-plugin": "^4.14.2",

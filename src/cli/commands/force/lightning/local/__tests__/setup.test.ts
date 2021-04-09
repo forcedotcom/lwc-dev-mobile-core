@@ -14,7 +14,7 @@ import { Setup } from '../setup';
 Messages.importMessagesDirectory(__dirname);
 const messages = Messages.loadMessages(
     '@salesforce/lwc-dev-mobile-core',
-    'setup'
+    'common'
 );
 
 enum PlatformType {
