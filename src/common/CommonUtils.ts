@@ -13,7 +13,6 @@ import https from 'https';
 import util from 'util';
 import path from 'path';
 import os from 'os';
-import { CommandLineUtils, Version } from './Common';
 
 type StdioOptions = childProcess.StdioOptions;
 
