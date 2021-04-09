@@ -142,7 +142,10 @@ describe('Commons utils tests', () => {
     });
 
     test('Platform flag config property returns expected flag', async () => {
-        const platformFlagConfig = common.CommandLineUtils.platformFlagConfig;
+        let platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.Platform,
+            true
+        );
         expect(platformFlagConfig.platform).toBeDefined();
         expect(platformFlagConfig.platform!.longDescription).toBe(
             messages.getMessage('platformFlagDescription')
@@ -150,10 +153,31 @@ describe('Commons utils tests', () => {
         expect(platformFlagConfig.platform!.description).toBe(
             messages.getMessage('platformFlagDescription')
         );
+        let requiredKeyValuePair = Object.entries(
+            platformFlagConfig.platform!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(true);
+
+        platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.Platform,
+            false
+        );
+
+        requiredKeyValuePair = Object.entries(
+            platformFlagConfig.platform!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(false);
     });
 
     test('API level flag config property returns expected flag', async () => {
-        const apiLevelFlagConfig = common.CommandLineUtils.apiLevelFlagConfig;
+        let apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.ApiLevel,
+            true
+        );
         expect(apiLevelFlagConfig.apilevel).toBeDefined();
         expect(apiLevelFlagConfig.apilevel!.longDescription).toBe(
             messages.getMessage('apiLevelFlagDescription')
@@ -161,6 +185,25 @@ describe('Commons utils tests', () => {
         expect(apiLevelFlagConfig.apilevel!.description).toBe(
             messages.getMessage('apiLevelFlagDescription')
         );
+
+        let requiredKeyValuePair = Object.entries(
+            apiLevelFlagConfig.apilevel!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(true);
+
+        apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.ApiLevel,
+            false
+        );
+
+        requiredKeyValuePair = Object.entries(
+            apiLevelFlagConfig.apilevel!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(false);
     });
 
     test('iOS does not require API level', async () => {

@@ -7,7 +7,10 @@
 import { FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages } from '@salesforce/core';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
-import { CommandLineUtils } from '../../../../../common/Common';
+import {
+    CommandLineUtils,
+    FlagsConfigType
+} from '../../../../../common/Common';
 import { CommonUtils } from '../../../../../common/CommonUtils';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
@@ -33,8 +36,8 @@ export class Setup extends SfdxCommand implements HasRequirements {
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
-        ...CommandLineUtils.apiLevelFlagConfig,
-        ...CommandLineUtils.platformFlagConfig
+        ...CommandLineUtils.createFlagConfig(FlagsConfigType.ApiLevel, false),
+        ...CommandLineUtils.createFlagConfig(FlagsConfigType.Platform, true)
     };
 
     public examples = [

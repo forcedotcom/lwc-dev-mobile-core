@@ -63,6 +63,11 @@ export class SetUtils {
     }
 }
 
+export enum FlagsConfigType {
+    Platform,
+    ApiLevel
+}
+
 // tslint:disable-next-line: max-classes-per-file
 export class CommandLineUtils {
     public static IOS_FLAG = 'ios';
@@ -120,16 +125,38 @@ export class CommandLineUtils {
         }
     }
 
-    public static get apiLevelFlagConfig() {
-        const flagsConfig: FlagsConfig = {
-            apilevel: flags.string({
-                char: 'a',
-                description: messages.getMessage('apiLevelFlagDescription'),
-                longDescription: messages.getMessage('apiLevelFlagDescription'),
-                required: false
-            })
-        };
-        return flagsConfig;
+    public static createFlagConfig(
+        type: FlagsConfigType,
+        required: boolean
+    ): FlagsConfig {
+        switch (type) {
+            case FlagsConfigType.ApiLevel:
+                return {
+                    apilevel: flags.string({
+                        char: 'a',
+                        description: messages.getMessage(
+                            'apiLevelFlagDescription'
+                        ),
+                        longDescription: messages.getMessage(
+                            'apiLevelFlagDescription'
+                        ),
+                        required
+                    })
+                };
+            case FlagsConfigType.Platform:
+                return {
+                    platform: flags.string({
+                        char: 'p',
+                        description: messages.getMessage(
+                            'platformFlagDescription'
+                        ),
+                        longDescription: messages.getMessage(
+                            'platformFlagDescription'
+                        ),
+                        required
+                    })
+                };
+        }
     }
 
     public static validateApiLevelFlag(
@@ -163,18 +190,6 @@ export class CommandLineUtils {
         }
 
         return Promise.resolve();
-    }
-
-    public static get platformFlagConfig() {
-        const flagsConfig: FlagsConfig = {
-            platform: flags.string({
-                char: 'p',
-                description: messages.getMessage('platformFlagDescription'),
-                longDescription: messages.getMessage('platformFlagDescription'),
-                required: true
-            })
-        };
-        return flagsConfig;
     }
 
     public static validatePlatformFlag(
