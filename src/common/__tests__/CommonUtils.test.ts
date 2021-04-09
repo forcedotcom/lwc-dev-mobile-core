@@ -240,7 +240,7 @@ describe('CommonUtils', () => {
                 messages.getMessage('error:invalidApiLevelFlagsDescription'),
                 `Error: Invalid version string: ${badInput}`
             );
-            expect(sfdxError.message).toBe(message);
+            expect(sfdxError.message).toMatch(message);
             expect(sfdxError.actions).toBeDefined();
             expect(sfdxError.actions!.length).toBe(1);
             expect(sfdxError.actions![0]).toBe(recommendations[0]);
@@ -284,7 +284,7 @@ describe('CommonUtils', () => {
             const message = messages.getMessage(
                 'error:invalidInputFlagsDescription'
             );
-            expect(sfdxError.message).toBe(message);
+            expect(sfdxError.message).toMatch(message);
             expect(sfdxError.actions).toBeDefined();
             expect(sfdxError.actions!.length).toBe(1);
             expect(sfdxError.actions![0]).toBe(recommendations[0]);
