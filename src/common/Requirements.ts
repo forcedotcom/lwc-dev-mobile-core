@@ -131,8 +131,8 @@ export class RequirementProcessor {
         this.skipRequirementList = {};
     }
 
-    public skipRequirements(requirementListKlass: string[]) {
-        requirementListKlass.forEach((value) => {
+    public skipRequirements(requirementNames: string[]) {
+        requirementNames.forEach((value) => {
             this.skipRequirementList[value] = true;
         });
     }
