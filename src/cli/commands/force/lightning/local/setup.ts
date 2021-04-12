@@ -11,7 +11,6 @@ import {
     CommandLineUtils,
     FlagsConfigType
 } from '../../../../../common/Common';
-import { CommonUtils } from '../../../../../common/CommonUtils';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
 import {
@@ -54,7 +53,11 @@ export class Setup extends SfdxCommand implements HasRequirements {
             .then(() =>
                 CommandLineUtils.validateApiLevelFlag(this.flags, this.examples)
             )
-            .then(() => RequirementProcessor.execute(this.commandRequirements)); // verify requirements
+            .then(() =>
+                RequirementProcessor.getInstance().execute(
+                    this.commandRequirements
+                )
+            ); // verify requirements
     }
 
     protected async init(): Promise<void> {

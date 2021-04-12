@@ -116,12 +116,31 @@ const messages = Messages.loadMessages(
 );
 
 export class RequirementProcessor {
+    private static instance: RequirementProcessor;
+    private skipRequirementList: { [key: string]: boolean } = {};
+    private constructor() {}
+
+    public static getInstance() {
+        return (
+            RequirementProcessor.instance ||
+            (RequirementProcessor.instance = new RequirementProcessor())
+        );
+    }
+
+    public resetSkipRequirements() {
+        this.skipRequirementList = {};
+    }
+
+    public skipRequirements(requirementListKlass: string[]) {
+        requirementListKlass.forEach((value) => {
+            this.skipRequirementList[value] = true;
+        });
+    }
+
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(
-        requirements: CommandRequirements
-    ): Promise<void> {
+    public async execute(requirements: CommandRequirements): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -130,8 +149,8 @@ export class RequirementProcessor {
         let totalDuration = 0;
         let enabledRequirements: Requirement[] = [];
 
-        Object.entries(requirements).forEach(([_, requirementList]) => {
-            if (requirementList.enabled) {
+        Object.entries(requirements).forEach(([name, requirementList]) => {
+            if (!this.skipRequirementList[name] && requirementList.enabled) {
                 enabledRequirements = enabledRequirements.concat(
                     requirementList.requirements
                 );
@@ -160,13 +179,13 @@ export class RequirementProcessor {
                                         testResult.hasMetAllRequirements = false;
                                     }
 
-                                    subTask.title = RequirementProcessor.getFormattedTitle(
+                                    subTask.title = RequirementProcessor.getInstance().getFormattedTitle(
                                         result
                                     );
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;
-                                    rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
+                                    rootTask.title = `${rootTaskTitle} (${RequirementProcessor.getInstance().formatDurationAsSeconds(
                                         totalDuration
                                     )})`;
 
@@ -221,19 +240,19 @@ export class RequirementProcessor {
                     'lwc-dev-mobile-core'
                 )
             );
+        } finally {
+            this.resetSkipRequirements();
         }
     }
 
-    private static getFormattedTitle(
-        testCaseResult: RequirementResult
-    ): string {
+    private getFormattedTitle(testCaseResult: RequirementResult): string {
         const statusMsg = testCaseResult.hasPassed
             ? messages.getMessage('passed')
             : messages.getMessage('failed');
 
         const title = `${statusMsg}: ${
             testCaseResult.title
-        } (${RequirementProcessor.formatDurationAsSeconds(
+        } (${RequirementProcessor.getInstance().formatDurationAsSeconds(
             testCaseResult.duration
         )})`;
 
@@ -242,7 +261,7 @@ export class RequirementProcessor {
             : chalk.bold.red(title);
     }
 
-    private static formatDurationAsSeconds(duration: number): string {
+    private formatDurationAsSeconds(duration: number): string {
         return `${duration.toFixed(3)} sec`;
     }
 }

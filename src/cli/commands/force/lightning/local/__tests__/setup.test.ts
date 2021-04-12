@@ -30,9 +30,10 @@ const executeSetupMock = jest.fn(
 
 describe('Setup Tests', () => {
     beforeEach(() => {
-        jest.spyOn(RequirementProcessor, 'execute').mockImplementation(
-            executeSetupMock
-        );
+        jest.spyOn(
+            RequirementProcessor.getInstance(),
+            'execute'
+        ).mockImplementation(executeSetupMock);
     });
 
     afterEach(() => {
