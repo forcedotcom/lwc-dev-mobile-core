@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { FlagsConfig, SfdxCommand } from '@salesforce/command';
-import { Logger, Messages } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
 import {
     CommandLineUtils,
@@ -45,19 +45,20 @@ export class Setup extends SfdxCommand implements HasRequirements {
     ];
 
     public async run(): Promise<any> {
-        await this.init(); // ensure init first
+        try {
+            await this.init(); // ensure init first
+        } catch (error) {
+            if (error instanceof SfdxError) {
+                const sfdxError = error as SfdxError;
+                sfdxError.actions = this.examples;
+                throw sfdxError;
+            }
+            throw error;
+        }
 
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
-        return CommandLineUtils.validatePlatformFlag(this.flags, this.examples)
-            .then(() =>
-                CommandLineUtils.validateApiLevelFlag(this.flags, this.examples)
-            )
-            .then(() =>
-                RequirementProcessor.getInstance().execute(
-                    this.commandRequirements
-                )
-            ); // verify requirements
+        return RequirementProcessor.execute(this.commandRequirements);
     }
 
     protected async init(): Promise<void> {

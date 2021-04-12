@@ -6,7 +6,6 @@
  */
 import { flags, FlagsConfig } from '@salesforce/command';
 import { Messages, SfdxError, Logger } from '@salesforce/core';
-import { OutputFlags } from '@oclif/parser';
 import util from 'util';
 
 // Initialize Messages with the current plugin directory
@@ -140,7 +139,8 @@ export class CommandLineUtils {
                         longDescription: messages.getMessage(
                             'apiLevelFlagDescription'
                         ),
-                        required
+                        required,
+                        validate: CommandLineUtils.validateApiLevelFlag
                     })
                 };
             case FlagsConfigType.Platform:
@@ -153,60 +153,39 @@ export class CommandLineUtils {
                         longDescription: messages.getMessage(
                             'platformFlagDescription'
                         ),
-                        required
+                        required,
+                        validate: CommandLineUtils.validatePlatformFlag
                     })
                 };
         }
     }
 
-    public static validateApiLevelFlag(
-        commandFlags: OutputFlags<any>,
-        recommendations: string[]
-    ): Promise<void> {
-        if (commandFlags.apilevel) {
-            if (CommandLineUtils.platformFlagIsIOS(commandFlags.platform)) {
-                CommandLineUtils.logger.warn(
-                    'The apiLevel flag does not apply to the iOS platform... ignoring.'
-                );
-                return Promise.resolve();
-            }
-
-            try {
-                Version.from(commandFlags.apilevel);
-            } catch (error) {
-                return Promise.reject(
-                    new SfdxError(
-                        util.format(
-                            messages.getMessage(
-                                'error:invalidApiLevelFlagsDescription'
-                            ),
-                            error
-                        ),
-                        'lwc-dev-mobile-core',
-                        recommendations
-                    )
-                );
-            }
+    private static validateApiLevelFlag(flag: string): boolean {
+        try {
+            Version.from(flag);
+        } catch (error) {
+            throw new SfdxError(
+                util.format(
+                    messages.getMessage(
+                        'error:invalidApiLevelFlagsDescription'
+                    ),
+                    error
+                ),
+                'lwc-dev-mobile-core'
+            );
         }
-
-        return Promise.resolve();
+        return true;
     }
 
-    public static validatePlatformFlag(
-        commandFlags: OutputFlags<any>,
-        recommendations: string[]
-    ): Promise<void> {
-        if (!CommandLineUtils.platformFlagIsValid(commandFlags.platform)) {
-            return Promise.reject(
-                new SfdxError(
-                    messages.getMessage('error:invalidInputFlagsDescription'),
-                    'lwc-dev-mobile-core',
-                    recommendations
-                )
+    private static validatePlatformFlag(flag: string): boolean {
+        if (!CommandLineUtils.platformFlagIsValid(flag)) {
+            throw new SfdxError(
+                messages.getMessage('error:invalidInputFlagsDescription'),
+                'lwc-dev-mobile-core'
             );
         }
 
-        return Promise.resolve();
+        return true;
     }
 
     private static logger: Logger = new Logger(LOGGER_NAME);

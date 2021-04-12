@@ -150,7 +150,7 @@ class TwoFalsyOneTruthyRequirements implements HasRequirements {
 describe('Requirements Processing', () => {
     test('Meets all requirements', async () => {
         expect.assertions(1);
-        await RequirementProcessor.getInstance().execute(
+        await RequirementProcessor.execute(
             new TruthyRequirements().commandRequirements
         );
         expect(true).toBeTruthy();
@@ -159,7 +159,7 @@ describe('Requirements Processing', () => {
     test('Throws when any requirement fails', async () => {
         expect.assertions(4);
         try {
-            await RequirementProcessor.getInstance().execute(
+            await RequirementProcessor.execute(
                 new FalsyRequirements().commandRequirements
             );
         } catch (error) {
@@ -175,71 +175,15 @@ describe('Requirements Processing', () => {
         const requirements = new TwoFalsyOneTruthyRequirements();
         requirements.commandRequirements.falsyRequirementOne.enabled = false;
         requirements.commandRequirements.falsyRequirementTwo.enabled = false;
-        await RequirementProcessor.getInstance().execute(
-            requirements.commandRequirements
-        );
+        await RequirementProcessor.execute(requirements.commandRequirements);
         expect(true).toBeTruthy();
-    });
-
-    test('Skips falsy requirements by using skipRequirements in RequirementProcessor', async () => {
-        const requirements = new TwoFalsyOneTruthyRequirements();
-        RequirementProcessor.getInstance().skipRequirements([
-            'falsyRequirementOne',
-            'falsyRequirementTwo'
-        ]);
-        await RequirementProcessor.getInstance().execute(
-            requirements.commandRequirements
-        );
-        expect(true).toBeTruthy();
-    });
-
-    test('Skipping truthy requirements by using skipRequirements in RequirementProcessor fails requirement check', async () => {
-        const requirements = new TwoFalsyOneTruthyRequirements();
-        RequirementProcessor.getInstance().skipRequirements([
-            'truthyRequirement'
-        ]);
-        expect.assertions(2);
-        try {
-            await RequirementProcessor.getInstance().execute(
-                requirements.commandRequirements
-            );
-        } catch (error) {
-            expect(error instanceof SfdxError).toBeTruthy();
-            const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(failureMessage);
-        }
-    });
-
-    test('Resetting skip requirements will fail requirement check', async () => {
-        expect.assertions(3);
-
-        const requirements = new TwoFalsyOneTruthyRequirements();
-        RequirementProcessor.getInstance().skipRequirements([
-            'falsyRequirementOne',
-            'falsyRequirementTwo'
-        ]);
-        await RequirementProcessor.getInstance().execute(
-            requirements.commandRequirements
-        );
-        expect(true).toBeTruthy();
-
-        RequirementProcessor.getInstance().resetSkipRequirements();
-        try {
-            await RequirementProcessor.getInstance().execute(
-                requirements.commandRequirements
-            );
-        } catch (error) {
-            expect(error instanceof SfdxError).toBeTruthy();
-            const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(failureMessage);
-        }
     });
 
     test('Fails when there is a failed requirement check in combo checks', async () => {
         expect.assertions(4);
         const requirements = new TwoFalsyOneTruthyRequirements();
         try {
-            await RequirementProcessor.getInstance().execute(
+            await RequirementProcessor.execute(
                 requirements.commandRequirements
             );
         } catch (error) {
@@ -254,9 +198,7 @@ describe('Requirements Processing', () => {
     test('Skips all checks and check will ', async () => {
         const requirements = new FalsyRequirements();
         requirements.commandRequirements.baseRequirements.enabled = false;
-        await RequirementProcessor.getInstance().execute(
-            requirements.commandRequirements
-        );
+        await RequirementProcessor.execute(requirements.commandRequirements);
         expect(true).toBeTruthy();
     });
 });

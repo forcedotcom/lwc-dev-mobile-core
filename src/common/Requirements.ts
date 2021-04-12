@@ -116,31 +116,12 @@ const messages = Messages.loadMessages(
 );
 
 export class RequirementProcessor {
-    private static instance: RequirementProcessor;
-    private skipRequirementList: { [key: string]: boolean } = {};
-    private constructor() {}
-
-    public static getInstance() {
-        return (
-            RequirementProcessor.instance ||
-            (RequirementProcessor.instance = new RequirementProcessor())
-        );
-    }
-
-    public resetSkipRequirements() {
-        this.skipRequirementList = {};
-    }
-
-    public skipRequirements(requirementNames: string[]) {
-        requirementNames.forEach((value) => {
-            this.skipRequirementList[value] = true;
-        });
-    }
-
     /**
      * Executes all of the base and command requirement checks.
      */
-    public async execute(requirements: CommandRequirements): Promise<void> {
+    public static async execute(
+        requirements: CommandRequirements
+    ): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -150,7 +131,7 @@ export class RequirementProcessor {
         let enabledRequirements: Requirement[] = [];
 
         Object.entries(requirements).forEach(([name, requirementList]) => {
-            if (!this.skipRequirementList[name] && requirementList.enabled) {
+            if (requirementList.enabled) {
                 enabledRequirements = enabledRequirements.concat(
                     requirementList.requirements
                 );
@@ -179,13 +160,13 @@ export class RequirementProcessor {
                                         testResult.hasMetAllRequirements = false;
                                     }
 
-                                    subTask.title = RequirementProcessor.getInstance().getFormattedTitle(
+                                    subTask.title = RequirementProcessor.getFormattedTitle(
                                         result
                                     );
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;
-                                    rootTask.title = `${rootTaskTitle} (${RequirementProcessor.getInstance().formatDurationAsSeconds(
+                                    rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
                                         totalDuration
                                     )})`;
 
@@ -240,19 +221,19 @@ export class RequirementProcessor {
                     'lwc-dev-mobile-core'
                 )
             );
-        } finally {
-            this.resetSkipRequirements();
         }
     }
 
-    private getFormattedTitle(testCaseResult: RequirementResult): string {
+    private static getFormattedTitle(
+        testCaseResult: RequirementResult
+    ): string {
         const statusMsg = testCaseResult.hasPassed
             ? messages.getMessage('passed')
             : messages.getMessage('failed');
 
         const title = `${statusMsg}: ${
             testCaseResult.title
-        } (${RequirementProcessor.getInstance().formatDurationAsSeconds(
+        } (${RequirementProcessor.formatDurationAsSeconds(
             testCaseResult.duration
         )})`;
 
@@ -261,7 +242,7 @@ export class RequirementProcessor {
             : chalk.bold.red(title);
     }
 
-    private formatDurationAsSeconds(duration: number): string {
+    private static formatDurationAsSeconds(duration: number): string {
         return `${duration.toFixed(3)} sec`;
     }
 }
