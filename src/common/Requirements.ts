@@ -130,7 +130,7 @@ export class RequirementProcessor {
         let totalDuration = 0;
         let enabledRequirements: Requirement[] = [];
 
-        Object.entries(requirements).forEach(([name, requirementList]) => {
+        Object.entries(requirements).forEach(([_, requirementList]) => {
             if (requirementList.enabled) {
                 enabledRequirements = enabledRequirements.concat(
                     requirementList.requirements
