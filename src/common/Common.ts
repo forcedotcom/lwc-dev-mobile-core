@@ -4,6 +4,22 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { flags, FlagsConfig } from '@salesforce/command';
+import { Messages, SfdxError, Logger } from '@salesforce/core';
+import util from 'util';
+
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
+
+const LOGGER_NAME = 'force:lightning:local:common';
+
 export class MapUtils {
     /**
      * Enables filtering operation on Map types.
@@ -44,6 +60,11 @@ export class SetUtils {
         }
         return aSet;
     }
+}
+
+export enum FlagsConfigType {
+    Platform,
+    ApiLevel
 }
 
 // tslint:disable-next-line: max-classes-per-file
@@ -102,6 +123,72 @@ export class CommandLineUtils {
             return defaultValue;
         }
     }
+
+    public static createFlagConfig(
+        type: FlagsConfigType,
+        required: boolean
+    ): FlagsConfig {
+        switch (type) {
+            case FlagsConfigType.ApiLevel:
+                return {
+                    apilevel: flags.string({
+                        char: 'l',
+                        description: messages.getMessage(
+                            'apiLevelFlagDescription'
+                        ),
+                        longDescription: messages.getMessage(
+                            'apiLevelFlagDescription'
+                        ),
+                        required,
+                        validate: CommandLineUtils.validateApiLevelFlag
+                    })
+                };
+            case FlagsConfigType.Platform:
+                return {
+                    platform: flags.string({
+                        char: 'p',
+                        description: messages.getMessage(
+                            'platformFlagDescription'
+                        ),
+                        longDescription: messages.getMessage(
+                            'platformFlagDescription'
+                        ),
+                        required,
+                        validate: CommandLineUtils.validatePlatformFlag
+                    })
+                };
+        }
+    }
+
+    private static validateApiLevelFlag(flag: string): boolean {
+        try {
+            Version.from(flag);
+        } catch (error) {
+            throw new SfdxError(
+                util.format(
+                    messages.getMessage(
+                        'error:invalidApiLevelFlagsDescription'
+                    ),
+                    error
+                ),
+                'lwc-dev-mobile-core'
+            );
+        }
+        return true;
+    }
+
+    private static validatePlatformFlag(flag: string): boolean {
+        if (!CommandLineUtils.platformFlagIsValid(flag)) {
+            throw new SfdxError(
+                messages.getMessage('error:invalidInputFlagsDescription'),
+                'lwc-dev-mobile-core'
+            );
+        }
+
+        return true;
+    }
+
+    private static logger: Logger = new Logger(LOGGER_NAME);
 }
 
 // tslint:disable-next-line: max-classes-per-file

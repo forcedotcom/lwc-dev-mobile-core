@@ -4,8 +4,19 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { Messages, SfdxError } from '@salesforce/core';
 import * as common from '../Common';
+import util from 'util';
 
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
 describe('Commons utils tests', () => {
     test('Filtering of maps returns maps', async () => {
         const mascotMapping = new Map();
@@ -128,5 +139,70 @@ describe('Commons utils tests', () => {
 
     test('Test that iOS platform check does not match empty input string', async () => {
         expect(common.CommandLineUtils.platformFlagIsIOS('') === false);
+    });
+
+    test('Platform flag config property returns expected flag', async () => {
+        let platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.Platform,
+            true
+        );
+        expect(platformFlagConfig.platform).toBeDefined();
+        expect(platformFlagConfig.platform!.longDescription).toBe(
+            messages.getMessage('platformFlagDescription')
+        );
+        expect(platformFlagConfig.platform!.description).toBe(
+            messages.getMessage('platformFlagDescription')
+        );
+        let requiredKeyValuePair = Object.entries(
+            platformFlagConfig.platform!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(true);
+
+        platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.Platform,
+            false
+        );
+
+        requiredKeyValuePair = Object.entries(
+            platformFlagConfig.platform!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(false);
+    });
+
+    test('API level flag config property returns expected flag', async () => {
+        let apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.ApiLevel,
+            true
+        );
+        expect(apiLevelFlagConfig.apilevel).toBeDefined();
+        expect(apiLevelFlagConfig.apilevel!.longDescription).toBe(
+            messages.getMessage('apiLevelFlagDescription')
+        );
+        expect(apiLevelFlagConfig.apilevel!.description).toBe(
+            messages.getMessage('apiLevelFlagDescription')
+        );
+
+        let requiredKeyValuePair = Object.entries(
+            apiLevelFlagConfig.apilevel!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(true);
+
+        apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+            common.FlagsConfigType.ApiLevel,
+            false
+        );
+
+        requiredKeyValuePair = Object.entries(
+            apiLevelFlagConfig.apilevel!
+        ).find((keyValuePair) => keyValuePair[0] === 'required');
+
+        expect(requiredKeyValuePair).toBeDefined();
+        expect(requiredKeyValuePair![1]).toBe(false);
     });
 });

@@ -4,11 +4,13 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { flags, FlagsConfig, SfdxCommand } from '@salesforce/command';
+import { FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages, SfdxError } from '@salesforce/core';
-import util from 'util';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
-import { CommandLineUtils, Version } from '../../../../../common/Common';
+import {
+    CommandLineUtils,
+    FlagsConfigType
+} from '../../../../../common/Common';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements';
 import { LoggerSetup } from '../../../../../common/LoggerSetup';
 import {
@@ -33,18 +35,8 @@ export class Setup extends SfdxCommand implements HasRequirements {
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
-        apilevel: flags.string({
-            char: 'a',
-            description: messages.getMessage('apiLevelFlagDescription'),
-            longDescription: messages.getMessage('apiLevelFlagDescription'),
-            required: false
-        }),
-        platform: flags.string({
-            char: 'p',
-            description: messages.getMessage('platformFlagDescription'),
-            longDescription: messages.getMessage('platformFlagDescription'),
-            required: true
-        })
+        ...CommandLineUtils.createFlagConfig(FlagsConfigType.ApiLevel, false),
+        ...CommandLineUtils.createFlagConfig(FlagsConfigType.Platform, true)
     };
 
     public examples = [
@@ -53,12 +45,20 @@ export class Setup extends SfdxCommand implements HasRequirements {
     ];
 
     public async run(): Promise<any> {
-        await this.init(); // ensure init first
+        try {
+            await this.init(); // ensure init first
+        } catch (error) {
+            if (error instanceof SfdxError) {
+                const sfdxError = error as SfdxError;
+                sfdxError.actions = this.examples;
+                throw sfdxError;
+            }
+            throw error;
+        }
 
         this.logger.info(`Setup command called for ${this.flags.platform}`);
 
-        return this.validateInputParameters() // validate input
-            .then(() => RequirementProcessor.execute(this.commandRequirements)); // verify requirements
+        return RequirementProcessor.execute(this.commandRequirements);
     }
 
     protected async init(): Promise<void> {
@@ -74,46 +74,6 @@ export class Setup extends SfdxCommand implements HasRequirements {
                 this.logger = logger;
                 return LoggerSetup.initializePluginLoggers();
             });
-    }
-
-    protected async validateInputParameters(): Promise<void> {
-        if (!CommandLineUtils.platformFlagIsValid(this.flags.platform)) {
-            return Promise.reject(
-                new SfdxError(
-                    messages.getMessage('error:invalidInputFlagsDescription'),
-                    'lwc-dev-mobile-core',
-                    this.examples
-                )
-            );
-        }
-
-        if (this.flags.apilevel) {
-            if (CommandLineUtils.platformFlagIsIOS(this.flags.platform)) {
-                this.logger.warn(
-                    'The apiLevel flag does not apply to the iOS platform... ignoring.'
-                );
-                return Promise.resolve();
-            }
-
-            try {
-                Version.from(this.flags.apilevel);
-            } catch (error) {
-                return Promise.reject(
-                    new SfdxError(
-                        util.format(
-                            messages.getMessage(
-                                'error:invalidApiLevelFlagsDescription'
-                            ),
-                            error
-                        ),
-                        'lwc-dev-mobile-core',
-                        this.examples
-                    )
-                );
-            }
-        }
-
-        return Promise.resolve();
     }
 
     public get commandRequirements(): CommandRequirements {

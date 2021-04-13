@@ -14,7 +14,7 @@ import { Setup } from '../setup';
 Messages.importMessagesDirectory(__dirname);
 const messages = Messages.loadMessages(
     '@salesforce/lwc-dev-mobile-core',
-    'setup'
+    'common'
 );
 
 enum PlatformType {
@@ -87,10 +87,27 @@ describe('Setup Tests', () => {
         }
     });
 
-    test('Checks that Setup ignores API Level flag for iOS platform', async () => {
-        const setup = makeSetup(PlatformType.ios, 'not-a-number');
+    test('Checks that Setup will still validate API Level flag for iOS platform if passed a value', async () => {
+        expect.assertions(3);
+
+        let setup = makeSetup(PlatformType.ios, '1.2.3');
         await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
+
+        setup = makeSetup(PlatformType.ios, 'not-a-number');
+        try {
+            await setup.run();
+        } catch (error) {
+            expect(error instanceof SfdxError).toBe(true);
+            expect((error as SfdxError).message).toMatch(
+                util.format(
+                    messages.getMessage(
+                        'error:invalidApiLevelFlagsDescription'
+                    ),
+                    'Error: Invalid version string: not-a-number'
+                )
+            );
+        }
     });
 
     test('Logger must be initialized and invoked', async () => {
@@ -115,7 +132,7 @@ describe('Setup Tests', () => {
     function makeSetup(platform: string, apiLevel?: string): Setup {
         const args = ['-p', platform];
         if (apiLevel) {
-            args.push('-a');
+            args.push('-l');
             args.push(apiLevel);
         }
         const setup = new Setup(
