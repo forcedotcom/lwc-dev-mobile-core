@@ -132,7 +132,7 @@ describe('Setup Tests', () => {
     function makeSetup(platform: string, apiLevel?: string): Setup {
         const args = ['-p', platform];
         if (apiLevel) {
-            args.push('-a');
+            args.push('-l');
             args.push(apiLevel);
         }
         const setup = new Setup(
