@@ -132,7 +132,7 @@ export class CommandLineUtils {
             case FlagsConfigType.ApiLevel:
                 return {
                     apilevel: flags.string({
-                        char: 'a',
+                        char: 'l',
                         description: messages.getMessage(
                             'apiLevelFlagDescription'
                         ),
