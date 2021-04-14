@@ -126,12 +126,10 @@ export class CommandLineUtils {
 
     public static createFlagConfig(
         type: FlagsConfigType,
-        required: boolean,
-        actionMessages: string[]
+        required: boolean
     ): FlagsConfig {
         switch (type) {
             case FlagsConfigType.ApiLevel:
-                CommandLineUtils.apiLevelFlagFailureActionMessages = actionMessages;
                 return {
                     apilevel: flags.string({
                         char: 'l',
@@ -146,7 +144,6 @@ export class CommandLineUtils {
                     })
                 };
             case FlagsConfigType.Platform:
-                CommandLineUtils.platformFlagFailureActionMessages = actionMessages;
                 return {
                     platform: flags.string({
                         char: 'p',
@@ -163,7 +160,8 @@ export class CommandLineUtils {
         }
     }
 
-    private static apiLevelFlagFailureActionMessages: string[] = [];
+    public static flagFailureActionMessages: string[] = [];
+
     private static validateApiLevelFlag(flag: string): boolean {
         try {
             Version.from(flag);
@@ -176,19 +174,18 @@ export class CommandLineUtils {
                     error
                 ),
                 'lwc-dev-mobile-core',
-                CommandLineUtils.apiLevelFlagFailureActionMessages
+                CommandLineUtils.flagFailureActionMessages
             );
         }
         return true;
     }
 
-    private static platformFlagFailureActionMessages: string[] = [];
     private static validatePlatformFlag(flag: string): boolean {
         if (!CommandLineUtils.platformFlagIsValid(flag)) {
             throw new SfdxError(
                 messages.getMessage('error:invalidInputFlagsDescription'),
                 'lwc-dev-mobile-core',
-                CommandLineUtils.platformFlagFailureActionMessages
+                CommandLineUtils.flagFailureActionMessages
             );
         }
 
