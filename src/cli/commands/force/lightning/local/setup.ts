@@ -30,8 +30,6 @@ const messages = Messages.loadMessages(
 );
 
 export class Setup extends SfdxCommand implements HasRequirements {
-    private _commandRequirements: CommandRequirements = {};
-
     public static description = messages.getMessage('commandDescription');
 
     public static readonly flagsConfig: FlagsConfig = {
@@ -45,23 +43,11 @@ export class Setup extends SfdxCommand implements HasRequirements {
     ];
 
     public async run(): Promise<any> {
-        try {
-            await this.init(); // ensure init first
-        } catch (error) {
-            if (error instanceof SfdxError) {
-                const sfdxError = error as SfdxError;
-                sfdxError.actions = this.examples;
-                throw sfdxError;
-            }
-            throw error;
-        }
-
         this.logger.info(`Setup command called for ${this.flags.platform}`);
-
         return RequirementProcessor.execute(this.commandRequirements);
     }
 
-    protected async init(): Promise<void> {
+    public async init(): Promise<void> {
         if (this.logger) {
             // already initialized
             return Promise.resolve();
@@ -76,6 +62,7 @@ export class Setup extends SfdxCommand implements HasRequirements {
             });
     }
 
+    private _commandRequirements: CommandRequirements = {};
     public get commandRequirements(): CommandRequirements {
         if (Object.keys(this._commandRequirements).length === 0) {
             const requirements = CommandLineUtils.platformFlagIsAndroid(

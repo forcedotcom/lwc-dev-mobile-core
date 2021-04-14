@@ -41,12 +41,14 @@ describe('Setup Tests', () => {
 
     test('Checks that Setup is initialized correctly for iOS', async () => {
         const setup = makeSetup(PlatformType.ios);
+        await setup.init();
         await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
     });
 
     test('Checks that Setup is initialized correctly for Android', async () => {
         const setup = makeSetup(PlatformType.android);
+        await setup.init();
         await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
     });
@@ -55,6 +57,7 @@ describe('Setup Tests', () => {
         const setup = makeSetup('someplatform');
         expect.assertions(2);
         try {
+            await setup.init();
             await setup.run();
         } catch (error) {
             expect(error instanceof SfdxError).toBe(true);
@@ -69,6 +72,7 @@ describe('Setup Tests', () => {
 
         expect.assertions(2);
         try {
+            await setup.init();
             await setup.run();
         } catch (error) {
             const expectedMsg = util
@@ -91,11 +95,13 @@ describe('Setup Tests', () => {
         expect.assertions(3);
 
         let setup = makeSetup(PlatformType.ios, '1.2.3');
+        await setup.init();
         await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
 
         setup = makeSetup(PlatformType.ios, 'not-a-number');
         try {
+            await setup.init();
             await setup.run();
         } catch (error) {
             expect(error instanceof SfdxError).toBe(true);
@@ -119,6 +125,7 @@ describe('Setup Tests', () => {
             LoggerSetup,
             'initializePluginLoggers'
         );
+        await setup.init();
         await setup.run();
         expect(loggerSpy).toHaveBeenCalled();
         expect(LoggerSetupSpy).toHaveBeenCalled();
