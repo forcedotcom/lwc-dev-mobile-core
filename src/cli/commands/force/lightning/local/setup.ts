@@ -32,15 +32,23 @@ const messages = Messages.loadMessages(
 export class Setup extends SfdxCommand implements HasRequirements {
     public static description = messages.getMessage('commandDescription');
 
-    public static readonly flagsConfig: FlagsConfig = {
-        ...CommandLineUtils.createFlagConfig(FlagsConfigType.ApiLevel, false),
-        ...CommandLineUtils.createFlagConfig(FlagsConfigType.Platform, true)
-    };
-
-    public examples = [
+    public static examples = [
         `sfdx force:lightning:local:setup -p iOS`,
         `sfdx force:lightning:local:setup -p Android`
     ];
+
+    public static readonly flagsConfig: FlagsConfig = {
+        ...CommandLineUtils.createFlagConfig(
+            FlagsConfigType.ApiLevel,
+            false,
+            Setup.examples
+        ),
+        ...CommandLineUtils.createFlagConfig(
+            FlagsConfigType.Platform,
+            true,
+            Setup.examples
+        )
+    };
 
     public async run(): Promise<any> {
         this.logger.info(`Setup command called for ${this.flags.platform}`);

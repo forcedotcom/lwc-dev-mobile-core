@@ -144,7 +144,8 @@ describe('Commons utils tests', () => {
     test('Platform flag config property returns expected flag', async () => {
         let platformFlagConfig = common.CommandLineUtils.createFlagConfig(
             common.FlagsConfigType.Platform,
-            true
+            true,
+            []
         );
         expect(platformFlagConfig.platform).toBeDefined();
         expect(platformFlagConfig.platform!.longDescription).toBe(
@@ -162,7 +163,8 @@ describe('Commons utils tests', () => {
 
         platformFlagConfig = common.CommandLineUtils.createFlagConfig(
             common.FlagsConfigType.Platform,
-            false
+            false,
+            []
         );
 
         requiredKeyValuePair = Object.entries(
@@ -176,7 +178,8 @@ describe('Commons utils tests', () => {
     test('API level flag config property returns expected flag', async () => {
         let apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
             common.FlagsConfigType.ApiLevel,
-            true
+            true,
+            []
         );
         expect(apiLevelFlagConfig.apilevel).toBeDefined();
         expect(apiLevelFlagConfig.apilevel!.longDescription).toBe(
@@ -195,7 +198,8 @@ describe('Commons utils tests', () => {
 
         apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
             common.FlagsConfigType.ApiLevel,
-            false
+            false,
+            []
         );
 
         requiredKeyValuePair = Object.entries(
