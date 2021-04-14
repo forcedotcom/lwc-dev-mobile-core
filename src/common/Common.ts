@@ -160,6 +160,8 @@ export class CommandLineUtils {
         }
     }
 
+    public static flagFailureActionMessages: string[] = [];
+
     private static validateApiLevelFlag(flag: string): boolean {
         try {
             Version.from(flag);
@@ -171,7 +173,8 @@ export class CommandLineUtils {
                     ),
                     error
                 ),
-                'lwc-dev-mobile-core'
+                'lwc-dev-mobile-core',
+                CommandLineUtils.flagFailureActionMessages
             );
         }
         return true;
@@ -181,7 +184,8 @@ export class CommandLineUtils {
         if (!CommandLineUtils.platformFlagIsValid(flag)) {
             throw new SfdxError(
                 messages.getMessage('error:invalidInputFlagsDescription'),
-                'lwc-dev-mobile-core'
+                'lwc-dev-mobile-core',
+                CommandLineUtils.flagFailureActionMessages
             );
         }
 
