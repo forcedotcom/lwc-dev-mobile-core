@@ -71,7 +71,7 @@ describe('Android Launcher tests', () => {
         );
 
         expect(launchUrlMock).toHaveBeenCalledWith(
-            'http://10.0.2.2:3333/lwc/preview/c/helloWorld',
+            'http://10.0.2.2:3333', //'http://10.0.2.2:3333/lwc/preview/c/helloWorld',
             5572
         );
     });

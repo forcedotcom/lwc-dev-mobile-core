@@ -103,7 +103,7 @@ export class AndroidLauncher {
 
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
                     const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
-                    const url = `${address}:${port}/lwc/preview/${compPath}`;
+                    const url = `${address}:${port}`; //`${address}:${port}/lwc/preview/${compPath}`;
                     CommonUtils.stopCliAction(
                         util.format(
                             messages.getMessage('launchBrowserStatus'),
