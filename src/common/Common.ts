@@ -71,6 +71,7 @@ export enum FlagsConfigType {
 export class CommandLineUtils {
     public static IOS_FLAG = 'ios';
     public static ANDROID_FLAG = 'android';
+    public static DESKTOP_FLAG = 'desktop';
 
     /**
      * Checks to see if a flag is targeting iOS.
@@ -79,7 +80,7 @@ export class CommandLineUtils {
      */
     public static platformFlagIsIOS(input: string): boolean {
         if (input) {
-            return input.toLowerCase() === CommandLineUtils.IOS_FLAG;
+            return input.trim().toLowerCase() === CommandLineUtils.IOS_FLAG;
         }
         return false;
     }
@@ -91,7 +92,19 @@ export class CommandLineUtils {
      */
     public static platformFlagIsAndroid(input: string): boolean {
         if (input) {
-            return input.toLowerCase() === CommandLineUtils.ANDROID_FLAG;
+            return input.trim().toLowerCase() === CommandLineUtils.ANDROID_FLAG;
+        }
+        return false;
+    }
+
+    /**
+     * Checks to see if a flag is targeting Desktop.
+     * @param input The input flag.
+     * @returns True if flag is targeting Desktop.
+     */
+    public static platformFlagIsDesktop(input: string): boolean {
+        if (input) {
+            return input.trim().toLowerCase() === CommandLineUtils.DESKTOP_FLAG;
         }
         return false;
     }
@@ -99,29 +112,19 @@ export class CommandLineUtils {
     /**
      * Checks to see if a platform flag has a valid value.
      * @param platformFlag The platform flag.
-     * @returns True if flag is valid (i.e either targeting iOS or Android).
+     * @param allowDesktop Indicates whether Desktop is allowed as a target platform. Defaults to false.
+     * @returns True if flag is valid.
      */
-    public static platformFlagIsValid(platformFlag: string) {
+    public static platformFlagIsValid(
+        platformFlag: string,
+        allowDesktop: boolean = false
+    ) {
         return (
             CommandLineUtils.platformFlagIsIOS(platformFlag) ||
-            CommandLineUtils.platformFlagIsAndroid(platformFlag)
+            CommandLineUtils.platformFlagIsAndroid(platformFlag) ||
+            (allowDesktop &&
+                CommandLineUtils.platformFlagIsDesktop(platformFlag))
         );
-    }
-
-    /**
-     * Helper method for resolving flag values.
-     * @param flag The input flag.
-     * @param defaultValue The default value for a flag.
-     * @returns If the input flag can be cast to a string that is not undefined/null/empty then
-     * the string value will be returned. Otherwise, the provided default value will be returned.
-     */
-    public static resolveFlag(flag: any, defaultValue: string): string {
-        const resolvedFlag = flag as string;
-        if (resolvedFlag && resolvedFlag.length > 0) {
-            return resolvedFlag;
-        } else {
-            return defaultValue;
-        }
     }
 
     public static createFlagConfig(
