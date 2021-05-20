@@ -112,17 +112,17 @@ export class CommandLineUtils {
     /**
      * Checks to see if a platform flag has a valid value.
      * @param platformFlag The platform flag.
-     * @param allowDesktop Indicates whether Desktop is allowed as a target platform. Defaults to false.
+     * @param includeDesktop Indicates whether Desktop is allowed as a target platform. Defaults to false.
      * @returns True if flag is valid.
      */
     public static platformFlagIsValid(
         platformFlag: string,
-        allowDesktop: boolean = false
+        includeDesktop: boolean = false
     ) {
         return (
             CommandLineUtils.platformFlagIsIOS(platformFlag) ||
             CommandLineUtils.platformFlagIsAndroid(platformFlag) ||
-            (allowDesktop &&
+            (includeDesktop &&
                 CommandLineUtils.platformFlagIsDesktop(platformFlag))
         );
     }
