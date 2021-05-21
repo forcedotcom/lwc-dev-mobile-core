@@ -1,7 +1,7 @@
 {
   "name": "@salesforce/lwc-dev-mobile-core",
   "description": "Core module supporting Salesforce CLI mobile extension plug-ins",
-  "version": "1.0.0",
+  "version": "1.0.0-lwr",
   "author": {
     "name": "Meisam Seyed Aliroteh",
     "email": "maliroteh@salesforce.com",

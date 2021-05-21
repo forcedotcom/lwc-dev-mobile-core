@@ -40,7 +40,6 @@ export class PlatformConfig {
 // tslint:disable-next-line: max-classes-per-file
 export class IOSConfig {
     public readonly minSupportedRuntime: string = '13';
-    public readonly defaultSimulatorName: string = 'SFDXSimulator';
 }
 
 // tslint:disable-next-line: max-classes-per-file
@@ -57,7 +56,6 @@ export class AndroidConfig {
         'pixel_xl',
         'pixel_c'
     ];
-    public readonly defaultEmulatorName: string = 'SFDXEmulator';
     public readonly defaultAdbPort: number = 5572;
     public readonly deviceReadinessWaitTime: number = 120000;
     public readonly AdbNumRetryAttempts: number = 6;
