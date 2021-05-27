@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfdxError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
 import fs from 'fs';
@@ -17,6 +17,16 @@ import os from 'os';
 type StdioOptions = childProcess.StdioOptions;
 
 const LOGGER_NAME = 'force:lightning:local:commonutils';
+
+// Initialize Messages with the current plugin directory
+Messages.importMessagesDirectory(__dirname);
+
+// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+// or any library that is using the messages framework can also be loaded this way.
+const messages = Messages.loadMessages(
+    '@salesforce/lwc-dev-mobile-core',
+    'common'
+);
 
 export class CommonUtils {
     public static DEFAULT_LWC_SERVER_PORT = '3333';
@@ -264,9 +274,14 @@ export class CommonUtils {
                 ? 'start'
                 : 'xdg-open';
 
-        return CommonUtils.executeCommandAsync(`${openCmd} ${url}`).then(() =>
-            Promise.resolve()
+        CommonUtils.startCliAction(
+            messages.getMessage('launchBrowserAction'),
+            util.format(messages.getMessage('openBrowserWithUrlStatus'), url)
         );
+        return CommonUtils.executeCommandAsync(`${openCmd} ${url}`).then(() => {
+            CommonUtils.stopCliAction();
+            return Promise.resolve();
+        });
     }
 
     /**
