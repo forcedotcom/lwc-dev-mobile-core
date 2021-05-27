@@ -4,7 +4,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "iOS - Setup",
+            "name": "Setup - iOS",
             "program": "${workspaceFolder}/bin/run",
             "args": [
                 "force:lightning:local:setup",
@@ -16,7 +16,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Android - Setup",
+            "name": "Setup - Android",
             "program": "${workspaceFolder}/bin/run",
             "args": [
                 "force:lightning:local:setup",
