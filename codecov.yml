@@ -6,6 +6,8 @@ comment:
   layout: "header, diff, tree"
   behavior: default
   require_changes: false  # if true: only post the comment if coverage changes
+  require_head: no
+  require_base: no
   branches: null
   flags: null
   paths: null
