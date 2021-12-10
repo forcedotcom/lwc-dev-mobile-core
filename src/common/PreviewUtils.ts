@@ -89,7 +89,7 @@ export class PreviewUtils {
                 errorMessage: errorText,
                 passed: isValid
             });
-        } catch (err) {
+        } catch (err: any) {
             return Promise.resolve({
                 errorMessage: err,
                 passed: false

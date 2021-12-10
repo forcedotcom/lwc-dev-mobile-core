@@ -43,7 +43,7 @@ describe('CommonUtils', () => {
 
         try {
             await CommonUtils.createTempDirectory();
-        } catch (error) {
+        } catch (error: any) {
             const message = `Could not create a temp folder at ${tempFolderPath}: `;
             expect(error.message.includes(message)).toBeTruthy();
         }
@@ -129,7 +129,7 @@ describe('CommonUtils', () => {
         expect.assertions(1);
         try {
             await promiseWithTimeout;
-        } catch (error) {
+        } catch (error: any) {
             expect(error.message === 'timed out').toBe(true);
         }
     });
