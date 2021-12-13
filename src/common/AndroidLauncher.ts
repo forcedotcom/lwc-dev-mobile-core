@@ -49,7 +49,8 @@ export class AndroidLauncher {
         appConfig: AndroidAppPreviewConfig | undefined,
         serverPort: string
     ): Promise<void> {
-        const preferredPack = await AndroidUtils.fetchSupportedEmulatorImagePackage();
+        const preferredPack =
+            await AndroidUtils.fetchSupportedEmulatorImagePackage();
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;

@@ -50,7 +50,8 @@ export class IOSLauncher {
         serverPort: string
     ): Promise<void> {
         const availableDevices: string[] = await IOSUtils.getSupportedDevices();
-        const supportedRuntimes: string[] = await IOSUtils.getSupportedRuntimes();
+        const supportedRuntimes: string[] =
+            await IOSUtils.getSupportedRuntimes();
         const currentSimulator = await IOSUtils.getSimulator(
             this.simulatorName
         );

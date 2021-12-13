@@ -53,7 +53,7 @@ export class SupportedEnvironmentRequirement implements Requirement {
      */
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for supported environment');
-        const unameCommand: string = '/usr/bin/uname';
+        const unameCommand = '/usr/bin/uname';
         return CommonUtils.executeCommandAsync(unameCommand)
             .then((result) => {
                 const output = result.stdout.trim();
@@ -104,7 +104,7 @@ export class XcodeInstalledRequirement implements Requirement {
      */
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for Xcode environment');
-        const xcodeBuildCommand: string = 'xcodebuild -version';
+        const xcodeBuildCommand = 'xcodebuild -version';
         return CommonUtils.executeCommandAsync(xcodeBuildCommand)
             .then((result) => {
                 if (result.stdout && result.stdout.length > 0) {

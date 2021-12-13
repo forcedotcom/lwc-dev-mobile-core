@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-const ORIG_ANDROID_HOME = process.env.ANDROID_HOME;
-// tslint:disable: no-unused-expression
 const MOCK_ANDROID_HOME = '/mock-android-home';
 process.env.ANDROID_HOME = MOCK_ANDROID_HOME;
 
@@ -34,6 +32,7 @@ const badBlockMock = jest.fn((): string => {
 });
 
 Messages.importMessagesDirectory(__dirname);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const messages = Messages.loadMessages(
     '@salesforce/lwc-dev-mobile-core',
     'requirement-android'
@@ -44,6 +43,7 @@ describe('Android enviroment requirement tests', () => {
     let androidEnvironment: AndroidEnvironmentRequirements;
 
     beforeEach(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         androidEnvironment = new AndroidEnvironmentRequirements(logger);
     });
 

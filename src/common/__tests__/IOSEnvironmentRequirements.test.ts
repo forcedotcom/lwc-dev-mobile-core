@@ -7,7 +7,6 @@
 import { Logger, Messages } from '@salesforce/core';
 import { CommonUtils } from '../CommonUtils';
 import {
-    IOSEnvironmentRequirements,
     SupportedEnvironmentRequirement,
     SupportedSimulatorRuntimeRequirement,
     XcodeInstalledRequirement
@@ -15,52 +14,38 @@ import {
 import { IOSUtils } from '../IOSUtils';
 
 Messages.importMessagesDirectory(__dirname);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const messages = Messages.loadMessages(
     '@salesforce/lwc-dev-mobile-core',
     'requirement-ios'
 );
 const logger = new Logger('test-IOSEnvironmentRequirement');
 
-const myUnameMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve, _) => {
-            resolve({ stdout: 'Darwin', stderr: 'mockError' });
-        });
-    }
-);
+const myUnameMock = jest.fn((): Promise<{ stdout: string; stderr: string }> => {
+    return Promise.resolve({ stdout: 'Darwin', stderr: 'mockError' });
+});
 
-const badBadMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((_, reject) => {
-            reject(new Error('Bad bad mock!'));
-        });
-    }
-);
+const badBadMock = jest.fn((): Promise<{ stdout: string; stderr: string }> => {
+    return new Promise((_, reject) => {
+        reject(new Error('Bad bad mock!'));
+    });
+});
 
 const myXcodeSelectMock = jest.fn(
     (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve, _) => {
-            resolve({
-                stderr: 'mockError',
-                stdout: '/Applications/Xcode.app/Contents/Developer'
-            });
+        return Promise.resolve({
+            stderr: 'mockError',
+            stdout: '/Applications/Xcode.app/Contents/Developer'
         });
     }
 );
 
-const runtimesMockBlock = jest.fn(
-    (): Promise<string[]> => {
-        return new Promise((resolve, reject) => {
-            resolve(['iOS-13-1']);
-        });
-    }
-);
+const runtimesMockBlock = jest.fn((): Promise<string[]> => {
+    return Promise.resolve(['iOS-13-1']);
+});
 
 describe('IOS Environment Requirement tests', () => {
-    let iosEnvironment: IOSEnvironmentRequirements;
-
     beforeEach(() => {
-        iosEnvironment = new IOSEnvironmentRequirements(logger);
         myUnameMock.mockClear();
         badBadMock.mockClear();
         myXcodeSelectMock.mockClear();
@@ -129,11 +114,9 @@ describe('IOS Environment Requirement tests', () => {
     });
 
     it('Should throw an error for unsupported Xcode runtime environments', async () => {
-        const badMock = jest.fn(
-            (): Promise<string[]> => {
-                return Promise.reject(new Error('Bad mock!'));
-            }
-        );
+        const badMock = jest.fn((): Promise<string[]> => {
+            return Promise.reject(new Error('Bad mock!'));
+        });
         jest.spyOn(IOSUtils, 'getSimulatorRuntimes').mockImplementation(
             badMock
         );

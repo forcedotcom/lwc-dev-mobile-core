@@ -7,7 +7,6 @@
 import { Logger, Messages, SfdxError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import util from 'util';
 import {
@@ -150,6 +149,7 @@ export class AndroidUtils {
 
         return CommonUtils.executeCommandAsync(
             `${AndroidUtils.getSdkManagerCommand()} --version`
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ).then((result) =>
             Promise.resolve(AndroidUtils.getAndroidCmdLineToolsBin())
         );
@@ -169,6 +169,7 @@ export class AndroidUtils {
 
         return CommonUtils.executeCommandAsync(
             `${AndroidUtils.getAdbShellCommand()} --version`
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ).then((result) =>
             Promise.resolve(AndroidUtils.getAndroidPlatformTools())
         );
@@ -314,9 +315,10 @@ export class AndroidUtils {
                 if (mustHaveSupportedEmulatorImages) {
                     for (const pkg of matchingPlatforms) {
                         try {
-                            const emulatorImage = await AndroidUtils.packageWithRequiredEmulatorImages(
-                                pkg
-                            );
+                            const emulatorImage =
+                                await AndroidUtils.packageWithRequiredEmulatorImages(
+                                    pkg
+                                );
 
                             // if it has a supported emulator image then include it
                             if (emulatorImage) {
@@ -434,10 +436,9 @@ export class AndroidUtils {
      * @returns True if an emulator with a given name is available, False otherwise.
      */
     public static async hasEmulator(emulatorName: string): Promise<boolean> {
-        return AndroidUtils.resolveEmulatorImage(
-            emulatorName
-        ).then((resolvedEmulator) =>
-            Promise.resolve(resolvedEmulator !== undefined)
+        return AndroidUtils.resolveEmulatorImage(emulatorName).then(
+            (resolvedEmulator) =>
+                Promise.resolve(resolvedEmulator !== undefined)
         );
     }
 
@@ -502,6 +503,7 @@ export class AndroidUtils {
             } catch (error) {
                 reject(new SfdxError(`Could not create emulator. ${error}`));
             }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         }).then((resolve) => AndroidUtils.updateEmulatorConfig(resolvedName));
     }
 
@@ -515,8 +517,8 @@ export class AndroidUtils {
      */
     public static async startEmulator(
         emulatorName: string,
-        writable: boolean = false,
-        waitForBoot: boolean = true
+        writable = false,
+        waitForBoot = true
     ): Promise<number> {
         let resolvedEmulatorName = emulatorName;
         return AndroidUtils.resolveEmulatorImage(emulatorName)
@@ -538,9 +540,10 @@ export class AndroidUtils {
 
                 if (resolvedPortNumber === port) {
                     // already is running on a port
-                    const isWritable = await AndroidUtils.isEmulatorSystemWritable(
-                        resolvedPortNumber
-                    );
+                    const isWritable =
+                        await AndroidUtils.isEmulatorSystemWritable(
+                            resolvedPortNumber
+                        );
 
                     if (writable === false || isWritable === true) {
                         // If we're not asked for a writable, or if it already
@@ -610,7 +613,7 @@ export class AndroidUtils {
      */
     public static async stopEmulator(
         portNumber: number,
-        waitForPowerOff: boolean = true
+        waitForPowerOff = true
     ): Promise<void> {
         return AndroidUtils.executeAdbCommand(
             'shell reboot -p',
@@ -632,7 +635,7 @@ export class AndroidUtils {
      */
     public static async rebootEmulator(
         portNumber: number,
-        waitForBoot: boolean = true
+        waitForBoot = true
     ): Promise<void> {
         return AndroidUtils.executeAdbCommand('shell reboot', portNumber).then(
             () => {
@@ -683,10 +686,9 @@ export class AndroidUtils {
     public static async fetchEmulatorNameFromPort(
         portNumber: number
     ): Promise<string> {
-        return AndroidUtils.executeAdbCommand(
-            'emu avd name',
-            portNumber
-        ).then((result) => result.split('\n')[0].trim());
+        return AndroidUtils.executeAdbCommand('emu avd name', portNumber).then(
+            (result) => result.split('\n')[0].trim()
+        );
     }
 
     /**
@@ -943,10 +945,9 @@ export class AndroidUtils {
             messages.getMessage('launchBrowserAction'),
             util.format(messages.getMessage('openBrowserWithUrlStatus'), url)
         );
-        return AndroidUtils.executeAdbCommand(
-            openUrlCommand,
-            portNumber
-        ).then(() => Promise.resolve());
+        return AndroidUtils.executeAdbCommand(openUrlCommand, portNumber).then(
+            () => Promise.resolve()
+        );
     }
 
     /**
@@ -1341,9 +1342,8 @@ export class AndroidUtils {
     private static async packageWithRequiredEmulatorImages(
         androidPackage: AndroidPackage
     ): Promise<AndroidPackage | undefined> {
-        const installedSystemImages = await AndroidUtils.fetchInstalledSystemImages(
-            androidPackage.platformAPI
-        );
+        const installedSystemImages =
+            await AndroidUtils.fetchInstalledSystemImages();
         const platformAPI = androidPackage.platformAPI;
 
         for (const architecture of PlatformConfig.androidConfig()
@@ -1377,9 +1377,9 @@ export class AndroidUtils {
         return `'${pathName}'`;
     }
 
-    private static async fetchInstalledSystemImages(
-        androidApi: string
-    ): Promise<AndroidPackage[]> {
+    private static async fetchInstalledSystemImages(): Promise<
+        AndroidPackage[]
+    > {
         return AndroidUtils.fetchInstalledPackages().then(
             (packages) => packages.systemImages
         );

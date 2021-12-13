@@ -59,14 +59,15 @@ describe('Preview utils tests', () => {
             configFileJson
         );
 
-        const validationResult = await PreviewUtils.validateConfigFileWithSchema(
-            'myConfig.json',
-            configSchema
-        );
+        const validationResult =
+            await PreviewUtils.validateConfigFileWithSchema(
+                'myConfig.json',
+                configSchema
+            );
 
         expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data/apps/ios/0 should have required property 'id'"
+            "data/apps/ios/0 must have required property 'id'"
         );
     });
 
@@ -77,14 +78,15 @@ describe('Preview utils tests', () => {
             configFileJson
         );
 
-        const validationResult = await PreviewUtils.validateConfigFileWithSchema(
-            'myConfig.json',
-            configSchema
-        );
+        const validationResult =
+            await PreviewUtils.validateConfigFileWithSchema(
+                'myConfig.json',
+                configSchema
+            );
 
         expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data/apps/ios/0 should have required property 'name'"
+            "data/apps/ios/0 must have required property 'name'"
         );
     });
 
@@ -109,14 +111,15 @@ describe('Preview utils tests', () => {
             configFileJson
         );
 
-        const validationResult = await PreviewUtils.validateConfigFileWithSchema(
-            'myConfig.json',
-            configSchema
-        );
+        const validationResult =
+            await PreviewUtils.validateConfigFileWithSchema(
+                'myConfig.json',
+                configSchema
+            );
 
         expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data/apps/ios/0/launch_arguments/1 should have required property 'value'"
+            "data/apps/ios/0/launch_arguments/1 must have required property 'value'"
         );
     });
 
@@ -137,14 +140,15 @@ describe('Preview utils tests', () => {
             configFileJson
         );
 
-        const validationResult = await PreviewUtils.validateConfigFileWithSchema(
-            'myConfig.json',
-            configSchema
-        );
+        const validationResult =
+            await PreviewUtils.validateConfigFileWithSchema(
+                'myConfig.json',
+                configSchema
+            );
 
         expect(validationResult.passed).toBe(false);
         expect(validationResult.errorMessage).toBe(
-            "data/apps/android/0 should have required property 'activity'"
+            "data/apps/android/0 must have required property 'activity'"
         );
     });
 

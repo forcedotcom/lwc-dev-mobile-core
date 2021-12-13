@@ -89,9 +89,9 @@ export class PreviewUtils {
                 errorMessage: errorText,
                 passed: isValid
             });
-        } catch (err: any) {
+        } catch (err) {
             return Promise.resolve({
-                errorMessage: err,
+                errorMessage: (err as any).toString(),
                 passed: false
             });
         }
@@ -119,6 +119,7 @@ export class PreviewUtils {
         appConfig: IOSAppPreviewConfig | AndroidAppPreviewConfig
     ): string | undefined {
         if (appConfig.get_app_bundle) {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const module = require(path.resolve(
                 basePath,
                 appConfig.get_app_bundle

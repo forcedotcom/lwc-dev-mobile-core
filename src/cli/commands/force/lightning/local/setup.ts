@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { FlagsConfig, SfdxCommand } from '@salesforce/command';
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, Messages } from '@salesforce/core';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
 import {
     CommandLineUtils,

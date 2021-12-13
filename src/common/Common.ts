@@ -203,6 +203,7 @@ export class Version {
      * @returns A Version object that follows semantic versioning syntax: major.minor.patch
      */
     public static from(input: string): Version {
+        // eslint-disable-next-line no-useless-escape
         const acceptedRange = /[0-9\-\.]+/g;
         const original = input.trim().toLowerCase();
         const invalidChars = original.replace(acceptedRange, '');

@@ -31,7 +31,7 @@ const myCommandRouterBlock = jest.fn(
 
 describe('IOS Launcher tests', () => {
     beforeEach(() => {
-        // tslint:disable-next-line: no-empty
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
     });
 
