@@ -63,7 +63,7 @@ export function WrappedPromise(
         PerformanceMarkers.REQUIREMENTS_MARKER_KEY
     )!;
 
-    let stepDuration: number = 0;
+    let stepDuration = 0;
     const obs = new PerformanceObserver((items) => {
         stepDuration = items.getEntries()[0].duration / 1000;
     });
@@ -130,6 +130,7 @@ export class RequirementProcessor {
         let totalDuration = 0;
         let enabledRequirements: Requirement[] = [];
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         Object.entries(requirements).forEach(([_, requirementList]) => {
             if (requirementList.enabled) {
                 enabledRequirements = enabledRequirements.concat(
@@ -157,12 +158,14 @@ export class RequirementProcessor {
                                 WrappedPromise(requirement).then((result) => {
                                     testResult.tests.push(result);
                                     if (!result.hasPassed) {
-                                        testResult.hasMetAllRequirements = false;
+                                        testResult.hasMetAllRequirements =
+                                            false;
                                     }
 
-                                    subTask.title = RequirementProcessor.getFormattedTitle(
-                                        result
-                                    );
+                                    subTask.title =
+                                        RequirementProcessor.getFormattedTitle(
+                                            result
+                                        );
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;

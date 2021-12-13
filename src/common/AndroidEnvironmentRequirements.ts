@@ -94,15 +94,18 @@ export class Java8AvailableRequirement implements Requirement {
      * Verifies that prerequisites for Android SDK are met and that Java 8 is installed.
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.androidSDKPrerequisitesCheck()
-            .then((result) => Promise.resolve(this.fulfilledMessage))
-            .catch((error) =>
-                Promise.reject(
-                    new SfdxError(
-                        util.format(this.unfulfilledMessage, error.message)
+        return (
+            AndroidUtils.androidSDKPrerequisitesCheck()
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                .then((result) => Promise.resolve(this.fulfilledMessage))
+                .catch((error) =>
+                    Promise.reject(
+                        new SfdxError(
+                            util.format(this.unfulfilledMessage, error.message)
+                        )
                     )
                 )
-            );
+        );
     }
 }
 
@@ -128,23 +131,27 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
      * Verifies that user has Android command line tools installed.
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.fetchAndroidCmdLineToolsLocation()
-            .then((result) =>
-                Promise.resolve(
-                    AndroidUtils.convertToUnixPath(
-                        util.format(this.fulfilledMessage, result)
+        return (
+            AndroidUtils.fetchAndroidCmdLineToolsLocation()
+                .then((result) =>
+                    Promise.resolve(
+                        AndroidUtils.convertToUnixPath(
+                            util.format(this.fulfilledMessage, result)
+                        )
                     )
                 )
-            )
-            .catch((error) =>
-                Promise.reject(new SfdxError(this.unfulfilledMessage))
-            );
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                .catch((error) =>
+                    Promise.reject(new SfdxError(this.unfulfilledMessage))
+                )
+        );
     }
 }
 
 // tslint:disable-next-line: max-classes-per-file
 export class AndroidSDKPlatformToolsInstalledRequirement
-    implements Requirement {
+    implements Requirement
+{
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
@@ -226,22 +233,26 @@ export class PlatformAPIPackageRequirement implements Requirement {
      * Verifies that user has a supported Android API package that also has matching supported emulator images installed.
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel)
-            .then((result) =>
-                Promise.resolve(
-                    util.format(this.fulfilledMessage, result.platformAPI)
+        return (
+            AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel)
+                .then((result) =>
+                    Promise.resolve(
+                        util.format(this.fulfilledMessage, result.platformAPI)
+                    )
                 )
-            )
-            .catch((error) =>
-                Promise.reject(
-                    new SfdxError(
-                        util.format(
-                            this.unfulfilledMessage,
-                            PlatformConfig.androidConfig().minSupportedRuntime
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                .catch((error) =>
+                    Promise.reject(
+                        new SfdxError(
+                            util.format(
+                                this.unfulfilledMessage,
+                                PlatformConfig.androidConfig()
+                                    .minSupportedRuntime
+                            )
                         )
                     )
                 )
-            );
+        );
     }
 }
 
@@ -269,21 +280,26 @@ export class EmulatorImagesRequirement implements Requirement {
      * Verifies that user has at least one Android package with any of the supported emulator image targets (e.g. Google APIs, default, Google Play).
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel)
-            .then((result) =>
-                Promise.resolve(util.format(this.fulfilledMessage, result.path))
-            )
-            .catch((error) =>
-                Promise.reject(
-                    new SfdxError(
-                        util.format(
-                            this.unfulfilledMessage,
-                            PlatformConfig.androidConfig().supportedImages.join(
-                                ','
+        return (
+            AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel)
+                .then((result) =>
+                    Promise.resolve(
+                        util.format(this.fulfilledMessage, result.path)
+                    )
+                )
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                .catch((error) =>
+                    Promise.reject(
+                        new SfdxError(
+                            util.format(
+                                this.unfulfilledMessage,
+                                PlatformConfig.androidConfig().supportedImages.join(
+                                    ','
+                                )
                             )
                         )
                     )
                 )
-            );
+        );
     }
 }

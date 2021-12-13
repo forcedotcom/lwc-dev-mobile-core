@@ -22,11 +22,9 @@ enum PlatformType {
     ios = 'ios'
 }
 
-const executeSetupMock = jest.fn(
-    (): Promise<void> => {
-        return Promise.resolve();
-    }
-);
+const executeSetupMock = jest.fn((): Promise<void> => {
+    return Promise.resolve();
+});
 
 describe('Setup Tests', () => {
     beforeEach(() => {
@@ -144,7 +142,7 @@ describe('Setup Tests', () => {
         }
         const setup = new Setup(
             args,
-            new Config.Config(({} as any) as Config.Options)
+            new Config.Config({} as any as Config.Options)
         );
         return setup;
     }

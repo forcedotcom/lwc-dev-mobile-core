@@ -45,7 +45,7 @@ export class IOSUtils {
      */
     public static async bootDevice(
         udid: string,
-        waitForBoot: boolean = true
+        waitForBoot = true
     ): Promise<void> {
         const command = `${XCRUN_CMD} simctl boot ${udid}`;
         return CommonUtils.executeCommandAsync(command)
@@ -236,6 +236,7 @@ export class IOSUtils {
         const runtimesCmd = `${XCRUN_CMD} simctl list --json runtimes available`;
         return CommonUtils.executeCommandAsync(runtimesCmd)
             .then((result) => {
+                // eslint-disable-next-line no-useless-escape
                 const runtimeMatchRegex = /.*SimRuntime\.((iOS)-[\d\-]+)$/;
                 const RUNTIMES_KEY = 'runtimes';
                 const ID_KEY = 'identifier';

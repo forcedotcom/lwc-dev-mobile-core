@@ -14,6 +14,7 @@ describe('Preview utils tests', () => {
     });
 
     test('getNetworkHardwarePorts succeeds with two enabled ports with IP address', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const executeCommandAsyncMock = jest.fn((cmd) => {
             return Promise.resolve({
                 stdout: `
@@ -64,6 +65,7 @@ describe('Preview utils tests', () => {
     });
 
     test('getNetworkHardwarePorts fails with error', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const executeCommandAsyncMock = jest.fn((cmd) => {
             throw new Error();
         });
@@ -79,6 +81,7 @@ describe('Preview utils tests', () => {
     });
 
     test('getProxySetting returns existing proxy setting', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const executeCommandMock = jest.fn((cmd) => {
             return Promise.resolve({
                 stdout: `
@@ -102,6 +105,7 @@ describe('Preview utils tests', () => {
     });
 
     test('getProxySetting returns empty object when there is no existing proxy setting', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const executeCommandMock = jest.fn((cmd) => {
             return Promise.resolve({
                 stdout: `

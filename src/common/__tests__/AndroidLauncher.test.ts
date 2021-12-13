@@ -25,7 +25,7 @@ const mockCmdLineToolsBin = path.normalize(
 
 describe('Android Launcher tests', () => {
     beforeEach(() => {
-        // tslint:disable-next-line: no-empty
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
         jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(() => {
             return {

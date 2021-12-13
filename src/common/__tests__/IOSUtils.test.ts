@@ -68,7 +68,7 @@ const launchCommandThrowsAlreadyBootedMock = jest.fn(
 
 describe('IOS utils tests', () => {
     beforeEach(() => {
-        // tslint:disable-next-line: no-empty
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
         myCommandRouterBlock.mockClear();
         launchCommandMock.mockClear();

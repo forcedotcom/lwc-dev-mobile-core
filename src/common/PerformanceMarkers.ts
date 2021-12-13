@@ -11,8 +11,8 @@ export interface PerformanceMarker {
 }
 
 export class PerformanceMarkers {
-    public static FETCH_DEVICES_MARKER_KEY: string = 'FetchDevicesMarker';
-    public static REQUIREMENTS_MARKER_KEY: string = 'RequirementsMarker';
+    public static FETCH_DEVICES_MARKER_KEY = 'FetchDevicesMarker';
+    public static REQUIREMENTS_MARKER_KEY = 'RequirementsMarker';
 
     public static getByName(markerKey: string): PerformanceMarker | undefined {
         return PerformanceMarkers.markerMap.get(markerKey);

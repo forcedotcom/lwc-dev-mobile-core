@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Messages, SfdxError } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import * as common from '../Common';
-import util from 'util';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -26,6 +25,7 @@ describe('Commons utils tests', () => {
 
         const filteredByMascots = common.MapUtils.filter(
             mascotMapping,
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (key, value) => key.indexOf('Rattle') > -1
         );
         expect(filteredByMascots.size === 1);
@@ -39,6 +39,7 @@ describe('Commons utils tests', () => {
 
         const filteredByMascots = common.MapUtils.filter(
             mascotMapping,
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (key, value) => key.indexOf('Murray') > -1
         );
         expect(filteredByMascots.size === 0);
@@ -52,6 +53,7 @@ describe('Commons utils tests', () => {
 
         const filteredByMascots = common.MapUtils.filter(
             mascotMapping,
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (key, value) => key.indexOf('Murray') > -1
         );
         expect(filteredByMascots !== undefined && filteredByMascots != null);
@@ -61,6 +63,7 @@ describe('Commons utils tests', () => {
         const mascotMapping = new Map<string, string>();
         const filteredByMascots = common.MapUtils.filter(
             mascotMapping,
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (key, value) => key.indexOf('Murray') > -1
         );
         expect(filteredByMascots !== undefined && filteredByMascots != null);

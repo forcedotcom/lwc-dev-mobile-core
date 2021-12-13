@@ -23,6 +23,7 @@ export class IOSSimulatorDevice {
         const STATE_KEY = 'state';
         const IS_AVAILABLE_KEY = 'isAvailable';
         const runtimeMatchRegex = new RegExp(
+            // eslint-disable-next-line no-useless-escape
             `\.SimRuntime\.(${supportedRuntimes.join('|')})`
         );
 
