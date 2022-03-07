@@ -225,9 +225,7 @@ export class RequirementProcessor {
                                         ? Promise.resolve()
                                         : Promise.reject(new Error());
                                 }),
-                            skip: () =>
-                                requirement.skipped == true &&
-                                requirement.title,
+                            skip: () => requirement.skipped == true,
                             title: requirement.title
                         });
                     }

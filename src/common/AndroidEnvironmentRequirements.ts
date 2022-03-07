@@ -116,6 +116,10 @@ export class AndroidSDKRootSetRequirement implements Requirement {
                 )
             );
         } else {
+            // We will resolve rather than reject since we indicate that the SDK was not found.
+            // And will count on the next subtask to install the SDK.
+            // If we reject, then the entire batch will show as failed, even if the install is successful,
+            // so we leave the ulimate rejection to whether the SDK is successfully installed or not.
             return Promise.resolve(this.unfulfilledMessage);
         }
     }
