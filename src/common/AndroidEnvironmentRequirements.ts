@@ -8,7 +8,7 @@ import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { AndroidEnvReqResolver } from './AndroidEnvReqResolver';
+import { AndroidSDKRootResolver } from './AndroidEnvReqResolver';
 import { Requirement, RequirementList } from './Requirements';
 
 Messages.importMessagesDirectory(__dirname);
@@ -148,11 +148,11 @@ export class AndroidSDKInstallTask implements Requirement {
     }
 
     /**
-     * Verifies that the root directory path for Android SDK is set.
-     * Only gets here, if not skipped, so no need to check again.
+     * Installs the Android SDK
+     * Only gets here, if not skipped.
      */
-    public async checkFunction(): Promise<string> {
-        return AndroidEnvReqResolver.resolveAndroidSDK();
+    public async checkFunction(): Promise<string | undefined> {
+        return new AndroidSDKRootResolver(this.logger).resolveFunction();
     }
 }
 
