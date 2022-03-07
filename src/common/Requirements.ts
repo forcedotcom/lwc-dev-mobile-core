@@ -16,6 +16,7 @@ Messages.importMessagesDirectory(__dirname);
 
 export interface Requirement {
     title: string;
+    skipped: boolean;
     checkFunction: CheckRequirementsFunc;
     fulfilledMessage?: string;
     unfulfilledMessage?: string;
@@ -38,6 +39,7 @@ interface RequirementCheckResult {
 export interface RequirementList {
     requirements: Requirement[];
     enabled: boolean;
+    title: string;
 }
 
 export type CommandRequirements = { [key: string]: RequirementList };
@@ -120,38 +122,79 @@ export class RequirementProcessor {
      * Executes all of the base and command requirement checks.
      */
     public static async execute(
-        requirements: CommandRequirements
+        requirements: CommandRequirements,
+        platform: string
     ): Promise<void> {
-        const testResult: RequirementCheckResult = {
-            hasMetAllRequirements: true,
-            tests: []
-        };
-
-        let totalDuration = 0;
-        let enabledRequirements: Requirement[] = [];
-
+        const requirementCheckResults: RequirementCheckResult[] = [];
+        const tasksToRun: Listr[] = [];
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         Object.entries(requirements).forEach(([_, requirementList]) => {
             if (requirementList.enabled) {
-                enabledRequirements = enabledRequirements.concat(
-                    requirementList.requirements
+                const requirementCheckResult: RequirementCheckResult = {
+                    hasMetAllRequirements: true,
+                    tests: []
+                };
+                requirementCheckResults.push(requirementCheckResult);
+                tasksToRun.push(
+                    this.createTasks(requirementList, requirementCheckResult)
                 );
             }
         });
 
-        if (enabledRequirements.length === 0) {
-            return Promise.resolve();
-        }
+        try {
+            await this.processTasks(tasksToRun);
 
-        const rootTaskTitle = messages.getMessage('rootTaskTitle');
-        const requirementTasks = new Listr(
+            let hasMetAllRequirements = true;
+
+            for (const results of requirementCheckResults) {
+                if (!results.hasMetAllRequirements) {
+                    hasMetAllRequirements = false;
+                }
+            }
+
+            if (!hasMetAllRequirements) {
+                return Promise.reject(
+                    new SfdxError(
+                        util.format(
+                            messages.getMessage('error:requirementCheckFailed'),
+                            platform
+                        ),
+                        'lwc-dev-mobile-core',
+                        [
+                            messages.getMessage(
+                                'error:requirementCheckFailed:recommendation'
+                            )
+                        ]
+                    )
+                );
+            }
+
+            return Promise.resolve();
+        } catch (error) {
+            return Promise.reject(
+                new SfdxError(
+                    util.format('unexpected error %s', error),
+                    'lwc-dev-mobile-core'
+                )
+            );
+        }
+    }
+
+    private static createTasks(
+        requirementList: RequirementList,
+        testResult: RequirementCheckResult
+    ): Listr {
+        const rootTaskTitle = requirementList.title;
+        let totalDuration = 0;
+
+        return new Listr(
             {
                 task: (_rootCtx, rootTask): Listr => {
                     const subTasks = new Listr([], {
                         concurrent: true,
                         exitOnError: false
                     });
-                    for (const requirement of enabledRequirements) {
+                    for (const requirement of requirementList.requirements) {
                         subTasks.add({
                             options: { persistentOutput: true },
                             task: (_subCtx, subTask): Promise<void> =>
@@ -182,6 +225,9 @@ export class RequirementProcessor {
                                         ? Promise.resolve()
                                         : Promise.reject(new Error());
                                 }),
+                            skip: () =>
+                                requirement.skipped == true &&
+                                requirement.title,
                             title: requirement.title
                         });
                     }
@@ -198,32 +244,11 @@ export class RequirementProcessor {
                 }
             }
         );
+    }
 
-        try {
-            await requirementTasks.run();
-
-            if (!testResult.hasMetAllRequirements) {
-                return Promise.reject(
-                    new SfdxError(
-                        messages.getMessage('error:requirementCheckFailed'),
-                        'lwc-dev-mobile-core',
-                        [
-                            messages.getMessage(
-                                'error:requirementCheckFailed:recommendation'
-                            )
-                        ]
-                    )
-                );
-            }
-
-            return Promise.resolve();
-        } catch (error) {
-            return Promise.reject(
-                new SfdxError(
-                    util.format('unexpected error %s', error),
-                    'lwc-dev-mobile-core'
-                )
-            );
+    private static async processTasks(tasks: Listr[]) {
+        for (const task of tasks) {
+            await task.run();
         }
     }
 

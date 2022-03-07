@@ -6,7 +6,14 @@
  */
 import { FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages } from '@salesforce/core';
-import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
+import {
+    AndroidSDKPlatformToolsInstalledRequirements,
+    AndroidSDKRootSetRequirements,
+    AndroidSDKToolsInstalledRequirements,
+    EmulatorImagesRequirements,
+    Java8AvailableRequirements,
+    PlatformAPIPackageRequirements
+} from '../../../../../common/AndroidEnvironmentRequirements';
 import {
     CommandLineUtils,
     FlagsConfigType
@@ -44,7 +51,10 @@ export class Setup extends SfdxCommand implements HasRequirements {
 
     public async run(): Promise<any> {
         this.logger.info(`Setup command called for ${this.flags.platform}`);
-        return RequirementProcessor.execute(this.commandRequirements);
+        return RequirementProcessor.execute(
+            this.commandRequirements,
+            `${this.flags.platform}`
+        );
     }
 
     public async init(): Promise<void> {
@@ -67,16 +77,37 @@ export class Setup extends SfdxCommand implements HasRequirements {
     private _commandRequirements: CommandRequirements = {};
     public get commandRequirements(): CommandRequirements {
         if (Object.keys(this._commandRequirements).length === 0) {
-            const requirements = CommandLineUtils.platformFlagIsAndroid(
-                this.flags.platform
-            )
-                ? new AndroidEnvironmentRequirements(
-                      this.logger,
-                      this.flags.apilevel
-                  )
-                : new IOSEnvironmentRequirements(this.logger);
+            if (CommandLineUtils.platformFlagIsAndroid(this.flags.platform)) {
+                this._commandRequirements.r1 =
+                    new AndroidSDKRootSetRequirements(this.logger);
 
-            this._commandRequirements.setup = requirements;
+                this._commandRequirements.r2 = new Java8AvailableRequirements(
+                    this.logger
+                );
+
+                this._commandRequirements.r3 =
+                    new AndroidSDKToolsInstalledRequirements(this.logger);
+
+                this._commandRequirements.r4 =
+                    new AndroidSDKPlatformToolsInstalledRequirements(
+                        this.logger
+                    );
+
+                this._commandRequirements.r5 =
+                    new PlatformAPIPackageRequirements(
+                        this.logger,
+                        this.flags.apilevel
+                    );
+
+                this._commandRequirements.r6 = new EmulatorImagesRequirements(
+                    this.logger,
+                    this.flags.apilevel
+                );
+            } else {
+                this._commandRequirements.r1 = new IOSEnvironmentRequirements(
+                    this.logger
+                );
+            }
         }
 
         return this._commandRequirements;

@@ -20,6 +20,7 @@ const messages = Messages.loadMessages(
 export class IOSEnvironmentRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
+    public title = 'iOS Requirements';
     constructor(logger: Logger) {
         this.requirements = [
             new SupportedEnvironmentRequirement(logger),
@@ -35,6 +36,7 @@ export class SupportedEnvironmentRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    public skipped: boolean;
 
     constructor(logger: Logger) {
         this.title = messages.getMessage('ios:reqs:macos:title');
@@ -45,6 +47,7 @@ export class SupportedEnvironmentRequirement implements Requirement {
             'ios:reqs:macos:unfulfilledMessage'
         );
         this.logger = logger;
+        this.skipped = false;
     }
 
     /**
@@ -86,6 +89,7 @@ export class XcodeInstalledRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    public skipped: boolean;
 
     constructor(logger: Logger) {
         this.title = messages.getMessage('ios:reqs:xcode:title');
@@ -96,6 +100,7 @@ export class XcodeInstalledRequirement implements Requirement {
             'ios:reqs:xcode:unfulfilledMessage'
         );
         this.logger = logger;
+        this.skipped = false;
     }
 
     /**
@@ -144,6 +149,7 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    public skipped: boolean;
 
     constructor(logger: Logger) {
         this.title = messages.getMessage('ios:reqs:simulator:title');
@@ -154,6 +160,7 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
             'ios:reqs:simulator:unfulfilledMessage'
         );
         this.logger = logger;
+        this.skipped = false;
     }
 
     /**

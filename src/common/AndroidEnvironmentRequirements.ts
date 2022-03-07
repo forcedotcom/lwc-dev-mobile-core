@@ -8,6 +8,7 @@ import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
+import { AndroidEnvReqResolver } from './AndroidEnvReqResolver';
 import { Requirement, RequirementList } from './Requirements';
 
 Messages.importMessagesDirectory(__dirname);
@@ -16,18 +17,66 @@ const messages = Messages.loadMessages(
     'requirement-android'
 );
 
-export class AndroidEnvironmentRequirements implements RequirementList {
+export class AndroidSDKRootSetRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    constructor(logger: Logger, apiLevel?: string) {
+    public title = 'Android SDK Requirements';
+    constructor(logger: Logger) {
         this.requirements = [
             new AndroidSDKRootSetRequirement(logger),
-            new Java8AvailableRequirement(logger),
-            new AndroidSDKToolsInstalledRequirement(logger),
-            new AndroidSDKPlatformToolsInstalledRequirement(logger),
-            new PlatformAPIPackageRequirement(logger, apiLevel),
-            new EmulatorImagesRequirement(logger, apiLevel)
+            new AndroidSDKInstallTask(logger)
         ];
+    }
+}
+
+export class Java8AvailableRequirements implements RequirementList {
+    public requirements: Requirement[] = [];
+    public enabled = true;
+    public title = 'Java 8 Requirements';
+    constructor(logger: Logger) {
+        this.requirements = [new Java8AvailableRequirement(logger)];
+    }
+}
+
+export class AndroidSDKToolsInstalledRequirements implements RequirementList {
+    public requirements: Requirement[] = [];
+    public enabled = true;
+    public title = 'Android SDK Tools Requirements';
+    constructor(logger: Logger) {
+        this.requirements = [new AndroidSDKToolsInstalledRequirement(logger)];
+    }
+}
+
+export class AndroidSDKPlatformToolsInstalledRequirements
+    implements RequirementList
+{
+    public requirements: Requirement[] = [];
+    public enabled = true;
+    public title = 'Android SDK Platform Requirements';
+    constructor(logger: Logger) {
+        this.requirements = [
+            new AndroidSDKPlatformToolsInstalledRequirement(logger)
+        ];
+    }
+}
+
+export class PlatformAPIPackageRequirements implements RequirementList {
+    public requirements: Requirement[] = [];
+    public enabled = true;
+    public title = 'Platform API Package Requirements';
+    constructor(logger: Logger, apiLevel?: string) {
+        this.requirements = [
+            new PlatformAPIPackageRequirement(logger, apiLevel)
+        ];
+    }
+}
+
+export class EmulatorImagesRequirements implements RequirementList {
+    public requirements: Requirement[] = [];
+    public enabled = true;
+    public title = 'Emulator Images Requirements';
+    constructor(logger: Logger, apiLevel?: string) {
+        this.requirements = [new EmulatorImagesRequirement(logger, apiLevel)];
     }
 }
 
@@ -37,6 +86,7 @@ export class AndroidSDKRootSetRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    public skipped: boolean;
 
     constructor(logger: Logger) {
         this.title = messages.getMessage('android:reqs:androidhome:title');
@@ -47,6 +97,7 @@ export class AndroidSDKRootSetRequirement implements Requirement {
             'android:reqs:androidhome:unfulfilledMessage'
         );
         this.logger = logger;
+        this.skipped = false;
     }
 
     /**
@@ -65,8 +116,43 @@ export class AndroidSDKRootSetRequirement implements Requirement {
                 )
             );
         } else {
-            return Promise.reject(new SfdxError(this.unfulfilledMessage));
+            return Promise.resolve(this.unfulfilledMessage);
         }
+    }
+}
+
+// tslint:disable-next-line: max-classes-per-file
+export class AndroidSDKInstallTask implements Requirement {
+    public title: string;
+    public fulfilledMessage: string;
+    public unfulfilledMessage: string;
+    public logger: Logger;
+    public skipped: boolean;
+
+    constructor(logger: Logger) {
+        this.title = messages.getMessage('android:reqs:androidsdk:title');
+        this.fulfilledMessage = messages.getMessage(
+            'android:reqs:androidsdk:resolvedMessage'
+        );
+        this.unfulfilledMessage = messages.getMessage(
+            'android:reqs:androidsdk:unableToResolveMessage'
+        );
+        this.logger = logger;
+
+        const root = AndroidUtils.getAndroidSdkRoot();
+        if (root) {
+            this.skipped = true;
+        } else {
+            this.skipped = false;
+        }
+    }
+
+    /**
+     * Verifies that the root directory path for Android SDK is set.
+     * Only gets here, if not skipped, so no need to check again.
+     */
+    public async checkFunction(): Promise<string> {
+        return AndroidEnvReqResolver.resolveAndroidSDK();
     }
 }
 
@@ -76,6 +162,7 @@ export class Java8AvailableRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    public skipped: boolean;
 
     constructor(logger: Logger) {
         this.title = messages.getMessage(
@@ -88,6 +175,7 @@ export class Java8AvailableRequirement implements Requirement {
             'android:reqs:androidsdkprerequisitescheck:unfulfilledMessage'
         );
         this.logger = logger;
+        this.skipped = false;
     }
 
     /**
@@ -112,12 +200,14 @@ export class Java8AvailableRequirement implements Requirement {
 // tslint:disable-next-line: max-classes-per-file
 export class AndroidSDKToolsInstalledRequirement implements Requirement {
     public title: string;
+    public skipped: boolean;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
 
     constructor(logger: Logger) {
         this.title = messages.getMessage('android:reqs:cmdlinetools:title');
+        this.skipped = false;
         this.fulfilledMessage = messages.getMessage(
             'android:reqs:cmdlinetools:fulfilledMessage'
         );
@@ -157,6 +247,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement
     public unfulfilledMessage: string;
     private notFoundMessage: string;
     public logger: Logger;
+    public skipped: boolean;
 
     constructor(logger: Logger) {
         this.title = messages.getMessage('android:reqs:platformtools:title');
@@ -170,6 +261,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement
             'android:reqs:platformtools:notFound'
         );
         this.logger = logger;
+        this.skipped = false;
     }
 
     /**
@@ -215,6 +307,7 @@ export class PlatformAPIPackageRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    public skipped: boolean;
     private apiLevel?: string;
 
     constructor(logger: Logger, apiLevel?: string) {
@@ -226,6 +319,7 @@ export class PlatformAPIPackageRequirement implements Requirement {
             'android:reqs:platformapi:unfulfilledMessage'
         );
         this.logger = logger;
+        this.skipped = false;
         this.apiLevel = apiLevel;
     }
 
@@ -262,6 +356,7 @@ export class EmulatorImagesRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
+    public skipped: boolean;
     private apiLevel?: string;
 
     constructor(logger: Logger, apiLevel?: string) {
@@ -273,6 +368,7 @@ export class EmulatorImagesRequirement implements Requirement {
             'android:reqs:emulatorimages:unfulfilledMessage'
         );
         this.logger = logger;
+        this.skipped = false;
         this.apiLevel = apiLevel;
     }
 

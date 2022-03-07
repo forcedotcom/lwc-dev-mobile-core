@@ -5,6 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, Messages, SfdxError } from '@salesforce/core';
+import util from 'util';
 import {
     RequirementProcessor,
     HasRequirements,
@@ -49,6 +50,7 @@ class TruthyRequirements implements HasRequirements {
                 fulfilledMessage: 'Android SDK was detected.',
                 logger,
                 title: 'SDK Check',
+                skipped: false,
                 unfulfilledMessage:
                     'You must install Android SDK add it to the path.'
             },
@@ -57,12 +59,14 @@ class TruthyRequirements implements HasRequirements {
                 fulfilledMessage: 'ANDROID_HOME has been detected.',
                 logger,
                 title: 'ANDROID_HOME check',
+                skipped: false,
                 unfulfilledMessage: 'You must setup ANDROID_HOME.'
             }
         ];
         this.commandRequirements.baseRequirements = {
             requirements,
-            enabled: true
+            enabled: true,
+            title: 'baseRequirements'
         };
     }
 }
@@ -77,6 +81,7 @@ class FalsyRequirements implements HasRequirements {
                 fulfilledMessage: 'Android SDK was detected.',
                 logger,
                 title: 'SDK Check',
+                skipped: false,
                 unfulfilledMessage:
                     'You must install Android SDK add it to the path.'
             },
@@ -85,12 +90,14 @@ class FalsyRequirements implements HasRequirements {
                 fulfilledMessage: 'ANDROID_HOME has been detected.',
                 logger,
                 title: 'ANDROID_HOME check',
+                skipped: false,
                 unfulfilledMessage: 'You must setup ANDROID_HOME.'
             },
             {
                 checkFunction: checkRejectFunctionTwo,
                 logger,
-                title: 'Checking SDK Tools'
+                title: 'Checking SDK Tools',
+                skipped: false
             },
             {
                 checkFunction: checkRejectFunctionTwo,
@@ -99,13 +106,15 @@ class FalsyRequirements implements HasRequirements {
                 logger,
                 supplementalMessage: 'Get Android platform tools!',
                 title: 'Checking SDK Platform Tools',
+                skipped: false,
                 unfulfilledMessage:
                     'Install at least one Android Platform tools package (23 - 30).'
             }
         ];
         this.commandRequirements.baseRequirements = {
             requirements,
-            enabled: true
+            enabled: true,
+            title: 'base Requirements'
         };
     }
 }
@@ -118,31 +127,37 @@ class TwoFalsyOneTruthyRequirements implements HasRequirements {
             requirements: [
                 {
                     title: 'title1',
+                    skipped: false,
                     checkFunction: checkRejectFunctionOne,
                     logger
                 }
             ],
-            enabled: true
+            enabled: true,
+            title: 'falsyRequirementOne'
         };
         this.commandRequirements.falsyRequirementTwo = {
             requirements: [
                 {
                     title: 'title2',
+                    skipped: false,
                     checkFunction: checkRejectFunctionTwo,
                     logger
                 }
             ],
-            enabled: true
+            enabled: true,
+            title: 'falsyRequirementTwo'
         };
         this.commandRequirements.truthyRequirement = {
             requirements: [
                 {
                     title: 'title3',
+                    skipped: false,
                     checkFunction: checkResolveFunctionOne,
                     logger
                 }
             ],
-            enabled: true
+            enabled: true,
+            title: 'truthyRequirement'
         };
     }
 }
@@ -151,21 +166,25 @@ describe('Requirements Processing', () => {
     test('Meets all requirements', async () => {
         expect.assertions(1);
         await RequirementProcessor.execute(
-            new TruthyRequirements().commandRequirements
+            new TruthyRequirements().commandRequirements,
+            'android'
         );
         expect(true).toBeTruthy();
     });
 
     test('Throws when any requirement fails', async () => {
+        const platform = 'ios';
+        const expectedFailureMessage = util.format(failureMessage, platform);
         expect.assertions(4);
         try {
             await RequirementProcessor.execute(
-                new FalsyRequirements().commandRequirements
+                new FalsyRequirements().commandRequirements,
+                platform
             );
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(failureMessage);
+            expect(sfdxError.message).toBe(expectedFailureMessage);
             expect(sfdxError.actions?.length).toBe(1);
             expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
         }
@@ -175,21 +194,27 @@ describe('Requirements Processing', () => {
         const requirements = new TwoFalsyOneTruthyRequirements();
         requirements.commandRequirements.falsyRequirementOne.enabled = false;
         requirements.commandRequirements.falsyRequirementTwo.enabled = false;
-        await RequirementProcessor.execute(requirements.commandRequirements);
+        await RequirementProcessor.execute(
+            requirements.commandRequirements,
+            'anyplatform'
+        );
         expect(true).toBeTruthy();
     });
 
     test('Fails when there is a failed requirement check in combo checks', async () => {
         expect.assertions(4);
+        const platform = 'platform1';
+        const expectedFailureMessage = util.format(failureMessage, platform);
         const requirements = new TwoFalsyOneTruthyRequirements();
         try {
             await RequirementProcessor.execute(
-                requirements.commandRequirements
+                requirements.commandRequirements,
+                platform
             );
         } catch (error) {
             expect(error instanceof SfdxError).toBeTruthy();
             const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(failureMessage);
+            expect(sfdxError.message).toBe(expectedFailureMessage);
             expect(sfdxError.actions?.length).toBe(1);
             expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
         }
@@ -198,7 +223,10 @@ describe('Requirements Processing', () => {
     test('Skips all checks and check will ', async () => {
         const requirements = new FalsyRequirements();
         requirements.commandRequirements.baseRequirements.enabled = false;
-        await RequirementProcessor.execute(requirements.commandRequirements);
+        await RequirementProcessor.execute(
+            requirements.commandRequirements,
+            'platform2'
+        );
         expect(true).toBeTruthy();
     });
 });

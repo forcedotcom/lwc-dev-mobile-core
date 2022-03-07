@@ -9,7 +9,7 @@ process.env.ANDROID_HOME = MOCK_ANDROID_HOME;
 
 import { Logger, Messages } from '@salesforce/core';
 import {
-    AndroidEnvironmentRequirements,
+    AndroidSDKRootSetRequirements,
     AndroidSDKPlatformToolsInstalledRequirement,
     AndroidSDKRootSetRequirement,
     AndroidSDKToolsInstalledRequirement,
@@ -40,11 +40,11 @@ const messages = Messages.loadMessages(
 const logger = new Logger('test');
 
 describe('Android enviroment requirement tests', () => {
-    let androidEnvironment: AndroidEnvironmentRequirements;
+    let androidEnvironment: AndroidSDKRootSetRequirements;
 
     beforeEach(() => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        androidEnvironment = new AndroidEnvironmentRequirements(logger);
+        androidEnvironment = new AndroidSDKRootSetRequirements(logger);
     });
 
     afterEach(() => {
