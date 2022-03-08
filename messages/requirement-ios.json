@@ -1,4 +1,5 @@
 {
+    "ios:reqs:title" : "iOS Requirements",
     "ios:reqs:macos:title" : "Checking macOS Environment",
     "ios:reqs:macos:fulfilledMessage" : "Running macOS.",
     "ios:reqs:macos:unfulfilledMessage" : "You must be running macOS to install an iOS development environment: %s",

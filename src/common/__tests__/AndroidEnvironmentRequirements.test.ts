@@ -12,7 +12,7 @@ import {
     AndroidSDKRootSetRequirements,
     AndroidSDKPlatformToolsInstalledRequirement,
     AndroidSDKRootSetRequirement,
-    AndroidSDKToolsInstalledRequirement,
+    AndroidCommandLineToolsInstalledRequirement,
     EmulatorImagesRequirement,
     Java8AvailableRequirement,
     PlatformAPIPackageRequirement
@@ -77,7 +77,7 @@ describe('Android enviroment requirement tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandSync').mockImplementation(
             () => MOCK_ANDROID_HOME
         );
-        const requirement = new AndroidSDKToolsInstalledRequirement(logger);
+        const requirement = new AndroidCommandLineToolsInstalledRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).resolves;
     });
@@ -86,7 +86,7 @@ describe('Android enviroment requirement tests', () => {
         jest.spyOn(CommonUtils, 'executeCommandSync').mockImplementation(() => {
             throw new Error('None');
         });
-        const requirement = new AndroidSDKToolsInstalledRequirement(logger);
+        const requirement = new AndroidCommandLineToolsInstalledRequirement(logger);
         const aPromise = requirement.checkFunction().catch(() => undefined);
         expect(aPromise).rejects;
     });

@@ -6,14 +6,7 @@
  */
 import { FlagsConfig, SfdxCommand } from '@salesforce/command';
 import { Logger, Messages } from '@salesforce/core';
-import {
-    AndroidSDKPlatformToolsInstalledRequirements,
-    AndroidSDKRootSetRequirements,
-    AndroidSDKToolsInstalledRequirements,
-    EmulatorImagesRequirements,
-    Java8AvailableRequirements,
-    PlatformAPIPackageRequirements
-} from '../../../../../common/AndroidEnvironmentRequirements';
+import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
 import {
     CommandLineUtils,
     FlagsConfigType
@@ -78,35 +71,14 @@ export class Setup extends SfdxCommand implements HasRequirements {
     public get commandRequirements(): CommandRequirements {
         if (Object.keys(this._commandRequirements).length === 0) {
             if (CommandLineUtils.platformFlagIsAndroid(this.flags.platform)) {
-                this._commandRequirements.r1 =
-                    new AndroidSDKRootSetRequirements(this.logger);
-
-                this._commandRequirements.r2 = new Java8AvailableRequirements(
-                    this.logger
-                );
-
-                this._commandRequirements.r3 =
-                    new AndroidSDKToolsInstalledRequirements(this.logger);
-
-                this._commandRequirements.r4 =
-                    new AndroidSDKPlatformToolsInstalledRequirements(
-                        this.logger
-                    );
-
-                this._commandRequirements.r5 =
-                    new PlatformAPIPackageRequirements(
-                        this.logger,
-                        this.flags.apilevel
-                    );
-
-                this._commandRequirements.r6 = new EmulatorImagesRequirements(
+                this._commandRequirements = new AndroidEnvironmentRequirements(
                     this.logger,
-                    this.flags.apilevel
-                );
+                    this.flags.apiLevel
+                ).commandRequirements;
             } else {
-                this._commandRequirements.r1 = new IOSEnvironmentRequirements(
+                this._commandRequirements = new IOSEnvironmentRequirements(
                     this.logger
-                );
+                ).commandRequirements;
             }
         }
 

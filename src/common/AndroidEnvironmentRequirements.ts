@@ -9,7 +9,11 @@ import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
 import { AndroidSDKRootResolver } from './AndroidEnvReqResolver';
-import { Requirement, RequirementList } from './Requirements';
+import {
+    CommandRequirements,
+    Requirement,
+    RequirementList
+} from './Requirements';
 
 Messages.importMessagesDirectory(__dirname);
 const messages = Messages.loadMessages(
@@ -17,10 +21,40 @@ const messages = Messages.loadMessages(
     'requirement-android'
 );
 
+export class AndroidEnvironmentRequirements {
+    public commandRequirements: CommandRequirements;
+
+    constructor(logger: Logger, apiLevel?: string) {
+        this.commandRequirements = {};
+
+        this.commandRequirements.r1 = new AndroidSDKRootSetRequirements(logger);
+
+        this.commandRequirements.r2 = new AndroidSDKPrerequisites(logger);
+
+        this.commandRequirements.r3 =
+            new AndroidCommandLineToolsInstalledRequirements(logger);
+
+        this.commandRequirements.r4 =
+            new AndroidSDKPlatformToolsInstalledRequirements(logger);
+
+        this.commandRequirements.r5 = new PlatformAPIPackageRequirements(
+            logger,
+            apiLevel
+        );
+
+        this.commandRequirements.r6 = new EmulatorImagesRequirements(
+            logger,
+            apiLevel
+        );
+    }
+}
+
 export class AndroidSDKRootSetRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    public title = 'Android SDK Requirements';
+    public title = messages.getMessage(
+        'android:reqs:androidsdk:requirements:title'
+    );
     constructor(logger: Logger) {
         this.requirements = [
             new AndroidSDKRootSetRequirement(logger),
@@ -29,21 +63,29 @@ export class AndroidSDKRootSetRequirements implements RequirementList {
     }
 }
 
-export class Java8AvailableRequirements implements RequirementList {
+export class AndroidSDKPrerequisites implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    public title = 'Java 8 Requirements';
+    public title = messages.getMessage(
+        'android:reqs:androidsdkprerequisites:requirements:title'
+    );
     constructor(logger: Logger) {
         this.requirements = [new Java8AvailableRequirement(logger)];
     }
 }
 
-export class AndroidSDKToolsInstalledRequirements implements RequirementList {
+export class AndroidCommandLineToolsInstalledRequirements
+    implements RequirementList
+{
     public requirements: Requirement[] = [];
     public enabled = true;
-    public title = 'Android SDK Tools Requirements';
+    public title = messages.getMessage(
+        'android:reqs:cmdlinetools:requirements:title'
+    );
     constructor(logger: Logger) {
-        this.requirements = [new AndroidSDKToolsInstalledRequirement(logger)];
+        this.requirements = [
+            new AndroidCommandLineToolsInstalledRequirement(logger)
+        ];
     }
 }
 
@@ -52,7 +94,9 @@ export class AndroidSDKPlatformToolsInstalledRequirements
 {
     public requirements: Requirement[] = [];
     public enabled = true;
-    public title = 'Android SDK Platform Requirements';
+    public title = messages.getMessage(
+        'android:reqs:platformtools:requirements:title'
+    );
     constructor(logger: Logger) {
         this.requirements = [
             new AndroidSDKPlatformToolsInstalledRequirement(logger)
@@ -63,7 +107,9 @@ export class AndroidSDKPlatformToolsInstalledRequirements
 export class PlatformAPIPackageRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    public title = 'Platform API Package Requirements';
+    public title = messages.getMessage(
+        'android:reqs:platformapi:requirements:title'
+    );
     constructor(logger: Logger, apiLevel?: string) {
         this.requirements = [
             new PlatformAPIPackageRequirement(logger, apiLevel)
@@ -74,7 +120,9 @@ export class PlatformAPIPackageRequirements implements RequirementList {
 export class EmulatorImagesRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    public title = 'Emulator Images Requirements';
+    public title = messages.getMessage(
+        'android:reqs:emulatorimages:requirements:title'
+    );
     constructor(logger: Logger, apiLevel?: string) {
         this.requirements = [new EmulatorImagesRequirement(logger, apiLevel)];
     }
@@ -169,9 +217,7 @@ export class Java8AvailableRequirement implements Requirement {
     public skipped: boolean;
 
     constructor(logger: Logger) {
-        this.title = messages.getMessage(
-            'android:reqs:androidsdkprerequisitescheck:title'
-        );
+        this.title = messages.getMessage('android:reqs:androidjavacheck:title');
         this.fulfilledMessage = messages.getMessage(
             'android:reqs:androidsdkprerequisitescheck:fulfilledMessage'
         );
@@ -202,7 +248,7 @@ export class Java8AvailableRequirement implements Requirement {
 }
 
 // tslint:disable-next-line: max-classes-per-file
-export class AndroidSDKToolsInstalledRequirement implements Requirement {
+export class AndroidCommandLineToolsInstalledRequirement implements Requirement {
     public title: string;
     public skipped: boolean;
     public fulfilledMessage: string;
@@ -243,9 +289,7 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
 }
 
 // tslint:disable-next-line: max-classes-per-file
-export class AndroidSDKPlatformToolsInstalledRequirement
-    implements Requirement
-{
+export class AndroidSDKPlatformToolsInstalledRequirement implements Requirement {
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;

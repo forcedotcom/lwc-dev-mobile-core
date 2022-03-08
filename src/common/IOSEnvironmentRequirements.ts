@@ -9,7 +9,11 @@ import util from 'util';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { Requirement, RequirementList } from './Requirements';
+import {
+    CommandRequirements,
+    Requirement,
+    RequirementList
+} from './Requirements';
 
 Messages.importMessagesDirectory(__dirname);
 const messages = Messages.loadMessages(
@@ -17,10 +21,20 @@ const messages = Messages.loadMessages(
     'requirement-ios'
 );
 
-export class IOSEnvironmentRequirements implements RequirementList {
+export class IOSEnvironmentRequirements {
+    public commandRequirements: CommandRequirements;
+
+    constructor(logger: Logger) {
+        this.commandRequirements = {};
+
+        this.commandRequirements.r1 = new IOSRequirements(logger);
+    }
+}
+
+class IOSRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    public title = 'iOS Requirements';
+    public title = messages.getMessage('ios:reqs:title');
     constructor(logger: Logger) {
         this.requirements = [
             new SupportedEnvironmentRequirement(logger),
