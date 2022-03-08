@@ -8,7 +8,7 @@ import { Logger, Messages, SfdxError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
-import { AndroidSDKRootResolver } from './AndroidEnvReqResolver';
+import { AndroidCommandLineToolsResolver as AndroidCommandLineToolsResolver } from './AndroidEnvReqResolver';
 import {
     CommandRequirements,
     Requirement,
@@ -31,8 +31,9 @@ export class AndroidEnvironmentRequirements {
 
         this.commandRequirements.r2 = new AndroidSDKPrerequisites(logger);
 
-        this.commandRequirements.r3 =
-            new AndroidCommandLineToolsInstalledRequirements(logger);
+        this.commandRequirements.r3 = new AndroidCommandLineToolsRequirements(
+            logger
+        );
 
         this.commandRequirements.r4 =
             new AndroidSDKPlatformToolsInstalledRequirements(logger);
@@ -56,10 +57,7 @@ export class AndroidSDKRootSetRequirements implements RequirementList {
         'android:reqs:androidsdk:requirements:title'
     );
     constructor(logger: Logger) {
-        this.requirements = [
-            new AndroidSDKRootSetRequirement(logger),
-            new AndroidSDKInstallTask(logger)
-        ];
+        this.requirements = [new AndroidSDKRootSetRequirement(logger)];
     }
 }
 
@@ -74,9 +72,7 @@ export class AndroidSDKPrerequisites implements RequirementList {
     }
 }
 
-export class AndroidCommandLineToolsInstalledRequirements
-    implements RequirementList
-{
+export class AndroidCommandLineToolsRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
     public title = messages.getMessage(
@@ -84,7 +80,8 @@ export class AndroidCommandLineToolsInstalledRequirements
     );
     constructor(logger: Logger) {
         this.requirements = [
-            new AndroidCommandLineToolsInstalledRequirement(logger)
+            new AndroidCommandLineToolsInstalledRequirement(logger),
+            new AndroidCommandLineToolsInstallTask(logger)
         ];
     }
 }
@@ -164,47 +161,8 @@ export class AndroidSDKRootSetRequirement implements Requirement {
                 )
             );
         } else {
-            // We will resolve rather than reject since we indicate that the SDK was not found.
-            // And will count on the next subtask to install the SDK.
-            // If we reject, then the entire batch will show as failed, even if the install is successful,
-            // so we leave the ulimate rejection to whether the SDK is successfully installed or not.
-            return Promise.resolve(this.unfulfilledMessage);
+            return Promise.reject(this.unfulfilledMessage);
         }
-    }
-}
-
-// tslint:disable-next-line: max-classes-per-file
-export class AndroidSDKInstallTask implements Requirement {
-    public title: string;
-    public fulfilledMessage: string;
-    public unfulfilledMessage: string;
-    public logger: Logger;
-    public skipped: boolean;
-
-    constructor(logger: Logger) {
-        this.title = messages.getMessage('android:reqs:androidsdk:title');
-        this.fulfilledMessage = messages.getMessage(
-            'android:reqs:androidsdk:resolvedMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'android:reqs:androidsdk:unableToResolveMessage'
-        );
-        this.logger = logger;
-
-        const root = AndroidUtils.getAndroidSdkRoot();
-        if (root) {
-            this.skipped = true;
-        } else {
-            this.skipped = false;
-        }
-    }
-
-    /**
-     * Installs the Android SDK
-     * Only gets here, if not skipped.
-     */
-    public async checkFunction(): Promise<string | undefined> {
-        return new AndroidSDKRootResolver(this.logger).resolveFunction();
     }
 }
 
@@ -226,6 +184,9 @@ export class Java8AvailableRequirement implements Requirement {
         );
         this.logger = logger;
         this.skipped = false;
+        if (!AndroidUtils.getAndroidSdkRoot()) {
+            this.skipped = true;
+        }
     }
 
     /**
@@ -248,7 +209,9 @@ export class Java8AvailableRequirement implements Requirement {
 }
 
 // tslint:disable-next-line: max-classes-per-file
-export class AndroidCommandLineToolsInstalledRequirement implements Requirement {
+export class AndroidCommandLineToolsInstalledRequirement
+    implements Requirement
+{
     public title: string;
     public skipped: boolean;
     public fulfilledMessage: string;
@@ -257,7 +220,6 @@ export class AndroidCommandLineToolsInstalledRequirement implements Requirement 
 
     constructor(logger: Logger) {
         this.title = messages.getMessage('android:reqs:cmdlinetools:title');
-        this.skipped = false;
         this.fulfilledMessage = messages.getMessage(
             'android:reqs:cmdlinetools:fulfilledMessage'
         );
@@ -265,6 +227,11 @@ export class AndroidCommandLineToolsInstalledRequirement implements Requirement 
             'android:reqs:cmdlinetools:unfulfilledMessage'
         );
         this.logger = logger;
+
+        this.skipped = false;
+        if (!AndroidUtils.getAndroidSdkRoot()) {
+            this.skipped = true;
+        }
     }
 
     /**
@@ -282,14 +249,61 @@ export class AndroidCommandLineToolsInstalledRequirement implements Requirement 
                 )
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 .catch((error) =>
-                    Promise.reject(new SfdxError(this.unfulfilledMessage))
+                    // We will resolve rather than reject since we indicate that the SDK was not found.
+                    // And will count on the next subtask to install the command line tools.
+                    // If we reject, then the entire batch will show as failed, even if the install is successful,
+                    // so we leave the ulimate rejection to whether the command lines tools are successfully installed or not.
+                    Promise.resolve(this.unfulfilledMessage)
                 )
         );
     }
 }
 
 // tslint:disable-next-line: max-classes-per-file
-export class AndroidSDKPlatformToolsInstalledRequirement implements Requirement {
+export class AndroidCommandLineToolsInstallTask implements Requirement {
+    public title: string;
+    public fulfilledMessage: string;
+    public unfulfilledMessage: string;
+    public logger: Logger;
+    public skipped: boolean;
+
+    constructor(logger: Logger) {
+        this.title = messages.getMessage(
+            'android:reqs:cmdlinetools:install:title'
+        );
+        this.fulfilledMessage = messages.getMessage(
+            'android:reqs:cmdlinetools:install:resolvedMessage'
+        );
+        this.unfulfilledMessage = messages.getMessage(
+            'android:reqs:cmdlinetools:install:unableToResolveMessage'
+        );
+        this.logger = logger;
+
+        this.skipped = false;
+        if (!AndroidUtils.getAndroidSdkRoot()) {
+            this.skipped = true;
+        } else {
+            AndroidUtils.fetchAndroidCmdLineToolsLocation()
+                .then(() => (this.skipped = true))
+                .catch(() => (this.skipped = false));
+        }
+    }
+
+    /**
+     * Installs the Android Command Line Tools
+     * Only gets here, if not skipped.
+     */
+    public async checkFunction(): Promise<string | undefined> {
+        return new AndroidCommandLineToolsResolver(
+            this.logger
+        ).resolveFunction();
+    }
+}
+
+// tslint:disable-next-line: max-classes-per-file
+export class AndroidSDKPlatformToolsInstalledRequirement
+    implements Requirement
+{
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
@@ -309,7 +323,11 @@ export class AndroidSDKPlatformToolsInstalledRequirement implements Requirement 
             'android:reqs:platformtools:notFound'
         );
         this.logger = logger;
+
         this.skipped = false;
+        if (!AndroidUtils.getAndroidSdkRoot()) {
+            this.skipped = true;
+        }
     }
 
     /**
@@ -367,8 +385,12 @@ export class PlatformAPIPackageRequirement implements Requirement {
             'android:reqs:platformapi:unfulfilledMessage'
         );
         this.logger = logger;
-        this.skipped = false;
         this.apiLevel = apiLevel;
+
+        this.skipped = false;
+        if (!AndroidUtils.getAndroidSdkRoot()) {
+            this.skipped = true;
+        }
     }
 
     /**
@@ -416,8 +438,12 @@ export class EmulatorImagesRequirement implements Requirement {
             'android:reqs:emulatorimages:unfulfilledMessage'
         );
         this.logger = logger;
-        this.skipped = false;
         this.apiLevel = apiLevel;
+
+        this.skipped = false;
+        if (!AndroidUtils.getAndroidSdkRoot()) {
+            this.skipped = true;
+        }
     }
 
     /**

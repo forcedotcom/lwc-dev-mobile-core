@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
-import { AndroidSDKRootResolver } from '../AndroidEnvReqResolver';
+import { Logger, SfdxError } from '@salesforce/core';
+import { AndroidCommandLineToolsResolver } from '../AndroidEnvReqResolver';
 
 const logger = new Logger('test');
 
@@ -16,7 +16,7 @@ describe('Resolver Processing', () => {
             return Promise.resolve(expectedMessage);
         };
 
-        const actualMessage = await new AndroidSDKRootResolver(
+        const actualMessage = await new AndroidCommandLineToolsResolver(
             logger,
             resolveFunction
         ).resolveFunction();
@@ -30,7 +30,7 @@ describe('Resolver Processing', () => {
         };
 
         try {
-            await new AndroidSDKRootResolver(
+            await new AndroidCommandLineToolsResolver(
                 logger,
                 resolveFunction
             ).resolveFunction();

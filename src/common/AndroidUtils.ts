@@ -141,12 +141,6 @@ export class AndroidUtils {
      * @returns The location of Android command line tools.
      */
     public static async fetchAndroidCmdLineToolsLocation(): Promise<string> {
-        if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(
-                new SfdxError('Android SDK root is not set.')
-            );
-        }
-
         return CommonUtils.executeCommandAsync(
             `${AndroidUtils.getSdkManagerCommand()} --version`
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -161,12 +155,6 @@ export class AndroidUtils {
      * @returns The location of Android platform tools.
      */
     public static async fetchAndroidSDKPlatformToolsLocation(): Promise<string> {
-        if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(
-                new SfdxError('Android SDK root is not set.')
-            );
-        }
-
         return CommonUtils.executeCommandAsync(
             `${AndroidUtils.getAdbShellCommand()} --version`
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -181,12 +169,6 @@ export class AndroidUtils {
      * @returns The installed packages.
      */
     public static async fetchInstalledPackages(): Promise<AndroidPackages> {
-        if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(
-                new SfdxError('Android SDK root is not set.')
-            );
-        }
-
         if (AndroidUtils.isCached()) {
             return Promise.resolve(AndroidUtils.packageCache);
         }

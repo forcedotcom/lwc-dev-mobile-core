@@ -23,7 +23,7 @@ export interface RequirementResolver {
 /**
  * Resolves the missing Android SDK
  */
-export class AndroidSDKRootResolver implements RequirementResolver {
+export class AndroidCommandLineToolsResolver implements RequirementResolver {
     public resolvedMessage: string;
     public unableToResolveMessage: string;
     public logger: Logger;
@@ -31,11 +31,11 @@ export class AndroidSDKRootResolver implements RequirementResolver {
 
     constructor(logger: Logger, resolveFunction?: RequirementResolveFunc) {
         this.resolvedMessage = messages.getMessage(
-            'android:reqs:androidsdk:resolvedMessage'
+            'android:reqs:cmdlinetools:install:resolvedMessage'
         );
 
         this.unableToResolveMessage = messages.getMessage(
-            'android:reqs:androidsdk:unableToResolveMessage'
+            'android:reqs:cmdlinetools:install:unableToResolveMessage'
         );
         this.logger = logger;
 
@@ -43,12 +43,12 @@ export class AndroidSDKRootResolver implements RequirementResolver {
             this.resolveFunction = resolveFunction;
         } else {
             this.resolveFunction = function () {
-                return this.installAndroidSDK();
+                return this.installAndroidCommandLineTools();
             };
         }
     }
 
-    private installAndroidSDK(): Promise<string | undefined> {
+    private installAndroidCommandLineTools(): Promise<string | undefined> {
         process.env.ANDROID_HOME = '/Users/pvandyk/Library/Android/sdk';
 
         if (process.env.ANDROID_HOME) {
