@@ -14,6 +14,7 @@ import {
     Requirement,
     RequirementList
 } from './Requirements';
+import { CommonUtils } from './CommonUtils';
 
 Messages.importMessagesDirectory(__dirname);
 const messages = Messages.loadMessages(
@@ -29,11 +30,11 @@ export class AndroidEnvironmentRequirements {
 
         this.commandRequirements.r1 = new AndroidSDKRootSetRequirements(logger);
 
-        this.commandRequirements.r2 = new AndroidSDKPrerequisites(logger);
-
-        this.commandRequirements.r3 = new AndroidCommandLineToolsRequirements(
+        this.commandRequirements.r2 = new AndroidCommandLineToolsRequirements(
             logger
         );
+
+        this.commandRequirements.r3 = new AndroidSDKPrerequisites(logger);
 
         this.commandRequirements.r4 =
             new AndroidSDKPlatformToolsInstalledRequirements(logger);
@@ -283,9 +284,15 @@ export class AndroidCommandLineToolsInstallTask implements Requirement {
         if (!AndroidUtils.getAndroidSdkRoot()) {
             this.skipped = true;
         } else {
-            AndroidUtils.fetchAndroidCmdLineToolsLocation()
-                .then(() => (this.skipped = true))
-                .catch(() => (this.skipped = false));
+            try {
+                CommonUtils.executeCommandSync(
+                    `${AndroidUtils.getSdkManagerCommand()} --version`
+                );
+                this.skipped = true;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+                this.skipped = false;
+            }
         }
     }
 

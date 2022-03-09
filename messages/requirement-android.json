@@ -12,7 +12,7 @@
     "android:reqs:cmdlinetools:fulfilledMessage" : "Android command line tools were detected at %s",
     "android:reqs:cmdlinetools:unfulfilledMessage" : "Android command line tools not found.  Will attempt to install these tools in the next step.",
     "android:reqs:cmdlinetools:install:title" : "Installing Android Command Line Tools",
-    "android:reqs:cmdlinetools:install:resolvedMessage" : "Android Command Line Tools have been successfully installed.",
+    "android:reqs:cmdlinetools:install:resolvedMessage" : "Android Command Line Tools were installed at %s",
     "android:reqs:cmdlinetools:install:unableToResolveMessage" : "Unable to install the Android Command Line Tools.",
     "android:reqs:platformtools:requirements:title" : "Platform Tools Requirements",
     "android:reqs:platformtools:title" : "Checking SDK Platform Tools",

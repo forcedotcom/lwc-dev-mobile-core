@@ -1152,9 +1152,12 @@ export class AndroidUtils {
             // Below, we get the list of all directories, then sort them descending and grab the first one.
             // This would either resolve to 'latest' or the latest versioned folder name
             if (fs.existsSync(AndroidUtils.androidCmdLineToolsBin)) {
-                const content = fs.readdirSync(
-                    AndroidUtils.androidCmdLineToolsBin
-                );
+                const content = fs
+                    .readdirSync(AndroidUtils.androidCmdLineToolsBin, {
+                        withFileTypes: true
+                    })
+                    .filter((dirent) => dirent.isDirectory())
+                    .map((dirent) => dirent.name);
                 if (content && content.length > 0) {
                     content.sort((a, b) => (a > b ? -1 : 1));
 
@@ -1163,7 +1166,11 @@ export class AndroidUtils {
                         content[0],
                         'bin'
                     );
+                } else {
+                    AndroidUtils.androidCmdLineToolsBin = '';
                 }
+            } else {
+                AndroidUtils.androidCmdLineToolsBin = '';
             }
         }
 
@@ -1227,10 +1234,15 @@ export class AndroidUtils {
      */
     public static getSdkManagerCommand(): string {
         if (!AndroidUtils.sdkManagerCommand) {
-            AndroidUtils.sdkManagerCommand = path.join(
-                AndroidUtils.getAndroidCmdLineToolsBin(),
-                ANDROID_SDK_MANAGER_NAME
-            );
+            const cmdlineToolsBin = AndroidUtils.getAndroidCmdLineToolsBin();
+            if (cmdlineToolsBin) {
+                AndroidUtils.sdkManagerCommand = path.join(
+                    cmdlineToolsBin,
+                    ANDROID_SDK_MANAGER_NAME
+                );
+            } else {
+                AndroidUtils.sdkManagerCommand = '';
+            }
         }
 
         return AndroidUtils.sdkManagerCommand;

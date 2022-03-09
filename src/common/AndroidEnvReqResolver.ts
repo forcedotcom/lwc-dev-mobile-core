@@ -5,6 +5,9 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { AndroidUtils } from './AndroidUtils';
+import util from 'util';
+import { CommonUtils } from './CommonUtils';
 
 Messages.importMessagesDirectory(__dirname);
 const messages = Messages.loadMessages(
@@ -48,13 +51,45 @@ export class AndroidCommandLineToolsResolver implements RequirementResolver {
         }
     }
 
-    private installAndroidCommandLineTools(): Promise<string | undefined> {
-        process.env.ANDROID_HOME = '/Users/pvandyk/Library/Android/sdk';
+    private async installAndroidCommandLineTools(): Promise<
+        string | undefined
+    > {
+        // download command line tools
 
-        if (process.env.ANDROID_HOME) {
-            return Promise.resolve(this.resolvedMessage);
-        } else {
-            return Promise.reject(new SfdxError(this.unableToResolveMessage));
-        }
+        // unzip and move to the latest folder
+        const unzipCommand = ''.concat(
+            'unzip /Users/pvandyk/Downloads/commandlinetools-mac-8092744_latest.zip -d $ANDROID_HOME/cmdline-tools/latest',
+            ' && ',
+            'mv $ANDROID_HOME/cmdline-tools/latest/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest',
+            ' && ',
+            'rm -rf $ANDROID_HOME/cmdline-tools/latest/cmdline-tools'
+        );
+        CommonUtils.executeCommandSync(unzipCommand);
+
+        // this is needed because unzipping doesn't register the sdkmanager
+        // it will install to latest-2, so remove and install
+        const installCommand = ''.concat(
+            '$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "cmdline-tools;latest"',
+            ' && ',
+            'rm -rf $ANDROID_HOME/cmdline-tools/latest',
+            ' && ',
+            'mv $ANDROID_HOME/cmdline-tools/latest-2 $ANDROID_HOME/cmdline-tools/latest'
+        );
+        CommonUtils.executeCommandSync(installCommand);
+
+        // cleanup (remove download)
+
+        return (
+            AndroidUtils.fetchAndroidCmdLineToolsLocation()
+                .then((result) =>
+                    Promise.resolve(
+                        AndroidUtils.convertToUnixPath(
+                            util.format(this.resolvedMessage, result)
+                        )
+                    )
+                )
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                .catch((error) => Promise.reject(this.unableToResolveMessage))
+        );
     }
 }
