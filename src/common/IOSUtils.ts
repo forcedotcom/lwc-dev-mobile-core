@@ -96,22 +96,24 @@ export class IOSUtils {
     /**
      * Attempts to get the info about a simulator.
      *
-     * @param simulatorName The name for the simulator.
+     * @param simulatorIdentifier The udid or the name for the simulator.
      * @returns An IOSSimulatorDevice object containing the info of a simulator, or NULL if not found.
      */
     public static async getSimulator(
-        simulatorName: string
+        simulatorIdentifier: string
     ): Promise<IOSSimulatorDevice | null> {
         return IOSUtils.getSupportedSimulators()
             .then((devices) => {
                 for (const device of devices) {
-                    if (simulatorName === device.name) {
+                    if (simulatorIdentifier === device.udid) {
+                        return Promise.resolve(device);
+                    } else if (simulatorIdentifier === device.name) {
                         return Promise.resolve(device);
                     }
                 }
 
                 IOSUtils.logger.info(
-                    `Unable to find simulator: ${simulatorName}`
+                    `Unable to find simulator: ${simulatorIdentifier}`
                 );
                 return Promise.resolve(null);
             })

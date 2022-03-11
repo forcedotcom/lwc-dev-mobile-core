@@ -135,6 +135,7 @@ describe('CommonUtils', () => {
     });
 
     test('downloadFile function', async () => {
+        jest.setTimeout(10000);
         const dest = path.join(os.tmpdir(), 'ca.crt');
 
         // should fail and not create a destination file
