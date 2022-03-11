@@ -91,7 +91,7 @@ export class IOSSimulatorDevice {
     }
 
     /**
-     * A string representation of an IOSSimulatorDevice which includes Name, Runtime Id
+     * A string representation of an IOSSimulatorDevice which includes Name, Runtime Id, and udid
      */
     public toString(): string {
         return `${this.name}, ${this.runtimeId}, ${this.udid}`;
