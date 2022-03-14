@@ -352,7 +352,7 @@ describe('IOS utils tests', () => {
         });
     });
 
-    test('Should attempt to fetch a sim', async () => {
+    test('Should attempt to fetch a sim by name', async () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandRouterBlock
         );
@@ -360,6 +360,21 @@ describe('IOS utils tests', () => {
         const found = await IOSUtils.getSimulator('iPhone 11 Pro');
         const notFound = await IOSUtils.getSimulator('blah');
         expect(found && found.name === 'iPhone 11 Pro').toBe(true);
+        expect(notFound === null).toBe(true);
+    });
+
+    test('Should attempt to fetch a sim by udid', async () => {
+        jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
+            myCommandRouterBlock
+        );
+
+        const found = await IOSUtils.getSimulator(
+            'F2B4097F-F33E-4D8A-8FFF-CE49F8D6C166'
+        );
+        const notFound = await IOSUtils.getSimulator(
+            'F2B4097F-F33E-4D8A-8FFF-ABCDEFGHIJ'
+        );
+        expect(found && found.name === 'iPhone-11 Pro Max').toBe(true);
         expect(notFound === null).toBe(true);
     });
 

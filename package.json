@@ -1,7 +1,7 @@
 {
   "name": "@salesforce/lwc-dev-mobile-core",
   "description": "Core module supporting Salesforce CLI mobile extension plug-ins",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": {
     "name": "Meisam Seyed Aliroteh",
     "email": "maliroteh@salesforce.com",
@@ -22,6 +22,11 @@
       "name": "Takashi Arai",
       "email": "t.arai@salesforce.com",
       "url": "https://github.com/sfdctaka"
+    },
+    {
+      "name": "Peter Van Dyk",
+      "email": "pvandyk@salesforce.com",
+      "url": "https://github.com/pvandyk"
     }
   ],
   "bugs": "https://github.com/forcedotcom/lwc-dev-mobile-core/issues",

@@ -179,5 +179,5 @@ describe('CommonUtils', () => {
             await CommonUtils.downloadFile('https://www.google.com', dest);
             expect(fs.existsSync(dest)).toBe(true);
         }
-    });
+    }, 10000); // increase timeout for this test
 });

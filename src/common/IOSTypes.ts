@@ -51,7 +51,18 @@ export class IOSSimulatorDevice {
             }
         }
 
-        return simDevices;
+        // sort by name in ascending order and then by ios version (runtimeid) in descending order
+        // if someone starts a device by name (eg. iPhone 11), rather than udid, then the newer
+        // version of iOS will be chosen as it will be first on the list.
+        return simDevices.sort((a, b) =>
+            a.name == b.name
+                ? a.runtimeId > b.runtimeId
+                    ? -1
+                    : 1
+                : a.name < b.name
+                ? -1
+                : 1
+        );
     }
 
     public name: string;
@@ -80,9 +91,9 @@ export class IOSSimulatorDevice {
     }
 
     /**
-     * A string representation of an IOSSimulatorDevice which includes Name, Runtime Id
+     * A string representation of an IOSSimulatorDevice which includes Name, Runtime Id, and udid
      */
     public toString(): string {
-        return `${this.name}, ${this.runtimeId}`;
+        return `${this.name}, ${this.runtimeId}, ${this.udid}`;
     }
 }
