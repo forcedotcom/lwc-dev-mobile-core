@@ -18,6 +18,7 @@ export class AndroidMockData {
       platforms;android-28                                | 6            | Android SDK Platform 28                         | platforms/android-28/                               
       platforms;android-29                                | 3            | Android SDK Platform 29                         | platforms/android-29/                               
       platforms;android-30                                | 3            | Android SDK Platform 30                         | platforms/android-30/                               
+      platforms;android-Tiramisu                          | 2            | Android SDK Platform Tiramisu                   | platforms/android-Tiramisu/                               
       system-images;android-28;default;x86_64             | 4            | Intel x86 Atom_64 System Image                  | system-images/android-28/default/x86_64/            
       system-images;android-28;google_apis;x86            | 10           | Google APIs Intel x86 Atom System Image         | system-images/android-28/google_apis/x86/           
       system-images;android-28;google_apis_playstore;x86  | 9            | Google Play Intel x86 Atom System Image         | system-images/android-28/google_apis_playstore/x86/ 
@@ -25,6 +26,7 @@ export class AndroidMockData {
       system-images;android-29;google_apis;x86            | 8            | Google APIs Intel x86 Atom System Image         | system-images/android-29/google_apis/x86/           
       system-images;android-30;google_apis;x86            | 9            | Google APIs Intel x86 Atom System Image         | system-images/android-30/google_apis/x86/           
       system-images;android-30;google_apis;x86_64         | 9            | Google APIs Intel x86 Atom_64 System Image      | system-images/android-30/google_apis/x86_64/        
+      system-images;android-Tiramisu;google_apis;x86_64   | 1            | Google APIs Intel x86 Atom_64 System Image      | system-images/android-Tiramisu/google_apis/x86_64/        
       tools                                               | 26.1.1       | Android SDK Tools 26.1.1                        | tools/                                              
     Available Packages:
       Path                                                                                     | Version      | Description                                                         
@@ -33,6 +35,9 @@ export class AndroidMockData {
     public static badMockRawPackagesString =
         'Installed packages:=====================]';
 
+    // NB: There are two codename packages in the output above, which should be
+    // ignored by parsing as of this release. This value represents an implicit
+    // test of discarding that data. The real count above is this value + 2.
     public static mockRawStringPackageLength = 13;
 
     public static avdList = `

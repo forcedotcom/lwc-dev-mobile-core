@@ -97,7 +97,9 @@ describe('Setup Tests', () => {
         await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
 
-        setup = makeSetup(PlatformType.ios, 'not-a-number');
+        const invalidVersionFlag = 'not-a-number';
+
+        setup = makeSetup(PlatformType.ios, invalidVersionFlag);
         try {
             await setup.init();
             await setup.run();
@@ -108,7 +110,7 @@ describe('Setup Tests', () => {
                     messages.getMessage(
                         'error:invalidApiLevelFlagsDescription'
                     ),
-                    'Error: Invalid version string: not-a-number'
+                    invalidVersionFlag
                 )
             );
         }
