@@ -208,12 +208,30 @@ export class IOSUtils {
             const minSupportedRuntimeIOS = Version.from(
                 PlatformConfig.iOSConfig().minSupportedRuntime
             );
+            if (minSupportedRuntimeIOS === null) {
+                return Promise.reject(
+                    new SfdxError(
+                        `${
+                            PlatformConfig.iOSConfig().minSupportedRuntime
+                        } is not a supported version format.`
+                    )
+                );
+            }
 
             const rtIntersection = configuredRuntimes.filter(
                 (configuredRuntime) => {
                     const configuredRuntimeVersion = Version.from(
                         configuredRuntime.toLowerCase().replace('ios-', '')
                     );
+                    if (configuredRuntimeVersion === null) {
+                        // We haven't hit a use case where Apple does unconventional version
+                        // specifications like Google will do with their codename "versions".
+                        // So for now, this is a 'miss' on the iOS side. Prove me wrong, Apple!
+                        IOSUtils.logger.warn(
+                            `getSupportedRuntimes(): getSimulatorRuntimes() returned '${configuredRuntime}', which is not a supported version format.`
+                        );
+                        return false;
+                    }
 
                     return configuredRuntimeVersion.sameOrNewer(
                         minSupportedRuntimeIOS

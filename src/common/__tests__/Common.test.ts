@@ -208,4 +208,67 @@ describe('Commons utils tests', () => {
         expect(requiredKeyValuePair).toBeDefined();
         expect(requiredKeyValuePair![1]).toBe(false);
     });
+
+    test('Valid Version formats return expected object values', async () => {
+        // Major only.
+        const v1 = common.Version.from('1');
+        expect(v1?.major).toBe(1);
+        expect(v1?.minor).toBe(0);
+        expect(v1?.patch).toBe(0);
+
+        // Major and minor only.
+        for (const versionString of ['2.3', '2-3']) {
+            const v2 = common.Version.from(versionString);
+            expect(v2?.major).toBe(2);
+            expect(v2?.minor).toBe(3);
+            expect(v2?.patch).toBe(0);
+        }
+
+        // Major, minor, and patch.
+        for (const versionString of ['4.5.6', '4-5-6']) {
+            const v3 = common.Version.from(versionString);
+            expect(v3?.major).toBe(4);
+            expect(v3?.minor).toBe(5);
+            expect(v3?.patch).toBe(6);
+        }
+
+        // Space-padded values.
+        for (const versionString of ['  7.8.9  ', '  7-8-9  ']) {
+            const v4 = common.Version.from(versionString);
+            expect(v4?.major).toBe(7);
+            expect(v4?.minor).toBe(8);
+            expect(v4?.patch).toBe(9);
+        }
+
+        // Multi-digit values.
+        for (const versionString of ['10.111.1212', '10-111-1212']) {
+            const v5 = common.Version.from(versionString);
+            expect(v5?.major).toBe(10);
+            expect(v5?.minor).toBe(111);
+            expect(v5?.patch).toBe(1212);
+        }
+
+        // 'Zero' releases.
+        for (const versionString of ['0.1.2', '0-1-2']) {
+            const v6 = common.Version.from(versionString);
+            expect(v6?.major).toBe(0);
+            expect(v6?.minor).toBe(1);
+            expect(v6?.patch).toBe(2);
+        }
+    });
+
+    test('Invalid Version formats return null', async () => {
+        const invalidVersions = [
+            'some-random-string',
+            '001.002.003',
+            '004-005-006',
+            '2-3.4',
+            '2.3-4',
+            '5.6.7.8',
+            '9-10-11-12'
+        ];
+        for (const invalidVersion of invalidVersions) {
+            expect(common.Version.from(invalidVersion)).toBeNull();
+        }
+    });
 });

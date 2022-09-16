@@ -163,15 +163,14 @@ export class CommandLineUtils {
     public static flagFailureActionMessages: string[] = [];
 
     private static validateApiLevelFlag(flag: string): boolean {
-        try {
-            Version.from(flag);
-        } catch (error) {
+        const version = Version.from(flag);
+        if (version === null) {
             throw new SfdxError(
                 util.format(
                     messages.getMessage(
                         'error:invalidApiLevelFlagsDescription'
                     ),
-                    error
+                    flag
                 ),
                 'lwc-dev-mobile-core',
                 CommandLineUtils.flagFailureActionMessages
@@ -198,29 +197,42 @@ export class CommandLineUtils {
 // tslint:disable-next-line: max-classes-per-file
 export class Version {
     /**
-     * Creates a Version object that follows semantic versioning syntax.
-     * @param input A version string that follows semantic versioning syntax.
-     * @returns A Version object that follows semantic versioning syntax: major.minor.patch
+     * Creates a Version object from a string that follows a basic versioning syntax
+     * of x[.y[.z]] or x[-y[-z]].
+     * @param input A version string that follows the basic syntax of x[.y[.z]] or x[-y[-z]].
+     * @returns A Version object from the parsed data, or null if the string does not follow
+     * the format.
      */
-    public static from(input: string): Version {
-        // eslint-disable-next-line no-useless-escape
-        const acceptedRange = /[0-9\-\.]+/g;
-        const original = input.trim().toLowerCase();
-        const invalidChars = original.replace(acceptedRange, '');
-        if (invalidChars.length > 0) {
-            throw new Error(`Invalid version string: ${input}`);
+    public static from(input: string): Version | null {
+        // Regex matches any valid value for x[.y[.z]] or x[-y[-z]]. Some examples include:
+        // "1.0.0"   - Valid
+        // "2-1-2"   - Valid
+        // "3.1-4"   - Invalid
+        // "4.5"     - Valid
+        // "6"       - Valid
+        // "7..8"    - Invalid
+        // "001.002" - Invalid
+        const versionRegex =
+            /^(?<Major>0|[1-9]\d*)((?<Separator>[-.])(?<Minor>0|[1-9]\d*))?(\k<Separator>(?<Patch>0|[1-9]\d*))?$/;
+        const trimmedInput = input.trim();
+        const versionMatch = versionRegex.exec(trimmedInput);
+        if (versionMatch === null) {
+            this.logger.warn(`'${trimmedInput}' is not valid version format.`);
+            return null;
         }
 
-        // support version strings using - or . as separators (e.g 13-0-4 and 13.0.4)
-        const parts = original.replace(/-/gi, '.').split('.');
-        const major = parts.length >= 1 ? Number.parseInt(parts[0], 10) : 0;
-        const minor = parts.length >= 2 ? Number.parseInt(parts[1], 10) : 0;
-        const patch = parts.length >= 3 ? Number.parseInt(parts[2], 10) : 0;
-
-        // this shouldn't really happen now, but just in case
-        if (Number.isNaN(major) || Number.isNaN(minor) || Number.isNaN(patch)) {
-            throw new Error(`Invalid version string: ${input}`);
-        }
+        const major =
+            versionMatch.groups?.Major !== undefined
+                ? Number.parseInt(versionMatch.groups.Major, 10)
+                : 0;
+        const minor =
+            versionMatch.groups?.Minor !== undefined
+                ? Number.parseInt(versionMatch.groups.Minor, 10)
+                : 0;
+        const patch =
+            versionMatch.groups?.Patch !== undefined
+                ? Number.parseInt(versionMatch.groups.Patch, 10)
+                : 0;
 
         return new Version(major, minor, patch);
     }
@@ -270,4 +282,14 @@ export class Version {
             return 1;
         }
     }
+
+    /**
+     * Logging-friendly format is x.y.z.
+     * @returns String representation of the version, i.e. x.y.z.
+     */
+    public toString(): string {
+        return `${this.major}.${this.minor}.${this.patch}`;
+    }
+
+    private static logger: Logger = new Logger(LOGGER_NAME);
 }

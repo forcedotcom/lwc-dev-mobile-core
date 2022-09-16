@@ -188,9 +188,15 @@ export class AndroidUtils {
         }
 
         if (AndroidUtils.isCached()) {
+            this.logger.debug(
+                'fetchInstalledPackages(): returning cached packages.'
+            );
             return Promise.resolve(AndroidUtils.packageCache);
         }
 
+        this.logger.debug(
+            'fetchInstalledPackages(): Packages not cached. Retrieving.'
+        );
         return CommonUtils.executeCommandAsync(
             `${AndroidUtils.getSdkManagerCommand()} --list`
         ).then((result) => {
@@ -200,6 +206,9 @@ export class AndroidUtils {
                 );
                 AndroidUtils.packageCache = packages;
             }
+            this.logger.debug(
+                `fetchInstalledPackages(): Retrieved packages:\n${AndroidUtils.packageCache}`
+            );
             return Promise.resolve(AndroidUtils.packageCache);
         });
     }
@@ -275,8 +284,18 @@ export class AndroidUtils {
     public static async fetchAllAvailableApiPackages(
         mustHaveSupportedEmulatorImages: boolean
     ): Promise<AndroidPackage[]> {
-        const minSupportedRuntime = Version.from(
-            PlatformConfig.androidConfig().minSupportedRuntime
+        const configuredMinSupportedRuntime =
+            PlatformConfig.androidConfig().minSupportedRuntime;
+        const minSupportedRuntime = Version.from(configuredMinSupportedRuntime);
+        if (minSupportedRuntime === null) {
+            return Promise.reject(
+                new SfdxError(
+                    `${configuredMinSupportedRuntime} is not a supported version format.`
+                )
+            );
+        }
+        this.logger.debug(
+            `fetchAllAvailableApiPackages(): minSupportedRuntime: ${minSupportedRuntime}`
         );
 
         return AndroidUtils.fetchInstalledPackages()
@@ -284,10 +303,7 @@ export class AndroidUtils {
                 if (allPackages.isEmpty()) {
                     return Promise.reject(
                         new SfdxError(
-                            `No Android API packages are installed. Minimum supported Android API package version is ${
-                                PlatformConfig.androidConfig()
-                                    .minSupportedRuntime
-                            }`
+                            `No Android API packages are installed. Minimum supported Android API package version is ${configuredMinSupportedRuntime}`
                         )
                     );
                 }
@@ -295,14 +311,16 @@ export class AndroidUtils {
                 const matchingPlatforms = allPackages.platforms.filter((pkg) =>
                     pkg.version.sameOrNewer(minSupportedRuntime)
                 );
+                this.logger.debug(
+                    `fetchAllAvailableApiPackages(): Installed platforms with versions >= ${minSupportedRuntime}:\n${AndroidPackages.packageArrayAsString(
+                        matchingPlatforms
+                    )}`
+                );
 
                 if (matchingPlatforms.length < 1) {
                     return Promise.reject(
                         new SfdxError(
-                            `Could not locate a supported Android API package. Minimum supported Android API package version is ${
-                                PlatformConfig.androidConfig()
-                                    .minSupportedRuntime
-                            }`
+                            `Could not locate a supported Android API package. Minimum supported Android API package version is ${configuredMinSupportedRuntime}`
                         )
                     );
                 }
@@ -312,6 +330,9 @@ export class AndroidUtils {
             .then(async (matchingPlatforms) => {
                 let results: AndroidPackage[] = [];
 
+                this.logger.debug(
+                    `fetchAllAvailableApiPackages(): mustHaveSupportedEmulatorImages: ${mustHaveSupportedEmulatorImages}`
+                );
                 if (mustHaveSupportedEmulatorImages) {
                     for (const pkg of matchingPlatforms) {
                         try {
@@ -322,7 +343,14 @@ export class AndroidUtils {
 
                             // if it has a supported emulator image then include it
                             if (emulatorImage) {
+                                this.logger.debug(
+                                    `Found supported emulator for platform: ${pkg}`
+                                );
                                 results.push(pkg);
+                            } else {
+                                this.logger.debug(
+                                    `fetchAllAvailableApiPackages(): Package does not have an associated emulator image: ${pkg}`
+                                );
                             }
                         } catch (error) {
                             this.logger.warn(
@@ -351,16 +379,25 @@ export class AndroidUtils {
     public static async fetchSupportedAndroidAPIPackage(
         apiLevel?: string
     ): Promise<AndroidPackage> {
-        const targetRuntime: Version | undefined = apiLevel
-            ? Version.from(apiLevel)
-            : undefined;
+        let targetRuntime: Version | undefined;
+        if (apiLevel !== undefined) {
+            const parsedVersion = Version.from(apiLevel);
+            if (parsedVersion === null) {
+                return Promise.reject(
+                    new SfdxError(
+                        `${apiLevel} is not a supported version format.`
+                    )
+                );
+            }
+            targetRuntime = parsedVersion;
+        }
 
         return AndroidUtils.fetchAllAvailableApiPackages(true).then(
             (packages) => {
                 let matchingPlatforms = packages;
                 if (targetRuntime) {
                     matchingPlatforms = packages.filter((pkg) =>
-                        pkg.version.same(targetRuntime)
+                        pkg.version.same(targetRuntime!)
                     );
                     if (matchingPlatforms.length < 1) {
                         return Promise.reject(
@@ -727,7 +764,7 @@ export class AndroidUtils {
                 }
 
                 // For API 29 or higher there are a few more steps to be done before we can remount after rooting
-                if (emulator.apiLevel.sameOrNewer(Version.from('29'))) {
+                if (emulator.apiLevel.sameOrNewer(Version.from('29')!)) {
                     const verificationIsAlreadyDisabled = (
                         await AndroidUtils.executeAdbCommandWithRetry(
                             'shell avbctl get-verification',

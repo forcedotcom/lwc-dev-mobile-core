@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { AndroidPackages, AndroidVirtualDevice } from './AndroidTypes';
 import { AndroidUtils } from './AndroidUtils';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
@@ -18,6 +19,8 @@ export class LoggerSetup {
         await IOSUtils.initializeLogger();
         await CommonUtils.initializeLogger();
         await MacNetworkUtils.initializeLogger();
+        await AndroidPackages.initializeLogger();
+        await AndroidVirtualDevice.initializeLogger();
         return Promise.resolve();
     }
 }

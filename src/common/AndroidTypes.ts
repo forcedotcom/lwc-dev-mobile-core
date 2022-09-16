@@ -6,8 +6,24 @@
  */
 import { Version } from './Common';
 import fs from 'fs';
+import { Logger } from '@salesforce/core';
+
+const ANDROID_PACKAGES_LOGGER_NAME =
+    'force:lightning:local:androidtypes:androidpackages';
+const ANDROID_VIRTUAL_DEVICE_LOGGER_NAME =
+    'force:lightning:local:androidtypes:androidvirtualdevice';
 
 export class AndroidPackages {
+    /**
+     * Initialize the logger used by AndroidPackages.
+     */
+    public static async initializeLogger(): Promise<void> {
+        AndroidPackages.logger = await Logger.child(
+            ANDROID_PACKAGES_LOGGER_NAME
+        );
+        return Promise.resolve();
+    }
+
     /**
      * Attempts to parse the output of `sdkmanager --list` command.
      *
@@ -56,6 +72,19 @@ export class AndroidPackages {
                             );
                         }
                         const version = Version.from(versionString);
+                        if (version === null) {
+                            // Android can deviate from the x[.y[.z]] version pattern when delivering
+                            // "beta" versions, and will instead use a "codename" in its place. For
+                            // example: system-images;android-Tiramisu;google_apis;x86_64
+                            //
+                            // In the future, we'd like to consider these versions as valid "bleeding edge"
+                            // resources available for use. For now, we're ignoring them to avert
+                            // otherwise unhandled errors with the non-standard versioning.
+                            this.logger.warn(
+                                `parseRawPackagesString(): Version in '${path}' is in an unsupported version format. Ignoring.`
+                            );
+                            continue;
+                        }
                         const description = rawStringSplits[2].trim();
                         const locationOfPack =
                             rawStringSplits.length > 2
@@ -93,6 +122,33 @@ export class AndroidPackages {
     public isEmpty(): boolean {
         return this.platforms.length < 1 && this.systemImages.length < 1;
     }
+
+    /**
+     * Creates a readable string of AndroidPackage object data.
+     * @param packageArray The array of package objects to render.
+     * @returns A readable string of package object data.
+     */
+    public static packageArrayAsString(packageArray: AndroidPackage[]) {
+        let packagesString = '';
+        for (const androidPackage of packageArray) {
+            packagesString += `${androidPackage}\n`;
+        }
+        return packagesString;
+    }
+
+    /**
+     * A string representation of the different package data.
+     * @returns The string containing the Android package data.
+     */
+    public toString(): string {
+        let retString = 'platforms:\n';
+        retString += AndroidPackages.packageArrayAsString(this.platforms);
+        retString += 'system images:\n';
+        retString += AndroidPackages.packageArrayAsString(this.systemImages);
+        return retString;
+    }
+
+    private static logger: Logger = new Logger(ANDROID_PACKAGES_LOGGER_NAME);
 }
 
 // tslint:disable-next-line: max-classes-per-file
@@ -128,10 +184,28 @@ export class AndroidPackage {
         this.description = description;
         this.location = location;
     }
+
+    /**
+     * A log-readable string of the AndroidPackage data.
+     * @returns A readable string of the AndroidPackage data.
+     */
+    public toString(): string {
+        return `path: ${this.path}, version: ${this.version}, description: ${this.description}, location: ${this.location}`;
+    }
 }
 
 // tslint:disable-next-line: max-classes-per-file
 export class AndroidVirtualDevice {
+    /**
+     * Initialize the logger used by AndroidVirtualDevice.
+     */
+    public static async initializeLogger(): Promise<void> {
+        AndroidVirtualDevice.logger = await Logger.child(
+            ANDROID_VIRTUAL_DEVICE_LOGGER_NAME
+        );
+        return Promise.resolve();
+    }
+
     /**
      * Attempts to parse the output of `avdmanager list avd` command.
      *
@@ -151,7 +225,7 @@ export class AndroidVirtualDevice {
 
             if (name && device && path && target && api) {
                 const filePath = path.replace(`${name}.avd`, `${name}.ini`);
-                let apiLevel = new Version(0, 0, 0);
+                let apiLevel: Version | null = new Version(0, 0, 0);
                 try {
                     const configFile = fs.readFileSync(filePath, 'utf8');
                     const targetAPI = configFile
@@ -162,6 +236,19 @@ export class AndroidVirtualDevice {
                         )
                         .map((entry) => entry.replace('android-', ''));
                     apiLevel = Version.from(targetAPI[0]);
+                    if (apiLevel === null) {
+                        // Android can deviate from the x[.y[.z]] version pattern when delivering
+                        // "beta" versions, and will instead use a "codename" in its place. For
+                        // example: system-images;android-Tiramisu;google_apis;x86_64
+                        //
+                        // In the future, we'd like to consider these versions as valid "bleeding edge"
+                        // resources available for use. For now, we're ignoring them to avert
+                        // otherwise unhandled errors with the non-standard versioning.
+                        this.logger.warn(
+                            `parseRawString(): Version found in '${targetAPI[0]}' is in an unsupported version format. Ignoring.`
+                        );
+                        continue;
+                    }
                 } catch (error) {
                     // fetching apiLevel is a best effort, so ignore and continue
                 }
@@ -173,7 +260,7 @@ export class AndroidVirtualDevice {
                         path,
                         target,
                         api,
-                        apiLevel
+                        apiLevel!
                     )
                 );
             }
@@ -282,4 +369,8 @@ export class AndroidVirtualDevice {
     public toString(): string {
         return `${this.displayName}, ${this.deviceName}, ${this.api}`;
     }
+
+    private static logger: Logger = new Logger(
+        ANDROID_VIRTUAL_DEVICE_LOGGER_NAME
+    );
 }

@@ -242,7 +242,7 @@ describe('Android utils', () => {
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
-        expect(apiPackage.version.same(Version.from('28'))).toBe(true);
+        expect(apiPackage.version.same(Version.from('28')!)).toBe(true);
     });
 
     test('Should not find a preferred Android package', async () => {
