@@ -51,7 +51,11 @@ export class AndroidConfig {
         'default',
         'google_apis_playstore'
     ];
-    public readonly supportedArchitectures: string[] = ['x86_64', 'x86', 'arm64-v8a'];
+    public readonly supportedArchitectures: string[] = [
+        'x86_64',
+        'x86',
+        'arm64-v8a'
+    ];
     public readonly supportedDeviceTypes: string[] = [
         'pixel',
         'pixel_xl',
