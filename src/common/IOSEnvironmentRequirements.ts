@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import util from 'util';
 import { CommonUtils } from './CommonUtils';
 import { IOSUtils } from './IOSUtils';
@@ -61,7 +61,7 @@ export class SupportedEnvironmentRequirement implements Requirement {
                     return Promise.resolve(this.fulfilledMessage);
                 } else {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(this.unfulfilledMessage, output)
                         )
                     );
@@ -69,7 +69,7 @@ export class SupportedEnvironmentRequirement implements Requirement {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         util.format(
                             this.unfulfilledMessage,
                             `command '${unameCommand}' failed: ${error}, error code: ${error.code}`
@@ -116,7 +116,7 @@ export class XcodeInstalledRequirement implements Requirement {
                     );
                 } else {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(
                                 this.unfulfilledMessage,
                                 `${result.stderr || 'None'}`
@@ -127,7 +127,7 @@ export class XcodeInstalledRequirement implements Requirement {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         util.format(
                             this.unfulfilledMessage,
                             `${error}, error code: ${error.code}`
@@ -170,7 +170,7 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
                     );
                 } else {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(
                                 this.unfulfilledMessage,
                                 `iOS-${
@@ -184,7 +184,7 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         util.format(
                             this.unfulfilledMessage,
                             `iOS-${

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import util from 'util';
 import { AndroidUtils } from './AndroidUtils';
 import { PlatformConfig } from './PlatformConfig';
@@ -65,7 +65,7 @@ export class AndroidSDKRootSetRequirement implements Requirement {
                 )
             );
         } else {
-            return Promise.reject(new SfdxError(this.unfulfilledMessage));
+            return Promise.reject(new SfError(this.unfulfilledMessage));
         }
     }
 }
@@ -100,7 +100,7 @@ export class Java8AvailableRequirement implements Requirement {
                 .then((result) => Promise.resolve(this.fulfilledMessage))
                 .catch((error) =>
                     Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(this.unfulfilledMessage, error.message)
                         )
                     )
@@ -142,7 +142,7 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
                 )
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 .catch((error) =>
-                    Promise.reject(new SfdxError(this.unfulfilledMessage))
+                    Promise.reject(new SfError(this.unfulfilledMessage))
                 )
         );
     }
@@ -187,7 +187,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement
             .catch((error) => {
                 if (error.status === 127) {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(
                                 this.notFoundMessage,
                                 AndroidUtils.getAndroidPlatformTools()
@@ -196,7 +196,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement
                     );
                 } else {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(
                                 this.unfulfilledMessage,
                                 PlatformConfig.androidConfig()
@@ -243,7 +243,7 @@ export class PlatformAPIPackageRequirement implements Requirement {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 .catch((error) =>
                     Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(
                                 this.unfulfilledMessage,
                                 PlatformConfig.androidConfig()
@@ -290,7 +290,7 @@ export class EmulatorImagesRequirement implements Requirement {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 .catch((error) =>
                     Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             util.format(
                                 this.unfulfilledMessage,
                                 PlatformConfig.androidConfig().supportedImages.join(

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -116,16 +116,14 @@ export class AndroidUtils {
                 );
 
                 if (!AndroidUtils.isJavaHomeSet()) {
-                    return Promise.reject(
-                        new SfdxError('JAVA_HOME is not set.')
-                    );
+                    return Promise.reject(new SfError('JAVA_HOME is not set.'));
                 } else if (idx !== -1) {
                     return Promise.reject(
-                        new SfdxError('unsupported Java version.')
+                        new SfError('unsupported Java version.')
                     );
                 } else if (error.status && error.status === 127) {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `SDK Manager not found. Expected at ${AndroidUtils.getSdkManagerCommand()}`
                         )
                     );
@@ -142,9 +140,7 @@ export class AndroidUtils {
      */
     public static async fetchAndroidCmdLineToolsLocation(): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(
-                new SfdxError('Android SDK root is not set.')
-            );
+            return Promise.reject(new SfError('Android SDK root is not set.'));
         }
 
         return CommonUtils.executeCommandAsync(
@@ -162,9 +158,7 @@ export class AndroidUtils {
      */
     public static async fetchAndroidSDKPlatformToolsLocation(): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(
-                new SfdxError('Android SDK root is not set.')
-            );
+            return Promise.reject(new SfError('Android SDK root is not set.'));
         }
 
         return CommonUtils.executeCommandAsync(
@@ -182,9 +176,7 @@ export class AndroidUtils {
      */
     public static async fetchInstalledPackages(): Promise<AndroidPackages> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
-            return Promise.reject(
-                new SfdxError('Android SDK root is not set.')
-            );
+            return Promise.reject(new SfError('Android SDK root is not set.'));
         }
 
         if (AndroidUtils.isCached()) {
@@ -289,7 +281,7 @@ export class AndroidUtils {
         const minSupportedRuntime = Version.from(configuredMinSupportedRuntime);
         if (minSupportedRuntime === null) {
             return Promise.reject(
-                new SfdxError(
+                new SfError(
                     `${configuredMinSupportedRuntime} is not a supported version format.`
                 )
             );
@@ -302,7 +294,7 @@ export class AndroidUtils {
             .then((allPackages) => {
                 if (allPackages.isEmpty()) {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `No Android API packages are installed. Minimum supported Android API package version is ${configuredMinSupportedRuntime}`
                         )
                     );
@@ -319,7 +311,7 @@ export class AndroidUtils {
 
                 if (matchingPlatforms.length < 1) {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `Could not locate a supported Android API package. Minimum supported Android API package version is ${configuredMinSupportedRuntime}`
                         )
                     );
@@ -384,7 +376,7 @@ export class AndroidUtils {
             const parsedVersion = Version.from(apiLevel);
             if (parsedVersion === null) {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `${apiLevel} is not a supported version format.`
                     )
                 );
@@ -401,7 +393,7 @@ export class AndroidUtils {
                     );
                     if (matchingPlatforms.length < 1) {
                         return Promise.reject(
-                            new SfdxError(
+                            new SfError(
                                 `Could not locate Android API package (with matching emulator images) for API level ${apiLevel}.`
                             )
                         );
@@ -410,7 +402,7 @@ export class AndroidUtils {
 
                 if (matchingPlatforms.length < 1) {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `Could not locate a supported Android API package with matching emulator images. Minimum supported Android API package version is ${
                                 PlatformConfig.androidConfig()
                                     .minSupportedRuntime
@@ -448,7 +440,7 @@ export class AndroidUtils {
                     return Promise.resolve(emulatorImage);
                 } else {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `Could not locate an emulator image. Requires any one of these [${PlatformConfig.androidConfig().supportedImages.join(
                                 ','
                             )} for ${[installedAndroidPackage.platformAPI]}]`
@@ -461,7 +453,7 @@ export class AndroidUtils {
                     `Could not find android emulator packages.\n${error}`
                 );
                 return Promise.reject(
-                    new SfdxError(`Could not find android emulator packages.`)
+                    new SfError(`Could not find android emulator packages.`)
                 );
             });
     }
@@ -520,7 +512,7 @@ export class AndroidUtils {
                     child.stdout.on('exit', () => resolve(true));
                     child.stderr.on('error', (err) => {
                         reject(
-                            new SfdxError(
+                            new SfError(
                                 `Could not create emulator. Command failed: ${createAvdCommand}\n${err}`
                             )
                         );
@@ -528,17 +520,17 @@ export class AndroidUtils {
                     child.stderr.on('data', (data: Buffer) => {
                         if (data.includes('Error:')) {
                             reject(
-                                new SfdxError(
+                                new SfError(
                                     `Could not create emulator. Command failed: ${createAvdCommand}\n${data}`
                                 )
                             );
                         }
                     });
                 } else {
-                    reject(new SfdxError(`Could not create emulator.`));
+                    reject(new SfError(`Could not create emulator.`));
                 }
             } catch (error) {
-                reject(new SfdxError(`Could not create emulator. ${error}`));
+                reject(new SfError(`Could not create emulator. ${error}`));
             }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         }).then((resolve) => AndroidUtils.updateEmulatorConfig(resolvedName));
@@ -564,7 +556,7 @@ export class AndroidUtils {
                 // before calling this method, but keeping it just in case
                 if (resolvedEmulator === undefined) {
                     return Promise.reject(
-                        new SfdxError(`Invalid emulator: ${emulatorName}`)
+                        new SfError(`Invalid emulator: ${emulatorName}`)
                     );
                 }
                 resolvedEmulatorName = resolvedEmulator;
@@ -757,7 +749,7 @@ export class AndroidUtils {
                 const emulator = await AndroidUtils.fetchEmulator(emulatorName);
                 if (!emulator) {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `Unable to determine device info: Port = ${portNumber} , Name = ${emulatorName}`
                         )
                     );
@@ -964,7 +956,7 @@ export class AndroidUtils {
         }
 
         // If we got here then it means that the command failed to execute successfully after all retries (if any)
-        return Promise.reject(new SfdxError(allOutput));
+        return Promise.reject(new SfError(allOutput));
     }
 
     /**
@@ -1301,11 +1293,11 @@ export class AndroidUtils {
         return AndroidUtils.fetchEmulator(emulatorName).then((device) => {
             if (!device) {
                 return Promise.reject(
-                    new SfdxError(`Device ${emulatorName} not found.`)
+                    new SfError(`Device ${emulatorName} not found.`)
                 );
             } else if (device.target.toLowerCase().includes('play')) {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         'Devices targeting Google Play are not supported. Please use a device that is targeting Google APIs instead.'
                     )
                 );

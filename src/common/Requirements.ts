@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import chalk from 'chalk';
 import util from 'util';
 import { Listr } from 'listr2';
@@ -204,7 +204,7 @@ export class RequirementProcessor {
 
             if (!testResult.hasMetAllRequirements) {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         messages.getMessage('error:requirementCheckFailed'),
                         'lwc-dev-mobile-core',
                         [
@@ -219,7 +219,7 @@ export class RequirementProcessor {
             return Promise.resolve();
         } catch (error) {
             return Promise.reject(
-                new SfdxError(
+                new SfError(
                     util.format('unexpected error %s', error),
                     'lwc-dev-mobile-core'
                 )

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { SfdxError } from '@salesforce/core';
+import { SfError } from '@salesforce/core';
 import fs from 'fs';
 import path from 'path';
 import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
@@ -651,7 +651,7 @@ describe('Android utils', () => {
         try {
             await AndroidUtils.ensureDeviceIsNotGooglePlay('Pixel_3_API_29');
         } catch (error) {
-            expect(error instanceof SfdxError).toBe(true);
+            expect(error instanceof SfError).toBe(true);
         }
     });
 

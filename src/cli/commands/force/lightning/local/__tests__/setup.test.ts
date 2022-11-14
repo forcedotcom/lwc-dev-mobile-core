@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import * as Config from '@oclif/config';
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Config } from '@oclif/core/lib/config';
+import { Options } from '@oclif/core/lib/interfaces';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import util from 'util';
 import { LoggerSetup } from '../../../../../../common/LoggerSetup';
 import { RequirementProcessor } from '../../../../../../common/Requirements';
@@ -58,8 +59,8 @@ describe('Setup Tests', () => {
             await setup.init();
             await setup.run();
         } catch (error) {
-            expect(error instanceof SfdxError).toBe(true);
-            expect((error as SfdxError).message).toBe(
+            expect(error instanceof SfError).toBe(true);
+            expect((error as SfError).message).toBe(
                 messages.getMessage('error:invalidInputFlagsDescription')
             );
         }
@@ -82,10 +83,8 @@ describe('Setup Tests', () => {
                 )
                 .trim();
 
-            expect(error instanceof SfdxError).toBe(true);
-            expect((error as SfdxError).message.includes(expectedMsg)).toBe(
-                true
-            );
+            expect(error instanceof SfError).toBe(true);
+            expect((error as SfError).message.includes(expectedMsg)).toBe(true);
         }
     });
 
@@ -104,8 +103,8 @@ describe('Setup Tests', () => {
             await setup.init();
             await setup.run();
         } catch (error) {
-            expect(error instanceof SfdxError).toBe(true);
-            expect((error as SfdxError).message).toMatch(
+            expect(error instanceof SfError).toBe(true);
+            expect((error as SfError).message).toMatch(
                 util.format(
                     messages.getMessage(
                         'error:invalidApiLevelFlagsDescription'
@@ -142,10 +141,7 @@ describe('Setup Tests', () => {
             args.push('-l');
             args.push(apiLevel);
         }
-        const setup = new Setup(
-            args,
-            new Config.Config({} as any as Config.Options)
-        );
+        const setup = new Setup(args, new Config({} as Options));
         return setup;
     }
 });

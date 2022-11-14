@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, SfdxError } from '@salesforce/core';
+import { Logger, SfError } from '@salesforce/core';
 import { CommonUtils } from './CommonUtils';
 import net from 'net';
 import util from 'util';
@@ -115,7 +115,7 @@ export class MacNetworkUtils {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         util.format(
                             `Error collecting network hardware ports: ${error}`
                         )

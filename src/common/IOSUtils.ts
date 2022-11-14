@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import util from 'util';
 import { Version } from '../common/Common';
 import { CommonUtils } from './CommonUtils';
@@ -59,7 +59,7 @@ export class IOSUtils {
             .catch((error) => {
                 if (!IOSUtils.isDeviceAlreadyBootedError(error)) {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `The command '${command}' failed to execute ${error}`
                         )
                     );
@@ -86,7 +86,7 @@ export class IOSUtils {
             .then((result) => Promise.resolve(result.stdout.trim()))
             .catch((error) =>
                 Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )
@@ -183,7 +183,7 @@ export class IOSUtils {
                     );
                 } else {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `Could not find any available devices. Command '${cmd}' returned an empty list.`
                         )
                     );
@@ -191,7 +191,7 @@ export class IOSUtils {
             })
             .catch((error) =>
                 Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `Could not find any available devices. ${error}`
                     )
                 )
@@ -210,7 +210,7 @@ export class IOSUtils {
             );
             if (minSupportedRuntimeIOS === null) {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `${
                             PlatformConfig.iOSConfig().minSupportedRuntime
                         } is not a supported version format.`
@@ -278,7 +278,7 @@ export class IOSUtils {
                     return Promise.resolve(filteredRuntimes);
                 } else {
                     return Promise.reject(
-                        new SfdxError(
+                        new SfError(
                             `The command '${runtimesCmd}' could not find any available runtimes`
                         )
                     );
@@ -286,7 +286,7 @@ export class IOSUtils {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `The command '${runtimesCmd}' failed: ${error}, error code: ${error.code}`
                     )
                 );
@@ -302,7 +302,7 @@ export class IOSUtils {
             .then(() => Promise.resolve())
             .catch((error) =>
                 Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )
@@ -318,7 +318,7 @@ export class IOSUtils {
             .then(() => Promise.resolve())
             .catch((error) =>
                 Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )
@@ -344,7 +344,7 @@ export class IOSUtils {
             .then(() => Promise.resolve())
             .catch((error) =>
                 Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         `The command '${command}' failed to execute ${error}`
                     )
                 )

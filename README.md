@@ -6,3 +6,12 @@
 
 # lwc-dev-mobile-core
 Core Node-based functionality to be shared by Mobile Extensions tooling (SFDX plug-ins, Salesforce Extensions for VSCode, etc.).
+
+### Checkout and Build Locally
+
+After you clone or fork this repo, run the following commands in the root folder of your local repo:
+
+```sh-session
+$ yarn install && yarn build
+$ yarn test 
+```

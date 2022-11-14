@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { flags, FlagsConfig } from '@salesforce/command';
-import { Messages, SfdxError, Logger } from '@salesforce/core';
+import { Messages, SfError, Logger } from '@salesforce/core';
 import util from 'util';
 
 // Initialize Messages with the current plugin directory
@@ -165,7 +165,7 @@ export class CommandLineUtils {
     private static validateApiLevelFlag(flag: string): boolean {
         const version = Version.from(flag);
         if (version === null) {
-            throw new SfdxError(
+            throw new SfError(
                 util.format(
                     messages.getMessage(
                         'error:invalidApiLevelFlagsDescription'
@@ -181,7 +181,7 @@ export class CommandLineUtils {
 
     private static validatePlatformFlag(flag: string): boolean {
         if (!CommandLineUtils.platformFlagIsValid(flag)) {
-            throw new SfdxError(
+            throw new SfError(
                 messages.getMessage('error:invalidInputFlagsDescription'),
                 'lwc-dev-mobile-core',
                 CommandLineUtils.flagFailureActionMessages

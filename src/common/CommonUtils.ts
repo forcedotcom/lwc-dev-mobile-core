@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, SfdxError } from '@salesforce/core';
+import { Logger, SfError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { cli } from 'cli-ux';
 import fs from 'fs';
@@ -177,7 +177,7 @@ export class CommonUtils {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         util.format(
                             'Could not create a temp folder at %s: %s',
                             tempFolderPath,

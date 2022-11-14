@@ -9,7 +9,6 @@ process.env.ANDROID_HOME = MOCK_ANDROID_HOME;
 
 import { Logger, Messages } from '@salesforce/core';
 import {
-    AndroidEnvironmentRequirements,
     AndroidSDKPlatformToolsInstalledRequirement,
     AndroidSDKRootSetRequirement,
     AndroidSDKToolsInstalledRequirement,
@@ -39,14 +38,7 @@ const messages = Messages.loadMessages(
 );
 const logger = new Logger('test');
 
-describe('Android enviroment requirement tests', () => {
-    let androidEnvironment: AndroidEnvironmentRequirements;
-
-    beforeEach(() => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        androidEnvironment = new AndroidEnvironmentRequirements(logger);
-    });
-
+describe('Android environment requirement tests', () => {
     afterEach(() => {
         myCommandBlockMock.mockClear();
         badBlockMock.mockClear();

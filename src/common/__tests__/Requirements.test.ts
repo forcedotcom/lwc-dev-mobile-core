@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfdxError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import {
     RequirementProcessor,
     HasRequirements,
@@ -163,11 +163,11 @@ describe('Requirements Processing', () => {
                 new FalsyRequirements().commandRequirements
             );
         } catch (error) {
-            expect(error instanceof SfdxError).toBeTruthy();
-            const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(failureMessage);
-            expect(sfdxError.actions?.length).toBe(1);
-            expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
+            expect(error instanceof SfError).toBeTruthy();
+            const sfError = error as SfError;
+            expect(sfError.message).toBe(failureMessage);
+            expect(sfError.actions?.length).toBe(1);
+            expect(sfError.actions?.[0]).toBe(recommendationMessage);
         }
     });
 
@@ -187,11 +187,11 @@ describe('Requirements Processing', () => {
                 requirements.commandRequirements
             );
         } catch (error) {
-            expect(error instanceof SfdxError).toBeTruthy();
-            const sfdxError = error as SfdxError;
-            expect(sfdxError.message).toBe(failureMessage);
-            expect(sfdxError.actions?.length).toBe(1);
-            expect(sfdxError.actions?.[0]).toBe(recommendationMessage);
+            expect(error instanceof SfError).toBeTruthy();
+            const sfError = error as SfError;
+            expect(sfError.message).toBe(failureMessage);
+            expect(sfError.actions?.length).toBe(1);
+            expect(sfError.actions?.[0]).toBe(recommendationMessage);
         }
     });
 
