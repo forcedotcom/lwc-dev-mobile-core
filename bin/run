@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-require('@oclif/core/lib/command').run()
-.then(require('@oclif/core/lib/command/flush'))
-.catch(require('@oclif/core/lib/errors/handle'));
+require('@oclif/command').run()
+.then(require('@oclif/command/flush'))
+.catch(require('@oclif/errors/handle'));
