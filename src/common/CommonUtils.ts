@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, SfdxError } from '@salesforce/core';
+import { Logger, SfError } from '@salesforce/core';
 import * as childProcess from 'child_process';
-import { cli } from 'cli-ux';
+import { CliUx } from '@oclif/core';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
@@ -78,7 +78,7 @@ export class CommonUtils {
      * @param status Optional status message for the action.
      */
     public static startCliAction(action: string, status?: string) {
-        cli.action.start(action, status, { stdout: true });
+        CliUx.ux.action.start(action, status, { stdout: true });
     }
 
     /**
@@ -88,7 +88,7 @@ export class CommonUtils {
      * @param status Status message for the action.
      */
     public static updateCliAction(status: string) {
-        const task = cli.action.task;
+        const task = CliUx.ux.action.task;
         if (!task || !task.active) {
             CommonUtils.startCliAction(status);
         } else {
@@ -102,7 +102,7 @@ export class CommonUtils {
      * @param message Optional status message for the action.
      */
     public static stopCliAction(message?: string) {
-        cli.action.stop(message);
+        CliUx.ux.action.stop(message);
     }
 
     /**
@@ -177,7 +177,7 @@ export class CommonUtils {
             })
             .catch((error) => {
                 return Promise.reject(
-                    new SfdxError(
+                    new SfError(
                         util.format(
                             'Could not create a temp folder at %s: %s',
                             tempFolderPath,
