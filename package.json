@@ -45,6 +45,7 @@
     "@types/node": "^18.11.9",
     "@typescript-eslint/eslint-plugin": "^5.43.0",
     "@typescript-eslint/parser": "^5.43.0",
+    "oclif": "^3.2.27",
     "eslint": "^8.27.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
@@ -103,13 +104,13 @@
     "clean": "yarn rimraf lib dist reports coverage errorShots oclif.manifest.json",
     "build": "yarn clean && tsc",
     "lint": "yarn eslint src --ext js,ts",
-    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "prepack": "rm -rf lib && tsc -b && oclif manifest && oclif readme",
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "yarn lint",
     "test": "yarn jest --coverage",
     "test:watch": "yarn test --watch",
     "test:debug": "node --inspect node_modules/.bin/jest src --runInBand",
-    "version": "oclif-dev readme && git add README.md",
+    "version": "oclif readme && git add README.md",
     "prepare": "husky install"
   },
   "husky": {
