@@ -172,7 +172,7 @@ describe('CommonUtils', () => {
             expect(fs.existsSync(dest)).toBe(false);
         }
 
-        // For now don't run this part on Windows b/c our CircleCI
+        // For now don't run this part on Windows b/c our CI
         // environment does not give file write permission.
         if (process.platform !== 'win32') {
             // should pass and create a destination file
@@ -185,11 +185,15 @@ describe('CommonUtils', () => {
         const dest = path.join(os.tmpdir(), 'test_file.txt');
         const testContent = 'This is a test.';
 
-        // should pass and create a destination file
-        await CommonUtils.createTextFile(dest, testContent);
-        expect(fs.existsSync(dest)).toBe(true);
+        // For now don't run this part on Windows b/c our CI
+        // environment does not give file write permission.
+        if (process.platform !== 'win32') {
+            // should pass and create a destination file
+            await CommonUtils.createTextFile(dest, testContent);
+            expect(fs.existsSync(dest)).toBe(true);
 
-        const content = await CommonUtils.readTextFile(dest);
-        expect(content).toBe(testContent);
-    });
+            const content = await CommonUtils.readTextFile(dest);
+            expect(content).toBe(testContent);
+        }
+    }, 10000); // increase timeout for this test
 });
