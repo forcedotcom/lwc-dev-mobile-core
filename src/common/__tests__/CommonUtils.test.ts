@@ -172,12 +172,28 @@ describe('CommonUtils', () => {
             expect(fs.existsSync(dest)).toBe(false);
         }
 
-        // For now don't run this part on Windows b/c our CircleCI
+        // For now don't run this part on Windows b/c our CI
         // environment does not give file write permission.
         if (process.platform !== 'win32') {
             // should pass and create a destination file
             await CommonUtils.downloadFile('https://www.google.com', dest);
             expect(fs.existsSync(dest)).toBe(true);
+        }
+    }, 10000); // increase timeout for this test
+
+    test('read/write text file functions', async () => {
+        const dest = path.join(os.tmpdir(), 'test_file.txt');
+        const testContent = 'This is a test.';
+
+        // For now don't run this part on Windows b/c our CI
+        // environment does not give file write permission.
+        if (process.platform !== 'win32') {
+            // should pass and create a destination file
+            await CommonUtils.createTextFile(dest, testContent);
+            expect(fs.existsSync(dest)).toBe(true);
+
+            const content = await CommonUtils.readTextFile(dest);
+            expect(content).toBe(testContent);
         }
     }, 10000); // increase timeout for this test
 });
