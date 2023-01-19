@@ -369,5 +369,40 @@ export class CommonUtils {
         });
     }
 
+    /**
+     * Creates a text file at a destination location with the given content
+     */
+    public static async createTextFile(
+        dest: string,
+        content: string
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(dest, content, function (err) {
+                if (err) {
+                    const msg = `Error creating file ${dest} - ${err}`;
+                    CommonUtils.logger.error(msg);
+                    reject(err);
+                }
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * Creates a text file at a destination location with the given content
+     */
+    public static async readTextFile(path: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            fs.readFile(path, function (err, data) {
+                if (err) {
+                    const msg = `Error reading file ${path} - ${err}`;
+                    CommonUtils.logger.error(msg);
+                    reject(err);
+                }
+                resolve((data ?? '').toString());
+            });
+        });
+    }
+
     private static logger: Logger = new Logger(LOGGER_NAME);
 }

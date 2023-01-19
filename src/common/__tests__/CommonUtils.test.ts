@@ -180,4 +180,16 @@ describe('CommonUtils', () => {
             expect(fs.existsSync(dest)).toBe(true);
         }
     }, 10000); // increase timeout for this test
+
+    test('read/write text file functions', async () => {
+        const dest = path.join(os.tmpdir(), 'test_file.txt');
+        const testContent = 'This is a test.';
+
+        // should pass and create a destination file
+        await CommonUtils.createTextFile(dest, testContent);
+        expect(fs.existsSync(dest)).toBe(true);
+
+        const content = await CommonUtils.readTextFile(dest);
+        expect(content).toBe(testContent);
+    });
 });
