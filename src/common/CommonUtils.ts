@@ -221,32 +221,45 @@ export class CommonUtils {
      * @returns A promise containing the results of stdout and stderr
      */
     public static async executeCommandAsync(
-        command: string
+        command: string,
+        forwardStdOut = false,
+        forwardStdErr = false
     ): Promise<{ stdout: string; stderr: string }> {
         return new Promise<{ stdout: string; stderr: string }>(
             (resolve, reject) => {
                 CommonUtils.logger.debug(`Executing command: '${command}'.`);
-                childProcess.exec(command, (error, stdout, stderr) => {
-                    if (error) {
-                        CommonUtils.logger.error(
-                            `Error executing command '${command}':`
-                        );
+                const prc = childProcess.exec(
+                    command,
+                    (error, stdout, stderr) => {
+                        if (error) {
+                            CommonUtils.logger.error(
+                                `Error executing command '${command}':`
+                            );
 
-                        // also include stderr & stdout for more detailed error
-                        let msg = error.message;
-                        if (stderr && stderr.length > 0) {
-                            msg = `${msg}\nstderr:\n${stderr}`;
-                        }
-                        if (stdout && stdout.length > 0) {
-                            msg = `${msg}\nstdout:\n${stdout}`;
-                        }
+                            // also include stderr & stdout for more detailed error
+                            let msg = error.message;
+                            if (stderr && stderr.length > 0) {
+                                msg = `${msg}\nstderr:\n${stderr}`;
+                            }
+                            if (stdout && stdout.length > 0) {
+                                msg = `${msg}\nstdout:\n${stdout}`;
+                            }
 
-                        CommonUtils.logger.error(msg);
-                        reject(error);
-                    } else {
-                        resolve({ stdout, stderr });
+                            CommonUtils.logger.error(msg);
+                            reject(error);
+                        } else {
+                            resolve({ stdout, stderr });
+                        }
                     }
-                });
+                );
+
+                if (forwardStdOut) {
+                    prc.stdout?.pipe(process.stdout);
+                }
+
+                if (forwardStdErr) {
+                    prc.stderr?.pipe(process.stderr);
+                }
             }
         );
     }
