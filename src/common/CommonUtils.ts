@@ -417,5 +417,59 @@ export class CommonUtils {
         });
     }
 
+    /**
+     * Given an input path, this method enumerates all of the files that are in
+     * that path. If the input path itself is path to a file then only that file
+     * is returned, otherwise all the files in that path that match the filtering
+     * expression will be returned.
+     *
+     * @param atPath An input path to start with.
+     * @param filterRegEx Optional regular expression to use for further filtering the results.
+     * @returns Array of file paths that are contained under the provided input path.
+     */
+    public static enumerateFiles(
+        atPath: string,
+        filterRegEx?: RegExp
+    ): string[] {
+        const inputPath = path.normalize(atPath);
+
+        const stat = fs.statSync(inputPath);
+
+        const filterFunc = (input: string): string | undefined => {
+            const trimmed = input.trim();
+
+            return (filterRegEx && !filterRegEx.test(trimmed)) ||
+                trimmed.length === 0
+                ? undefined
+                : trimmed;
+        };
+
+        if (stat.isFile()) {
+            const result = filterFunc(inputPath);
+            return result ? [result] : [];
+        }
+
+        let files: string[] = [];
+        const items = fs.readdirSync(inputPath, {
+            withFileTypes: true
+        });
+        items.forEach((item) => {
+            const itemPath = path.join(inputPath, item.name);
+            if (item.isDirectory()) {
+                files = [
+                    ...files,
+                    ...this.enumerateFiles(itemPath, filterRegEx)
+                ];
+            } else {
+                const result = filterFunc(itemPath);
+                if (result) {
+                    files.push(result);
+                }
+            }
+        });
+
+        return files;
+    }
+
     private static logger: Logger = new Logger(LOGGER_NAME);
 }

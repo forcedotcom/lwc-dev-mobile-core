@@ -196,4 +196,110 @@ describe('CommonUtils', () => {
             expect(content).toBe(testContent);
         }
     }, 10000); // increase timeout for this test
+
+    test('enumerateFiles - file as input ', async () => {
+        jest.spyOn(fs, 'statSync').mockReturnValue(createStats(true));
+
+        expect(CommonUtils.enumerateFiles('/path/to/my/file.js')).toEqual([
+            '/path/to/my/file.js'
+        ]);
+
+        expect(
+            CommonUtils.enumerateFiles(
+                '/path/to/my/file.js',
+                new RegExp('^.*\\.((j|J)(s|S))$')
+            )
+        ).toEqual(['/path/to/my/file.js']);
+
+        expect(
+            CommonUtils.enumerateFiles(
+                '/path/to/my/file.txt',
+                new RegExp('^.*\\.((j|J)(s|S))$')
+            )
+        ).toEqual([]);
+    });
+
+    test('enumerateFiles - directory as input ', async () => {
+        const rootFolder = '/path/to/my/root';
+        const rootFolderFile1 = 'file_1.js';
+        const rootFolderFile2 = 'file_2.txt';
+        const rootSubFolder = 'subfolder';
+        const rootSubFolderFile1 = 'file_1.ts';
+        const rootSubFolderFile2 = 'file_2.js';
+
+        jest.spyOn(fs, 'statSync').mockImplementation((atPath) =>
+            createStats(
+                !(
+                    atPath.toString() === path.normalize(rootFolder) ||
+                    atPath.toString() ===
+                        path.normalize(`${rootFolder}/${rootSubFolder}`)
+                )
+            )
+        );
+
+        jest.spyOn(fs, 'readdirSync').mockImplementation((atPath) => {
+            if (atPath.toString() === path.normalize(rootFolder)) {
+                return [
+                    createDirent(rootFolderFile1, true),
+                    createDirent(rootFolderFile2, true),
+                    createDirent(rootSubFolder, false)
+                ];
+            } else if (
+                atPath.toString() ===
+                path.normalize(`${rootFolder}/${rootSubFolder}`)
+            ) {
+                return [
+                    createDirent(rootSubFolderFile1, true),
+                    createDirent(rootSubFolderFile2, true)
+                ];
+            } else {
+                return [];
+            }
+        });
+
+        const results = CommonUtils.enumerateFiles(
+            rootFolder,
+            new RegExp('^.*\\.((j|J)(s|S))$')
+        );
+
+        expect(results).toEqual([
+            path.normalize('/path/to/my/root/file_1.js'),
+            path.normalize('/path/to/my/root/subfolder/file_2.js')
+        ]);
+    });
+
+    function createStats(isFile: boolean): fs.Stats {
+        return {
+            isFile() {
+                return isFile;
+            }
+        } as fs.Stats;
+    }
+
+    function createDirent(name: string, isFile: boolean): fs.Dirent {
+        return {
+            isFile() {
+                return isFile;
+            },
+            isDirectory() {
+                return !isFile;
+            },
+            isBlockDevice() {
+                return false;
+            },
+            isCharacterDevice() {
+                return false;
+            },
+            isSymbolicLink() {
+                return false;
+            },
+            isFIFO() {
+                return false;
+            },
+            isSocket() {
+                return false;
+            },
+            name: name
+        };
+    }
 });
