@@ -201,7 +201,7 @@ describe('CommonUtils', () => {
         jest.spyOn(fs, 'statSync').mockReturnValue(createStats(true));
 
         expect(CommonUtils.enumerateFiles('/path/to/my/file.js')).toEqual([
-            '/path/to/my/file.js'
+            path.normalize('/path/to/my/file.js')
         ]);
 
         expect(
@@ -209,7 +209,7 @@ describe('CommonUtils', () => {
                 '/path/to/my/file.js',
                 new RegExp('^.*\\.((j|J)(s|S))$')
             )
-        ).toEqual(['/path/to/my/file.js']);
+        ).toEqual([path.normalize('/path/to/my/file.js')]);
 
         expect(
             CommonUtils.enumerateFiles(
