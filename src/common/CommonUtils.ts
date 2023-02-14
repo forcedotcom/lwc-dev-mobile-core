@@ -200,7 +200,7 @@ export class CommonUtils {
         command: string,
         stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
     ): string {
-        CommonUtils.logger.debug(`Executing command: '${command}'.`);
+        CommonUtils.logger.debug(`Executing command: '${command}'`);
         try {
             return childProcess
                 .execSync(command, {
@@ -215,51 +215,99 @@ export class CommonUtils {
     }
 
     /**
-     * Execute a command asynchronously.
+     * Execute a command asynchronously using child_process.exec()
      *
      * @param command The command to be executed.
      * @returns A promise containing the results of stdout and stderr
      */
     public static async executeCommandAsync(
-        command: string,
-        forwardStdOut = false,
-        forwardStdErr = false
+        command: string
     ): Promise<{ stdout: string; stderr: string }> {
         return new Promise<{ stdout: string; stderr: string }>(
             (resolve, reject) => {
-                CommonUtils.logger.debug(`Executing command: '${command}'.`);
-                const prc = childProcess.exec(
-                    command,
-                    (error, stdout, stderr) => {
-                        if (error) {
-                            CommonUtils.logger.error(
-                                `Error executing command '${command}':`
-                            );
+                CommonUtils.logger.debug(`Executing command: '${command}'`);
+                childProcess.exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        CommonUtils.logger.error(
+                            `Error executing command '${command}':`
+                        );
 
-                            // also include stderr & stdout for more detailed error
-                            let msg = error.message;
-                            if (stderr && stderr.length > 0) {
-                                msg = `${msg}\nstderr:\n${stderr}`;
-                            }
-                            if (stdout && stdout.length > 0) {
-                                msg = `${msg}\nstdout:\n${stdout}`;
-                            }
-
-                            CommonUtils.logger.error(msg);
-                            reject(error);
-                        } else {
-                            resolve({ stdout, stderr });
+                        // also include stderr & stdout for more detailed error
+                        let msg = error.message;
+                        if (stderr && stderr.length > 0) {
+                            msg = `${msg}\nstderr:\n${stderr}`;
                         }
+                        if (stdout && stdout.length > 0) {
+                            msg = `${msg}\nstdout:\n${stdout}`;
+                        }
+
+                        CommonUtils.logger.error(msg);
+                        reject(error);
+                    } else {
+                        resolve({ stdout, stderr });
                     }
-                );
+                });
+            }
+        );
+    }
 
-                if (forwardStdOut) {
-                    prc.stdout?.pipe(process.stdout);
-                }
+    /**
+     * Execute a command asynchronously using child_process.spawn()
+     *
+     * @param command The command to be executed.
+     * @param args Array of arguments for the command (if any). Defaults to an empty array.
+     * @param stdioOptions Options to be used for [stderr, stdin, stdout]. Defaults to ['ignore', 'pipe', 'ignore']
+     * @returns A promise containing the results of stdout and stderr
+     */
+    public static async spawnCommandAsync(
+        command: string,
+        args: string[] = [],
+        stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
+    ): Promise<{ stdout: string; stderr: string }> {
+        return new Promise<{ stdout: string; stderr: string }>(
+            (resolve, reject) => {
+                const capturedStdout: string[] = [];
+                const capturedStderr: string[] = [];
 
-                if (forwardStdErr) {
-                    prc.stderr?.pipe(process.stderr);
-                }
+                const fullCommand =
+                    args.length > 0 ? `${command} ${args.join(' ')}` : command;
+
+                CommonUtils.logger.debug(`Executing command: '${fullCommand}'`);
+
+                const prc = childProcess.spawn(command, args, {
+                    shell: true,
+                    stdio: stdioOptions
+                });
+
+                prc.stdout?.on('data', (data) => {
+                    capturedStdout.push(data.toString());
+                });
+
+                prc.stderr?.on('data', (data) => {
+                    capturedStderr.push(data.toString());
+                });
+
+                prc.on('close', (code) => {
+                    if (code !== 0) {
+                        CommonUtils.logger.error(
+                            `Error executing command '${fullCommand}':`
+                        );
+
+                        // also include stderr & stdout for more detailed error
+                        let msg = `stderr:\n${capturedStderr.join()}`;
+                        if (capturedStdout.length > 0) {
+                            msg = `${msg}\nstdout:\n${capturedStdout}`;
+                        }
+
+                        CommonUtils.logger.error(msg);
+                        reject(new Error(capturedStderr.join()));
+                    } else {
+                        resolve({
+                            stdout: capturedStdout.join(),
+                            stderr: capturedStderr.join()
+                        });
+                    }
+                });
             }
         );
     }
