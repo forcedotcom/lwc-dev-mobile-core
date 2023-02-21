@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { FlagsConfig, SfdxCommand } from '@salesforce/command';
+import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Logger, Messages } from '@salesforce/core';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
 import {
@@ -29,20 +29,33 @@ const messages = Messages.loadMessages(
     'setup'
 );
 
-export class Setup extends SfdxCommand implements HasRequirements {
-    public static description = messages.getMessage('commandDescription');
+export class Setup extends SfCommand<any> implements HasRequirements {
+    public static readonly description =
+        messages.getMessage('commandDescription');
 
-    public static readonly flagsConfig: FlagsConfig = {
-        ...CommandLineUtils.createFlagConfig(FlagsConfigType.ApiLevel, false),
-        ...CommandLineUtils.createFlagConfig(FlagsConfigType.Platform, true)
-    };
-
-    public examples = [
+    public static readonly examples = [
         `sfdx force:lightning:local:setup -p iOS`,
         `sfdx force:lightning:local:setup -p Android`
     ];
 
+    public static readonly flags = {
+        ...CommandLineUtils.createFlagConfig(
+            FlagsConfigType.ApiLevel,
+            false,
+            Setup.examples
+        ),
+        ...CommandLineUtils.createFlagConfig(
+            FlagsConfigType.Platform,
+            true,
+            Setup.examples
+        )
+    };
+
+    private flags: any;
+    protected logger!: Logger;
+
     public async run(): Promise<any> {
+        this.flags = (await this.parse(Setup)).flags;
         this.logger.info(`Setup command called for ${this.flags.platform}`);
         return RequirementProcessor.execute(this.commandRequirements);
     }
@@ -53,11 +66,9 @@ export class Setup extends SfdxCommand implements HasRequirements {
             return Promise.resolve();
         }
 
-        CommandLineUtils.flagFailureActionMessages = this.examples;
-
         return super
             .init()
-            .then(() => Logger.child('force:lightning:local:setup', {}))
+            .then(() => Logger.child('force:lightning:local:setup'))
             .then((logger) => {
                 this.logger = logger;
                 return LoggerSetup.initializePluginLoggers();

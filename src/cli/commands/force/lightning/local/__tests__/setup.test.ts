@@ -13,22 +13,25 @@ import { RequirementProcessor } from '../../../../../../common/Requirements';
 import { Setup } from '../setup';
 
 Messages.importMessagesDirectory(__dirname);
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'common'
-);
-
-enum PlatformType {
-    android = 'android',
-    ios = 'ios'
-}
-
-const executeSetupMock = jest.fn((): Promise<void> => {
-    return Promise.resolve();
-});
 
 describe('Setup Tests', () => {
+    const messages = Messages.loadMessages(
+        '@salesforce/lwc-dev-mobile-core',
+        'common'
+    );
+
+    enum PlatformType {
+        android = 'android',
+        ios = 'ios'
+    }
+
+    let executeSetupMock: jest.Mock<any, [], any>;
+
     beforeEach(() => {
+        executeSetupMock = jest.fn((): Promise<void> => {
+            return Promise.resolve();
+        });
+
         jest.spyOn(RequirementProcessor, 'execute').mockImplementation(
             executeSetupMock
         );
@@ -60,8 +63,11 @@ describe('Setup Tests', () => {
             await setup.run();
         } catch (error) {
             expect(error instanceof SfError).toBe(true);
-            expect((error as SfError).message).toBe(
-                messages.getMessage('error:invalidInputFlagsDescription')
+            expect((error as SfError).message).toContain(
+                util.format(
+                    messages.getMessage('error:invalidFlagValue'),
+                    'someplatform'
+                )
             );
         }
     });
@@ -74,17 +80,13 @@ describe('Setup Tests', () => {
             await setup.init();
             await setup.run();
         } catch (error) {
-            const expectedMsg = util
-                .format(
-                    messages.getMessage(
-                        'error:invalidApiLevelFlagsDescription'
-                    ),
-                    ''
-                )
-                .trim();
-
             expect(error instanceof SfError).toBe(true);
-            expect((error as SfError).message.includes(expectedMsg)).toBe(true);
+            expect((error as SfError).message).toContain(
+                util.format(
+                    messages.getMessage('error:invalidFlagValue'),
+                    'not-a-number'
+                )
+            );
         }
     });
 
@@ -104,12 +106,10 @@ describe('Setup Tests', () => {
             await setup.run();
         } catch (error) {
             expect(error instanceof SfError).toBe(true);
-            expect((error as SfError).message).toMatch(
+            expect((error as SfError).message).toContain(
                 util.format(
-                    messages.getMessage(
-                        'error:invalidApiLevelFlagsDescription'
-                    ),
-                    invalidVersionFlag
+                    messages.getMessage('error:invalidFlagValue'),
+                    'not-a-number'
                 )
             );
         }
