@@ -118,7 +118,7 @@ export class CommandLineUtils {
      */
     public static resolveFlag(flag: any, defaultValue: string): string {
         const resolvedFlag = flag as string;
-        if (resolvedFlag && resolvedFlag.length > 0) {
+        if (resolvedFlag && resolvedFlag.trim().length > 0) {
             return resolvedFlag;
         } else {
             return defaultValue;
@@ -204,8 +204,6 @@ export class CommandLineUtils {
     private static validatePlatformFlag(flag: string): boolean {
         return CommandLineUtils.platformFlagIsValid(flag);
     }
-
-    private static logger: Logger = new Logger(LOGGER_NAME);
 }
 
 // tslint:disable-next-line: max-classes-per-file

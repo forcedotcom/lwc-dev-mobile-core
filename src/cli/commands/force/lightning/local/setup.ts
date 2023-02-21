@@ -4,20 +4,15 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { SfCommand } from '@salesforce/sf-plugins-core';
-import { Logger, Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements';
+import { BaseCommand } from '../../../../../common/BaseCommand';
 import {
     CommandLineUtils,
     FlagsConfigType
 } from '../../../../../common/Common';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements';
-import { LoggerSetup } from '../../../../../common/LoggerSetup';
-import {
-    RequirementProcessor,
-    HasRequirements,
-    CommandRequirements
-} from '../../../../../common/Requirements';
+import { RequirementProcessor } from '../../../../../common/Requirements';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -29,7 +24,9 @@ const messages = Messages.loadMessages(
     'setup'
 );
 
-export class Setup extends SfCommand<any> implements HasRequirements {
+export class Setup extends BaseCommand {
+    protected commandName = 'force:lightning:local:setup';
+
     public static readonly description =
         messages.getMessage('commandDescription');
 
@@ -51,45 +48,23 @@ export class Setup extends SfCommand<any> implements HasRequirements {
         )
     };
 
-    private flags: any;
-    protected logger!: Logger;
-
     public async run(): Promise<any> {
-        this.flags = (await this.parse(Setup)).flags;
-        this.logger.info(`Setup command called for ${this.flags.platform}`);
+        this.logger.info(
+            `Setup command called for ${this.flagValues.platform}`
+        );
         return RequirementProcessor.execute(this.commandRequirements);
     }
 
-    public async init(): Promise<void> {
-        if (this.logger) {
-            // already initialized
-            return Promise.resolve();
-        }
+    protected populateCommandRequirements(): void {
+        const requirements = CommandLineUtils.platformFlagIsAndroid(
+            this.flagValues.platform
+        )
+            ? new AndroidEnvironmentRequirements(
+                  this.logger,
+                  this.flagValues.apilevel
+              )
+            : new IOSEnvironmentRequirements(this.logger);
 
-        return super
-            .init()
-            .then(() => Logger.child('force:lightning:local:setup'))
-            .then((logger) => {
-                this.logger = logger;
-                return LoggerSetup.initializePluginLoggers();
-            });
-    }
-
-    private _commandRequirements: CommandRequirements = {};
-    public get commandRequirements(): CommandRequirements {
-        if (Object.keys(this._commandRequirements).length === 0) {
-            const requirements = CommandLineUtils.platformFlagIsAndroid(
-                this.flags.platform
-            )
-                ? new AndroidEnvironmentRequirements(
-                      this.logger,
-                      this.flags.apilevel
-                  )
-                : new IOSEnvironmentRequirements(this.logger);
-
-            this._commandRequirements.setup = requirements;
-        }
-
-        return this._commandRequirements;
+        this._commandRequirements.setup = requirements;
     }
 }
