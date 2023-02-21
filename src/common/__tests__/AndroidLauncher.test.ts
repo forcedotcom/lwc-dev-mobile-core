@@ -10,21 +10,23 @@ import { AndroidLauncher } from '../AndroidLauncher';
 import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
 import { AndroidMockData } from './AndroidMockData';
 
-const myCommandBlockMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> =>
-        Promise.resolve({
-            stderr: '',
-            stdout: AndroidMockData.mockRawPackagesString
-        })
-);
-
-const mockAndroidHome = '/mock-android-home';
-const mockCmdLineToolsBin = path.normalize(
-    path.join(mockAndroidHome, 'cmdline-tools', 'latest', 'bin')
-);
-
 describe('Android Launcher tests', () => {
+    const mockAndroidHome = '/mock-android-home';
+    const mockCmdLineToolsBin = path.normalize(
+        path.join(mockAndroidHome, 'cmdline-tools', 'latest', 'bin')
+    );
+
+    let myCommandBlockMock: jest.Mock<any, [], any>;
+
     beforeEach(() => {
+        myCommandBlockMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> =>
+                Promise.resolve({
+                    stderr: '',
+                    stdout: AndroidMockData.mockRawPackagesString
+                })
+        );
+
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
         jest.spyOn(AndroidUtils, 'getAndroidSdkRoot').mockImplementation(() => {

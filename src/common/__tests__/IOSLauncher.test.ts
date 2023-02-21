@@ -9,28 +9,31 @@ import { IOSLauncher } from '../IOSLauncher';
 import { IOSUtils } from '../IOSUtils';
 import { IOSMockData } from './IOSMockData';
 
-const myCommandRouterBlock = jest.fn(
-    (command: string): Promise<{ stdout: string; stderr: string }> => {
-        let output = '';
-        if (command.endsWith('simctl list --json devicetypes')) {
-            output = JSON.stringify(IOSMockData.mockRuntimeDeviceTypes);
-        } else if (command.endsWith('simctl list --json devices available')) {
-            output = JSON.stringify(IOSMockData.mockRuntimeDevices);
-        } else {
-            output = JSON.stringify(IOSMockData.mockRuntimes);
-        }
-
-        return new Promise((resolve) => {
-            resolve({
-                stderr: '',
-                stdout: output
-            });
-        });
-    }
-);
-
 describe('IOS Launcher tests', () => {
+    let myCommandRouterBlock: jest.Mock<any, [command: string], any>;
+
     beforeEach(() => {
+        myCommandRouterBlock = jest.fn(
+            (command: string): Promise<{ stdout: string; stderr: string }> => {
+                let output = '';
+                if (command.endsWith('simctl list --json devicetypes')) {
+                    output = JSON.stringify(IOSMockData.mockRuntimeDeviceTypes);
+                } else if (
+                    command.endsWith('simctl list --json devices available')
+                ) {
+                    output = JSON.stringify(IOSMockData.mockRuntimeDevices);
+                } else {
+                    output = JSON.stringify(IOSMockData.mockRuntimes);
+                }
+                return new Promise((resolve) => {
+                    resolve({
+                        stderr: '',
+                        stdout: output
+                    });
+                });
+            }
+        );
+
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
     });

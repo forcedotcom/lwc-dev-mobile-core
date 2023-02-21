@@ -13,79 +13,92 @@ import { CommonUtils } from '../CommonUtils';
 import { PreviewUtils } from '../PreviewUtils';
 import { AndroidMockData } from './AndroidMockData';
 
-const mockAndroidHome = '/mock-android-home';
-
-const mockAndroidSdkRoot = '/mock-android-sdk-root';
-
-const userHome =
-    process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
-
-const myGenericVersionsCommandBlockMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> =>
-        Promise.resolve({ stdout: 'mock version 1.0', stderr: '' })
-);
-
-const myGenericVersionsCommandBlockMockThrows = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> =>
-        Promise.reject(new Error('Command not found!'))
-);
-
-const myCommandBlockMock = jest.fn(
-    (command: string): Promise<{ stdout: string; stderr: string }> => {
-        let output = '';
-        if (command.endsWith('avdmanager list avd')) {
-            output = AndroidMockData.avdList;
-        } else if (command.endsWith('emulator -list-avds')) {
-            output = AndroidMockData.emuNames;
-        } else if (command.endsWith('adb devices')) {
-            output = 'emulator-5572';
-        } else if (command.endsWith('emu avd name')) {
-            output = 'Pixel_4_XL_API_29';
-        } else if (command.endsWith('emu avd path')) {
-            output = '/User/test/.android/avd/Pixel_4_XL_API_29.avd';
-        } else {
-            output = AndroidMockData.mockRawPackagesString;
-        }
-
-        return Promise.resolve({
-            stderr: '',
-            stdout: output
-        });
-    }
-);
-
-const badBlockMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> =>
-        Promise.resolve({
-            stderr: '',
-            stdout: AndroidMockData.badMockRawPackagesString
-        })
-);
-
-const throwMock = jest.fn((): void => {
-    throw new Error('test error');
-});
-
-const launchCommandMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> =>
-        Promise.resolve({ stdout: '', stderr: '' })
-);
-
-const launchCommandThrowsMock = jest.fn((): string => {
-    throw new Error(' Mock Error');
-});
-
-const mockCmdLineToolsBin = path.normalize(
-    path.join(mockAndroidHome, 'cmdline-tools', 'latest', 'bin')
-);
-const sdkCommand = path.normalize(path.join(mockCmdLineToolsBin, 'sdkmanager'));
-const adbCommand = path.normalize(mockAndroidHome + '/platform-tools/adb');
-
-let readFileSpy: jest.SpyInstance<any>;
-let writeFileSpy: jest.SpyInstance<any>;
-
 describe('Android utils', () => {
+    const mockAndroidHome = '/mock-android-home';
+
+    const mockAndroidSdkRoot = '/mock-android-sdk-root';
+
+    const userHome =
+        process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+
+    const mockCmdLineToolsBin = path.normalize(
+        path.join(mockAndroidHome, 'cmdline-tools', 'latest', 'bin')
+    );
+    const sdkCommand = path.normalize(
+        path.join(mockCmdLineToolsBin, 'sdkmanager')
+    );
+    const adbCommand = path.normalize(mockAndroidHome + '/platform-tools/adb');
+
+    let myGenericVersionsCommandBlockMock: jest.Mock<any, [], any>;
+    let myGenericVersionsCommandBlockMockThrows: jest.Mock<any, [], any>;
+    let myCommandBlockMock: jest.Mock<any, [command: string], any>;
+    let badBlockMock: jest.Mock<any, [], any>;
+    let throwMock: jest.Mock<any, [], any>;
+    let launchCommandMock: jest.Mock<any, [], any>;
+    let launchCommandThrowsMock: jest.Mock<any, [], any>;
+    let readFileSpy: jest.SpyInstance<any>;
+    let writeFileSpy: jest.SpyInstance<any>;
+
     beforeEach(() => {
+        myGenericVersionsCommandBlockMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                return Promise.resolve({
+                    stdout: 'mock version 1.0',
+                    stderr: ''
+                });
+            }
+        );
+
+        myGenericVersionsCommandBlockMockThrows = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> =>
+                Promise.reject(new Error('Command not found!'))
+        );
+
+        myCommandBlockMock = jest.fn(
+            (command: string): Promise<{ stdout: string; stderr: string }> => {
+                let output = '';
+                if (command.endsWith('avdmanager list avd')) {
+                    output = AndroidMockData.avdList;
+                } else if (command.endsWith('emulator -list-avds')) {
+                    output = AndroidMockData.emuNames;
+                } else if (command.endsWith('adb devices')) {
+                    output = 'emulator-5572';
+                } else if (command.endsWith('emu avd name')) {
+                    output = 'Pixel_4_XL_API_29';
+                } else if (command.endsWith('emu avd path')) {
+                    output = '/User/test/.android/avd/Pixel_4_XL_API_29.avd';
+                } else {
+                    output = AndroidMockData.mockRawPackagesString;
+                }
+
+                return Promise.resolve({
+                    stderr: '',
+                    stdout: output
+                });
+            }
+        );
+
+        badBlockMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> =>
+                Promise.resolve({
+                    stderr: '',
+                    stdout: AndroidMockData.badMockRawPackagesString
+                })
+        );
+
+        throwMock = jest.fn((): void => {
+            throw new Error('test error');
+        });
+
+        launchCommandMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> =>
+                Promise.resolve({ stdout: '', stderr: '' })
+        );
+
+        launchCommandThrowsMock = jest.fn((): string => {
+            throw new Error(' Mock Error');
+        });
+
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
         jest.spyOn(CommonUtils, 'delay').mockReturnValue(Promise.resolve());

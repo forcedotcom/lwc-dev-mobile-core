@@ -14,15 +14,6 @@ import {
 const logger = new Logger('test');
 
 Messages.importMessagesDirectory(__dirname);
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'requirement'
-);
-
-const failureMessage = messages.getMessage('error:requirementCheckFailed');
-const recommendationMessage = messages.getMessage(
-    'error:requirementCheckFailed:recommendation'
-);
 
 async function checkResolveFunctionOne(): Promise<string> {
     return Promise.resolve('Done');
@@ -148,6 +139,16 @@ class TwoFalsyOneTruthyRequirements implements HasRequirements {
 }
 
 describe('Requirements Processing', () => {
+    const messages = Messages.loadMessages(
+        '@salesforce/lwc-dev-mobile-core',
+        'requirement'
+    );
+
+    const failureMessage = messages.getMessage('error:requirementCheckFailed');
+    const recommendationMessage = messages.getMessage(
+        'error:requirementCheckFailed:recommendation'
+    );
+
     test('Meets all requirements', async () => {
         expect.assertions(1);
         await RequirementProcessor.execute(
