@@ -12,7 +12,10 @@ import {
     FlagsConfigType
 } from '../../../../../common/Common';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements';
-import { RequirementProcessor } from '../../../../../common/Requirements';
+import {
+    CommandRequirements,
+    RequirementProcessor
+} from '../../../../../common/Requirements';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -25,7 +28,7 @@ const messages = Messages.loadMessages(
 );
 
 export class Setup extends BaseCommand {
-    protected commandName = 'force:lightning:local:setup';
+    protected _commandName = 'force:lightning:local:setup';
 
     public static readonly description =
         messages.getMessage('commandDescription');
@@ -36,19 +39,11 @@ export class Setup extends BaseCommand {
     ];
 
     public static readonly flags = {
-        ...CommandLineUtils.createFlagConfig(
-            FlagsConfigType.ApiLevel,
-            false,
-            Setup.examples
-        ),
-        ...CommandLineUtils.createFlagConfig(
-            FlagsConfigType.Platform,
-            true,
-            Setup.examples
-        )
+        ...CommandLineUtils.createFlag(FlagsConfigType.ApiLevel, false),
+        ...CommandLineUtils.createFlag(FlagsConfigType.Platform, true)
     };
 
-    public async run(): Promise<any> {
+    public async run(): Promise<void> {
         this.logger.info(
             `Setup command called for ${this.flagValues.platform}`
         );
@@ -56,7 +51,9 @@ export class Setup extends BaseCommand {
     }
 
     protected populateCommandRequirements(): void {
-        const requirements = CommandLineUtils.platformFlagIsAndroid(
+        const requirements: CommandRequirements = {};
+
+        requirements.setup = CommandLineUtils.platformFlagIsAndroid(
             this.flagValues.platform
         )
             ? new AndroidEnvironmentRequirements(
@@ -65,6 +62,6 @@ export class Setup extends BaseCommand {
               )
             : new IOSEnvironmentRequirements(this.logger);
 
-        this._commandRequirements.setup = requirements;
+        this._commandRequirements = requirements;
     }
 }

@@ -146,15 +146,11 @@ describe('Commons utils tests', () => {
     });
 
     test('Platform flag config property returns expected flag', async () => {
-        let platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+        let platformFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.Platform,
-            true,
-            []
+            true
         );
         expect(platformFlagConfig.platform).toBeDefined();
-        expect(platformFlagConfig.platform!.longDescription).toBe(
-            messages.getMessage('platformFlagDescription')
-        );
         expect(platformFlagConfig.platform!.description).toBe(
             messages.getMessage('platformFlagDescription')
         );
@@ -165,10 +161,9 @@ describe('Commons utils tests', () => {
         expect(requiredKeyValuePair).toBeDefined();
         expect(requiredKeyValuePair![1]).toBe(true);
 
-        platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+        platformFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.Platform,
-            false,
-            []
+            false
         );
 
         requiredKeyValuePair = Object.entries(
@@ -180,15 +175,11 @@ describe('Commons utils tests', () => {
     });
 
     test('API level flag config property returns expected flag', async () => {
-        let apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+        let apiLevelFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.ApiLevel,
-            true,
-            []
+            true
         );
         expect(apiLevelFlagConfig.apilevel).toBeDefined();
-        expect(apiLevelFlagConfig.apilevel!.longDescription).toBe(
-            messages.getMessage('apiLevelFlagDescription')
-        );
         expect(apiLevelFlagConfig.apilevel!.description).toBe(
             messages.getMessage('apiLevelFlagDescription')
         );
@@ -200,10 +191,9 @@ describe('Commons utils tests', () => {
         expect(requiredKeyValuePair).toBeDefined();
         expect(requiredKeyValuePair![1]).toBe(true);
 
-        apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+        apiLevelFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.ApiLevel,
-            false,
-            []
+            false
         );
 
         requiredKeyValuePair = Object.entries(

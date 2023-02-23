@@ -544,7 +544,7 @@ describe('Android utils', () => {
         process.env.ANDROID_HOME = mockAndroidHome;
         delete process.env.ANDROID_SDK_ROOT; // set it to undefined
         jest.restoreAllMocks();
-        jest.spyOn(fs, 'existsSync').mockImplementation(() => true);
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
         const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         const rootPath = (sdkRoot && sdkRoot.rootLocation) || '';
         expect(rootPath).toBe(mockAndroidHome);
@@ -554,7 +554,7 @@ describe('Android utils', () => {
         delete process.env.ANDROID_HOME; // set it to undefined
         process.env.ANDROID_SDK_ROOT = mockAndroidSdkRoot;
         jest.restoreAllMocks();
-        jest.spyOn(fs, 'existsSync').mockImplementation(() => true);
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
         const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         const rootPath = (sdkRoot && sdkRoot.rootLocation) || '';
         expect(rootPath).toBe(mockAndroidSdkRoot);
@@ -564,7 +564,7 @@ describe('Android utils', () => {
         process.env.ANDROID_HOME = mockAndroidHome;
         process.env.ANDROID_SDK_ROOT = mockAndroidSdkRoot;
         jest.restoreAllMocks();
-        jest.spyOn(fs, 'existsSync').mockImplementation(() => true);
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
         const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         const rootPath = (sdkRoot && sdkRoot.rootLocation) || '';
         expect(rootPath).toBe(mockAndroidHome);

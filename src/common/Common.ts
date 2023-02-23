@@ -4,10 +4,14 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Flags } from '@salesforce/sf-plugins-core';
+import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError, Logger } from '@salesforce/core';
 import util from 'util';
-//import { CustomOptions, FlagParserContext, OptionFlag } from '@oclif/core/lib/interfaces/parser';
+import {
+    CustomOptions,
+    FlagParserContext,
+    OptionFlag
+} from '@oclif/core/lib/interfaces/parser';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -125,11 +129,7 @@ export class CommandLineUtils {
         }
     }
 
-    public static createFlagConfig(
-        type: FlagsConfigType,
-        isRequired: boolean,
-        flagFailureActionMessages: string[]
-    ): any {
+    public static createFlag(type: FlagsConfigType, isRequired: boolean): any {
         switch (type) {
             case FlagsConfigType.ApiLevel:
                 return {
@@ -138,18 +138,8 @@ export class CommandLineUtils {
                         description: messages.getMessage(
                             'apiLevelFlagDescription'
                         ),
-                        longDescription: messages.getMessage(
-                            'apiLevelFlagDescription'
-                        ),
                         required: isRequired,
-                        parse: (flag /*, context, options*/) =>
-                            CommandLineUtils.commandFlagParser(
-                                flag,
-                                //context,
-                                //options,
-                                CommandLineUtils.validateApiLevelFlag,
-                                flagFailureActionMessages
-                            )
+                        validate: CommandLineUtils.validateApiLevelFlag
                     })
                 };
             case FlagsConfigType.Platform:
@@ -159,42 +149,45 @@ export class CommandLineUtils {
                         description: messages.getMessage(
                             'platformFlagDescription'
                         ),
-                        longDescription: messages.getMessage(
-                            'platformFlagDescription'
-                        ),
                         required: isRequired,
-                        parse: (flag /*, context, options*/) =>
-                            CommandLineUtils.commandFlagParser(
-                                flag,
-                                //context,
-                                //options,
-                                CommandLineUtils.validatePlatformFlag,
-                                flagFailureActionMessages
-                            )
+                        validate: CommandLineUtils.validatePlatformFlag
                     })
                 };
         }
     }
 
-    private static commandFlagParser(
-        flag: any,
-        //context: FlagParserContext,
-        //options: CustomOptions & OptionFlag<any, CustomOptions>,
-        checkFunction: (input: any) => boolean,
-        actionMessages: string[]
+    public static flagParser(
+        input: string | boolean,
+        context: FlagParserContext,
+        opts: CustomOptions & OptionFlag<string, CustomOptions>
     ): Promise<any> {
-        return checkFunction(flag)
-            ? Promise.resolve(flag)
-            : Promise.reject(
-                  new SfError(
-                      util.format(
-                          messages.getMessage('error:invalidFlagValue'),
-                          flag
-                      ),
-                      undefined,
-                      actionMessages
-                  )
-              );
+        const validateFunction = opts.validate as (flag: any) => boolean;
+
+        if (validateFunction && !validateFunction(input)) {
+            // get the examples array (if any) and reduce it
+            // to only keep the string examples
+            const examples = (<typeof SfCommand>(
+                context.constructor
+            )).examples?.reduce((results: string[], item: any) => {
+                if (typeof item === 'string') {
+                    results.push(item.toString());
+                }
+                return results;
+            }, []);
+
+            return Promise.reject(
+                new SfError(
+                    util.format(
+                        messages.getMessage('error:invalidFlagValue'),
+                        input
+                    ),
+                    undefined,
+                    examples
+                )
+            );
+        }
+
+        return Promise.resolve(input);
     }
 
     private static validateApiLevelFlag(flag: string): boolean {
