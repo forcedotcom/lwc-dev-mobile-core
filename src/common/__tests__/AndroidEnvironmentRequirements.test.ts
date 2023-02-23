@@ -7,7 +7,7 @@
 const MOCK_ANDROID_HOME = '/mock-android-home';
 process.env.ANDROID_HOME = MOCK_ANDROID_HOME;
 
-import { Logger, Messages } from '@salesforce/core';
+import { Logger } from '@salesforce/core';
 import {
     AndroidSDKPlatformToolsInstalledRequirement,
     AndroidSDKRootSetRequirement,
@@ -22,23 +22,22 @@ import { Version } from '../Common';
 import { CommonUtils } from '../CommonUtils';
 import { AndroidMockData } from './AndroidMockData';
 
-const myCommandBlockMock = jest.fn((): string => {
-    return AndroidMockData.mockRawPackagesString;
-});
-
-const badBlockMock = jest.fn((): string => {
-    return AndroidMockData.badMockRawPackagesString;
-});
-
-Messages.importMessagesDirectory(__dirname);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'requirement-android'
-);
-const logger = new Logger('test');
-
 describe('Android environment requirement tests', () => {
+    const logger = new Logger('test');
+
+    let myCommandBlockMock: jest.Mock<any, [], any>;
+    let badBlockMock: jest.Mock<any, [], any>;
+
+    beforeEach(() => {
+        myCommandBlockMock = jest.fn((): string => {
+            return AndroidMockData.mockRawPackagesString;
+        });
+
+        badBlockMock = jest.fn((): string => {
+            return AndroidMockData.badMockRawPackagesString;
+        });
+    });
+
     afterEach(() => {
         myCommandBlockMock.mockClear();
         badBlockMock.mockClear();

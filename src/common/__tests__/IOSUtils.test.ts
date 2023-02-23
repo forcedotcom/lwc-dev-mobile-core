@@ -10,64 +10,72 @@ import { IOSUtils } from '../IOSUtils';
 import { PreviewUtils } from '../PreviewUtils';
 import { IOSMockData } from './IOSMockData';
 
-const DEVICE_TYPE_PREFIX = 'com.apple.CoreSimulator.SimDeviceType';
-const RUNTIME_TYPE_PREFIX = 'com.apple.CoreSimulator.SimRuntime';
-
-const myCommandRouterBlock = jest.fn(
-    (command: string): Promise<{ stdout: string; stderr: string }> => {
-        let output = '';
-        if (command.endsWith('simctl list --json devicetypes')) {
-            output = JSON.stringify(IOSMockData.mockRuntimeDeviceTypes);
-        } else if (command.endsWith('simctl list --json devices available')) {
-            output = JSON.stringify(IOSMockData.mockRuntimeDevices);
-        } else {
-            output = JSON.stringify(IOSMockData.mockRuntimes);
-        }
-
-        return new Promise((resolve) => {
-            resolve({
-                stderr: 'mockError',
-                stdout: output
-            });
-        });
-    }
-);
-
-const badBlockMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve) => {
-            resolve({ stdout: '{[}', stderr: 'mockError' });
-        });
-    }
-);
-
-const launchCommandMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> => {
-        return new Promise((resolve) => {
-            resolve({
-                stderr: 'mockError',
-                stdout: 'Done'
-            });
-        });
-    }
-);
-
-const launchCommandThrowsMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> => {
-        throw new Error(' Mock Error');
-    }
-);
-
-const launchCommandThrowsAlreadyBootedMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> => {
-        return Promise.reject(
-            new Error('The device is cannot boot state: booted')
-        );
-    }
-);
-
 describe('IOS utils tests', () => {
+    const DEVICE_TYPE_PREFIX = 'com.apple.CoreSimulator.SimDeviceType';
+    const RUNTIME_TYPE_PREFIX = 'com.apple.CoreSimulator.SimRuntime';
+
+    let myCommandRouterBlock: jest.Mock<any, [command: string], any>;
+    let badBlockMock: jest.Mock<any, [], any>;
+    let launchCommandMock: jest.Mock<any, [], any>;
+    let launchCommandThrowsMock: jest.Mock<any, [], any>;
+    let launchCommandThrowsAlreadyBootedMock: jest.Mock<any, [], any>;
+
     beforeEach(() => {
+        myCommandRouterBlock = jest.fn(
+            (command: string): Promise<{ stdout: string; stderr: string }> => {
+                let output = '';
+                if (command.endsWith('simctl list --json devicetypes')) {
+                    output = JSON.stringify(IOSMockData.mockRuntimeDeviceTypes);
+                } else if (
+                    command.endsWith('simctl list --json devices available')
+                ) {
+                    output = JSON.stringify(IOSMockData.mockRuntimeDevices);
+                } else {
+                    output = JSON.stringify(IOSMockData.mockRuntimes);
+                }
+
+                return new Promise((resolve) => {
+                    resolve({
+                        stderr: 'mockError',
+                        stdout: output
+                    });
+                });
+            }
+        );
+
+        badBlockMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                return new Promise((resolve) => {
+                    resolve({ stdout: '{[}', stderr: 'mockError' });
+                });
+            }
+        );
+
+        launchCommandMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                return new Promise((resolve) => {
+                    resolve({
+                        stderr: 'mockError',
+                        stdout: 'Done'
+                    });
+                });
+            }
+        );
+
+        launchCommandThrowsMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                throw new Error(' Mock Error');
+            }
+        );
+
+        launchCommandThrowsAlreadyBootedMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                return Promise.reject(
+                    new Error('The device is cannot boot state: booted')
+                );
+            }
+        );
+
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
         myCommandRouterBlock.mockClear();

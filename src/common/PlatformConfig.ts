@@ -27,6 +27,8 @@
  * NOTE: The same issue would occur if these classes were defined as JSON files and where imported
  * (i.e import iOSConfig from { IOSConfig.json } or similar for Android)
  */
+import os from 'os';
+
 export class PlatformConfig {
     public static iOSConfig(): IOSConfig {
         return new IOSConfig();
@@ -51,19 +53,24 @@ export class AndroidConfig {
         'default',
         'google_apis_playstore'
     ];
-    public readonly supportedArchitectures: string[] = [
-        'x86_64',
-        'x86',
-        'arm64-v8a'
-    ];
     public readonly supportedDeviceTypes: string[] = [
         'pixel',
         'pixel_xl',
         'pixel_c'
     ];
+    public readonly supportedArchitectures: string[];
     public readonly defaultEmulatorName: string = 'SFDXEmulator';
     public readonly defaultAdbPort: number = 5572;
     public readonly deviceReadinessWaitTime: number = 120000;
     public readonly AdbNumRetryAttempts: number = 6;
     public readonly AdbRetryAttemptDelay: number = 500;
+
+    constructor() {
+        const cpu = os.cpus()[0].model;
+        const isAppleSilicon = cpu.includes('Apple M');
+
+        this.supportedArchitectures = isAppleSilicon
+            ? ['arm64-v8a']
+            : ['x86_64', 'x86', 'arm64-v8a'];
+    }
 }

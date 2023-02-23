@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages } from '@salesforce/core';
+import { Logger } from '@salesforce/core';
 import { CommonUtils } from '../CommonUtils';
 import {
     SupportedEnvironmentRequirement,
@@ -13,43 +13,44 @@ import {
 } from '../IOSEnvironmentRequirements';
 import { IOSUtils } from '../IOSUtils';
 
-Messages.importMessagesDirectory(__dirname);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'requirement-ios'
-);
-const logger = new Logger('test-IOSEnvironmentRequirement');
-
-const myUnameMock = jest.fn((): Promise<{ stdout: string; stderr: string }> => {
-    return Promise.resolve({ stdout: 'Darwin', stderr: 'mockError' });
-});
-
-const badBadMock = jest.fn((): Promise<{ stdout: string; stderr: string }> => {
-    return new Promise((_, reject) => {
-        reject(new Error('Bad bad mock!'));
-    });
-});
-
-const myXcodeSelectMock = jest.fn(
-    (): Promise<{ stdout: string; stderr: string }> => {
-        return Promise.resolve({
-            stderr: 'mockError',
-            stdout: '/Applications/Xcode.app/Contents/Developer'
-        });
-    }
-);
-
-const runtimesMockBlock = jest.fn((): Promise<string[]> => {
-    return Promise.resolve(['iOS-13-1']);
-});
-
 describe('IOS Environment Requirement tests', () => {
+    const logger = new Logger('test-IOSEnvironmentRequirement');
+
+    let myUnameMock: jest.Mock<any, [], any>;
+    let badBadMock: jest.Mock<any, [], any>;
+    let myXcodeSelectMock: jest.Mock<any, [], any>;
+    let runtimesMockBlock: jest.Mock<any, [], any>;
+
     beforeEach(() => {
-        myUnameMock.mockClear();
-        badBadMock.mockClear();
-        myXcodeSelectMock.mockClear();
-        runtimesMockBlock.mockClear();
+        myUnameMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                return Promise.resolve({
+                    stdout: 'Darwin',
+                    stderr: 'mockError'
+                });
+            }
+        );
+
+        badBadMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                return new Promise((_, reject) => {
+                    reject(new Error('Bad bad mock!'));
+                });
+            }
+        );
+
+        myXcodeSelectMock = jest.fn(
+            (): Promise<{ stdout: string; stderr: string }> => {
+                return Promise.resolve({
+                    stderr: 'mockError',
+                    stdout: '/Applications/Xcode.app/Contents/Developer'
+                });
+            }
+        );
+
+        runtimesMockBlock = jest.fn((): Promise<string[]> => {
+            return Promise.resolve(['iOS-13-1']);
+        });
     });
 
     afterEach(() => {

@@ -6,7 +6,7 @@
  */
 import { Logger, SfError } from '@salesforce/core';
 import * as childProcess from 'child_process';
-import { CliUx } from '@oclif/core';
+import { ux } from '@oclif/core';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
@@ -37,7 +37,7 @@ export class CommonUtils {
      * @param failureMessage Optional failure message when timeout happens
      * @returns A Promise that supports timeout
      */
-    public static promiseWithTimeout<T>(
+    public static async promiseWithTimeout<T>(
         timeout: number,
         promise: Promise<T>,
         failureMessage?: string
@@ -78,7 +78,7 @@ export class CommonUtils {
      * @param status Optional status message for the action.
      */
     public static startCliAction(action: string, status?: string) {
-        CliUx.ux.action.start(action, status, { stdout: true });
+        ux.action.start(action, status, { stdout: true });
     }
 
     /**
@@ -88,7 +88,7 @@ export class CommonUtils {
      * @param status Status message for the action.
      */
     public static updateCliAction(status: string) {
-        const task = CliUx.ux.action.task;
+        const task = ux.action.task;
         if (!task || !task.active) {
             CommonUtils.startCliAction(status);
         } else {
@@ -102,7 +102,7 @@ export class CommonUtils {
      * @param message Optional status message for the action.
      */
     public static stopCliAction(message?: string) {
-        CliUx.ux.action.stop(message);
+        ux.action.stop(message);
     }
 
     /**

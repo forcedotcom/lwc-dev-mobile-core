@@ -4,9 +4,14 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { flags, FlagsConfig } from '@salesforce/command';
+import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 import { Messages, SfError, Logger } from '@salesforce/core';
 import util from 'util';
+import {
+    CustomOptions,
+    FlagParserContext,
+    OptionFlag
+} from '@oclif/core/lib/interfaces/parser';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -117,81 +122,81 @@ export class CommandLineUtils {
      */
     public static resolveFlag(flag: any, defaultValue: string): string {
         const resolvedFlag = flag as string;
-        if (resolvedFlag && resolvedFlag.length > 0) {
+        if (resolvedFlag && resolvedFlag.trim().length > 0) {
             return resolvedFlag;
         } else {
             return defaultValue;
         }
     }
 
-    public static createFlagConfig(
-        type: FlagsConfigType,
-        required: boolean
-    ): FlagsConfig {
+    public static createFlag(type: FlagsConfigType, isRequired: boolean): any {
         switch (type) {
             case FlagsConfigType.ApiLevel:
                 return {
-                    apilevel: flags.string({
+                    apilevel: Flags.string({
                         char: 'l',
                         description: messages.getMessage(
                             'apiLevelFlagDescription'
                         ),
-                        longDescription: messages.getMessage(
-                            'apiLevelFlagDescription'
-                        ),
-                        required,
+                        required: isRequired,
                         validate: CommandLineUtils.validateApiLevelFlag
                     })
                 };
             case FlagsConfigType.Platform:
                 return {
-                    platform: flags.string({
+                    platform: Flags.string({
                         char: 'p',
                         description: messages.getMessage(
                             'platformFlagDescription'
                         ),
-                        longDescription: messages.getMessage(
-                            'platformFlagDescription'
-                        ),
-                        required,
+                        required: isRequired,
                         validate: CommandLineUtils.validatePlatformFlag
                     })
                 };
         }
     }
 
-    public static flagFailureActionMessages: string[] = [];
+    public static async flagParser(
+        input: string | boolean,
+        context: FlagParserContext,
+        opts: CustomOptions & OptionFlag<string, CustomOptions>
+    ): Promise<any> {
+        const validateFunction = opts.validate as (flag: any) => boolean;
 
-    private static validateApiLevelFlag(flag: string): boolean {
-        const version = Version.from(flag);
-        if (version === null) {
-            throw new SfError(
-                util.format(
-                    messages.getMessage(
-                        'error:invalidApiLevelFlagsDescription'
+        if (validateFunction && !validateFunction(input)) {
+            // get the examples array (if any) and reduce it
+            // to only keep the string examples
+            const examples = (<typeof SfCommand>(
+                context.constructor
+            )).examples?.reduce((results: string[], item: any) => {
+                if (typeof item === 'string') {
+                    results.push(item.toString());
+                }
+                return results;
+            }, []);
+
+            return Promise.reject(
+                new SfError(
+                    util.format(
+                        messages.getMessage('error:invalidFlagValue'),
+                        input
                     ),
-                    flag
-                ),
-                'lwc-dev-mobile-core',
-                CommandLineUtils.flagFailureActionMessages
+                    undefined,
+                    examples
+                )
             );
         }
-        return true;
+
+        return Promise.resolve(input);
+    }
+
+    private static validateApiLevelFlag(flag: string): boolean {
+        return Version.from(flag) !== null;
     }
 
     private static validatePlatformFlag(flag: string): boolean {
-        if (!CommandLineUtils.platformFlagIsValid(flag)) {
-            throw new SfError(
-                messages.getMessage('error:invalidInputFlagsDescription'),
-                'lwc-dev-mobile-core',
-                CommandLineUtils.flagFailureActionMessages
-            );
-        }
-
-        return true;
+        return CommandLineUtils.platformFlagIsValid(flag);
     }
-
-    private static logger: Logger = new Logger(LOGGER_NAME);
 }
 
 // tslint:disable-next-line: max-classes-per-file

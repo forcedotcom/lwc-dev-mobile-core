@@ -10,13 +10,14 @@ import * as common from '../Common';
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
 
-// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
-// or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'common'
-);
 describe('Commons utils tests', () => {
+    // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
+    // or any library that is using the messages framework can also be loaded this way.
+    const messages = Messages.loadMessages(
+        '@salesforce/lwc-dev-mobile-core',
+        'common'
+    );
+
     test('Filtering of maps returns maps', async () => {
         const mascotMapping = new Map();
         mascotMapping.set('Edddie', 'Iron Maiden');
@@ -145,14 +146,11 @@ describe('Commons utils tests', () => {
     });
 
     test('Platform flag config property returns expected flag', async () => {
-        let platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+        let platformFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.Platform,
             true
         );
         expect(platformFlagConfig.platform).toBeDefined();
-        expect(platformFlagConfig.platform!.longDescription).toBe(
-            messages.getMessage('platformFlagDescription')
-        );
         expect(platformFlagConfig.platform!.description).toBe(
             messages.getMessage('platformFlagDescription')
         );
@@ -163,7 +161,7 @@ describe('Commons utils tests', () => {
         expect(requiredKeyValuePair).toBeDefined();
         expect(requiredKeyValuePair![1]).toBe(true);
 
-        platformFlagConfig = common.CommandLineUtils.createFlagConfig(
+        platformFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.Platform,
             false
         );
@@ -177,14 +175,11 @@ describe('Commons utils tests', () => {
     });
 
     test('API level flag config property returns expected flag', async () => {
-        let apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+        let apiLevelFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.ApiLevel,
             true
         );
         expect(apiLevelFlagConfig.apilevel).toBeDefined();
-        expect(apiLevelFlagConfig.apilevel!.longDescription).toBe(
-            messages.getMessage('apiLevelFlagDescription')
-        );
         expect(apiLevelFlagConfig.apilevel!.description).toBe(
             messages.getMessage('apiLevelFlagDescription')
         );
@@ -196,7 +191,7 @@ describe('Commons utils tests', () => {
         expect(requiredKeyValuePair).toBeDefined();
         expect(requiredKeyValuePair![1]).toBe(true);
 
-        apiLevelFlagConfig = common.CommandLineUtils.createFlagConfig(
+        apiLevelFlagConfig = common.CommandLineUtils.createFlag(
             common.FlagsConfigType.ApiLevel,
             false
         );
