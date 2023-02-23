@@ -55,7 +55,7 @@ export interface HasRequirements {
  * @param requirement A Requirement object
  * @returns A Promise object that runs the requirement check and returns a RequirementResult object.
  */
-export function WrappedPromise(
+export async function WrappedPromise(
     requirement: Requirement
 ): Promise<RequirementResult> {
     const promise = requirement.checkFunction();

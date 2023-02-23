@@ -156,7 +156,7 @@ export class CommandLineUtils {
         }
     }
 
-    public static flagParser(
+    public static async flagParser(
         input: string | boolean,
         context: FlagParserContext,
         opts: CustomOptions & OptionFlag<string, CustomOptions>

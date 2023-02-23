@@ -61,16 +61,20 @@ export abstract class BaseCommand
             .then(() => this.populateCommandRequirements());
     }
 
+    // Loops over all of the flags of a command and checks to see
+    // if a flag has a `validate` function defined. If so then we
+    // mark it to use `CommandLineUtils.flagParser` as a parser,
+    // which will execute the validation function.
     private injectFlagParser() {
         const flags = (<typeof SfCommand>this.constructor).flags;
         const flagEntries = Object.entries(flags);
-        flagEntries.forEach((item) => {
-            const configEntries = Object.entries(item[1]);
+        flagEntries.forEach((flag) => {
+            const configEntries = Object.entries(flag[1]);
             const hasValidate = configEntries.find(
                 (keyValuePair) => keyValuePair[0] === 'validate'
             );
             if (hasValidate) {
-                item[1].parse = CommandLineUtils.flagParser;
+                flag[1].parse = CommandLineUtils.flagParser;
             }
         });
     }

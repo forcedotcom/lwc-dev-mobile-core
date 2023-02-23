@@ -37,7 +37,7 @@ export class CommonUtils {
      * @param failureMessage Optional failure message when timeout happens
      * @returns A Promise that supports timeout
      */
-    public static promiseWithTimeout<T>(
+    public static async promiseWithTimeout<T>(
         timeout: number,
         promise: Promise<T>,
         failureMessage?: string
