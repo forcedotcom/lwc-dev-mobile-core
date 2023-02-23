@@ -18,7 +18,8 @@ export class AndroidMockData {
       platforms;android-28                                | 6            | Android SDK Platform 28                         | platforms/android-28/                               
       platforms;android-29                                | 3            | Android SDK Platform 29                         | platforms/android-29/                               
       platforms;android-30                                | 3            | Android SDK Platform 30                         | platforms/android-30/                               
-      platforms;android-Tiramisu                          | 2            | Android SDK Platform Tiramisu                   | platforms/android-Tiramisu/                               
+      platforms;android-31                                | 3            | Android SDK Platform 31                         | platforms/android-31/                               
+      platforms;android-Tiramisu                          | 2            | Android SDK Platform Tiramisu                   | platforms/android-Tiramisu/                         
       system-images;android-28;default;x86_64             | 4            | Intel x86 Atom_64 System Image                  | system-images/android-28/default/x86_64/            
       system-images;android-28;google_apis;x86            | 10           | Google APIs Intel x86 Atom System Image         | system-images/android-28/google_apis/x86/           
       system-images;android-28;google_apis_playstore;x86  | 9            | Google Play Intel x86 Atom System Image         | system-images/android-28/google_apis_playstore/x86/ 
@@ -26,7 +27,8 @@ export class AndroidMockData {
       system-images;android-29;google_apis;x86            | 8            | Google APIs Intel x86 Atom System Image         | system-images/android-29/google_apis/x86/           
       system-images;android-30;google_apis;x86            | 9            | Google APIs Intel x86 Atom System Image         | system-images/android-30/google_apis/x86/           
       system-images;android-30;google_apis;x86_64         | 9            | Google APIs Intel x86 Atom_64 System Image      | system-images/android-30/google_apis/x86_64/        
-      system-images;android-Tiramisu;google_apis;x86_64   | 1            | Google APIs Intel x86 Atom_64 System Image      | system-images/android-Tiramisu/google_apis/x86_64/        
+      system-images;android-31;google_apis;arm64-v8a      | 9            | Google Play ARM 64 v8a System Image             | system-images/android-30/google_apis/x86_64/        
+      system-images;android-Tiramisu;google_apis;x86_64   | 1            | Google APIs Intel x86 Atom_64 System Image      | system-images/android-Tiramisu/google_apis/x86_64/  
       tools                                               | 26.1.1       | Android SDK Tools 26.1.1                        | tools/                                              
     Available Packages:
       Path                                                                                     | Version      | Description                                                         
@@ -38,10 +40,18 @@ export class AndroidMockData {
     // NB: There are two codename packages in the output above, which should be
     // ignored by parsing as of this release. This value represents an implicit
     // test of discarding that data. The real count above is this value + 2.
-    public static mockRawStringPackageLength = 13;
+    public static mockRawStringPackageLength = 15;
 
     public static avdList = `
       Available Android Virtual Devices:
+        Name: Pixel_5_API_31
+        Device: pixel_5 (Google)
+          Path: /Users/test/.android/avd/Pixel_5_API_31.avd
+        Target: Google APIs (Google Inc.)
+                Based on: Android 12.0 (S) Tag/ABI: google_apis/arm64-v8a
+          Skin: pixel_5
+        Sdcard: 512M
+      ---------
           Name: Nexus_6_API_30
         Device: Nexus 6 (Google)
           Path: /Users/test/.android/avd/Nexus_6_API_30.avd
@@ -76,6 +86,7 @@ export class AndroidMockData {
     `;
 
     public static emuNames = `
+      Pixel_5_API_31
       Nexus_6_API_30
       Pixel_3_API_29
       Pixel_4_XL_API_29

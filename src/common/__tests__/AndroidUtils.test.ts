@@ -6,6 +6,7 @@
  */
 import { SfError } from '@salesforce/core';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { AndroidSDKRootSource, AndroidUtils } from '../AndroidUtils';
 import { Version } from '../Common';
@@ -39,6 +40,13 @@ describe('Android utils', () => {
     let readFileSpy: jest.SpyInstance<any>;
     let writeFileSpy: jest.SpyInstance<any>;
 
+    const isAppleSilicon = os.cpus()[0].model.includes('Apple M');
+    const testAvdApi = isAppleSilicon ? '31' : '29';
+    const testAvdName = isAppleSilicon ? 'Pixel_5_API_31' : 'Pixel_4_XL_API_29';
+    const testAvdPath = isAppleSilicon
+        ? '/User/test/.android/avd/Pixel_5_API_31.avd'
+        : '/User/test/.android/avd/Pixel_4_XL_API_29.avd';
+
     beforeEach(() => {
         myGenericVersionsCommandBlockMock = jest.fn(
             (): Promise<{ stdout: string; stderr: string }> => {
@@ -64,9 +72,9 @@ describe('Android utils', () => {
                 } else if (command.endsWith('adb devices')) {
                     output = 'emulator-5572';
                 } else if (command.endsWith('emu avd name')) {
-                    output = 'Pixel_4_XL_API_29';
+                    output = testAvdName;
                 } else if (command.endsWith('emu avd path')) {
-                    output = '/User/test/.android/avd/Pixel_4_XL_API_29.avd';
+                    output = testAvdPath;
                 } else {
                     output = AndroidMockData.mockRawPackagesString;
                 }
@@ -250,12 +258,12 @@ describe('Android utils', () => {
             myCommandBlockMock
         );
         const apiPackage = await AndroidUtils.fetchSupportedAndroidAPIPackage(
-            '28'
+            testAvdApi
         );
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
-        expect(apiPackage.version.same(Version.from('28')!)).toBe(true);
+        expect(apiPackage.version.same(Version.from(testAvdApi)!)).toBe(true);
     });
 
     test('Should not find a preferred Android package', async () => {
@@ -598,8 +606,8 @@ describe('Android utils', () => {
         );
         readFileSpy.mockReturnValue('');
 
-        // mocks are set up to show that Pixel_4_XL_API_29 is running on 5572
-        // so Pixel_XL_API_28 should not start on 5574
+        // mocks are set up to show that testAvdName is running on 5572
+        // so Pixel_XL_API_28 should now start on 5574
         const port = await AndroidUtils.startEmulator('Pixel_XL_API_28');
         expect(port).toBe(5574);
     });
@@ -610,10 +618,7 @@ describe('Android utils', () => {
         );
         readFileSpy.mockReturnValue('');
 
-        const port = await AndroidUtils.startEmulator(
-            'Pixel_4_XL_API_29',
-            true
-        );
+        const port = await AndroidUtils.startEmulator(testAvdName, true);
         expect(port).toBe(5572);
     });
 
@@ -625,7 +630,7 @@ describe('Android utils', () => {
         jest.spyOn(fs, 'readFileSync').mockImplementation(
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (filePath: any, encoding: any) => {
-                if (filePath.endsWith('Pixel_4_XL_API_29.ini')) {
+                if (filePath.endsWith(`${testAvdName}.ini`)) {
                     return 'target=android-29';
                 } else {
                     return '';
@@ -633,9 +638,7 @@ describe('Android utils', () => {
             }
         );
 
-        const port = await AndroidUtils.mountAsRootWritableSystem(
-            'Pixel_4_XL_API_29'
-        );
+        const port = await AndroidUtils.mountAsRootWritableSystem(testAvdName);
         expect(port).toBe(5572);
     });
 
@@ -646,7 +649,7 @@ describe('Android utils', () => {
         readFileSpy.mockReturnValue('');
 
         try {
-            await AndroidUtils.ensureDeviceIsNotGooglePlay('Pixel_4_XL_API_29');
+            await AndroidUtils.ensureDeviceIsNotGooglePlay(testAvdName);
         } catch (error) {
             fail(
                 `Should have resolved b/c device is not Google Play: ${error}`
