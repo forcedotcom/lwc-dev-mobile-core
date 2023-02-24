@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfError } from '@salesforce/core';
+import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -50,8 +50,11 @@ export class AndroidUtils {
     /**
      * Initialized the logger used by AndroidUtils
      */
-    public static async initializeLogger(): Promise<void> {
+    public static async initializeLogger(
+        level?: LoggerLevelValue
+    ): Promise<void> {
         AndroidUtils.logger = await Logger.child(LOGGER_NAME);
+        AndroidUtils.logger.setLevel(level);
         return Promise.resolve();
     }
 

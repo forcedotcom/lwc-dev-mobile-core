@@ -28,5 +28,7 @@
 
     "platformFlagDescription": "Specify platform ('iOS' or 'Android').",
     "apiLevelFlagDescription": "Specify Android API level. Defaults to the latest API level installed.",
+    "jsonFlagDescription": "Format output as json.",
+    "logLevelFlagDescription": "Logging level for this command invocation (options: TRACE, DEBUG, INFO, WARN, ERROR, FATAL).",
     "error:invalidFlagValue": "Invalid value: %s"
 }
