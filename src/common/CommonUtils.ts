@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, SfError } from '@salesforce/core';
+import { Logger, LoggerLevelValue, SfError } from '@salesforce/core';
 import * as childProcess from 'child_process';
 import { ux } from '@oclif/core';
 import fs from 'fs';
@@ -24,8 +24,11 @@ export class CommonUtils {
     /**
      * Initializes the logger used by CommonUtils for logging activities.
      */
-    public static async initializeLogger(): Promise<void> {
+    public static async initializeLogger(
+        level?: LoggerLevelValue
+    ): Promise<void> {
         CommonUtils.logger = await Logger.child(LOGGER_NAME);
+        CommonUtils.logger.setLevel(level);
         return Promise.resolve();
     }
 

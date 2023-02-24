@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfError } from '@salesforce/core';
+import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
 import util from 'util';
 import { Version } from '../common/Common';
 import { CommonUtils } from './CommonUtils';
@@ -32,8 +32,11 @@ export class IOSUtils {
     /**
      * Initialized the logger used by IOSUtils
      */
-    public static async initializeLogger(): Promise<void> {
+    public static async initializeLogger(
+        level?: LoggerLevelValue
+    ): Promise<void> {
         IOSUtils.logger = await Logger.child(LOGGER_NAME);
+        IOSUtils.logger.setLevel(level);
         return Promise.resolve();
     }
 

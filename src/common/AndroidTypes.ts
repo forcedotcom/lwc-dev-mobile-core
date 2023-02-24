@@ -6,7 +6,7 @@
  */
 import { Version } from './Common';
 import fs from 'fs';
-import { Logger } from '@salesforce/core';
+import { Logger, LoggerLevelValue } from '@salesforce/core';
 
 const ANDROID_PACKAGES_LOGGER_NAME =
     'force:lightning:local:androidtypes:androidpackages';
@@ -17,10 +17,13 @@ export class AndroidPackages {
     /**
      * Initialize the logger used by AndroidPackages.
      */
-    public static async initializeLogger(): Promise<void> {
+    public static async initializeLogger(
+        level?: LoggerLevelValue
+    ): Promise<void> {
         AndroidPackages.logger = await Logger.child(
             ANDROID_PACKAGES_LOGGER_NAME
         );
+        AndroidPackages.logger.setLevel(level);
         return Promise.resolve();
     }
 
@@ -199,10 +202,13 @@ export class AndroidVirtualDevice {
     /**
      * Initialize the logger used by AndroidVirtualDevice.
      */
-    public static async initializeLogger(): Promise<void> {
+    public static async initializeLogger(
+        level?: LoggerLevelValue
+    ): Promise<void> {
         AndroidVirtualDevice.logger = await Logger.child(
             ANDROID_VIRTUAL_DEVICE_LOGGER_NAME
         );
+        AndroidVirtualDevice.logger.setLevel(level);
         return Promise.resolve();
     }
 

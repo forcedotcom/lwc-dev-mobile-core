@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
-import { Logger } from '@salesforce/core';
+import { Logger, LoggerLevel } from '@salesforce/core';
 import { CommandLineUtils } from './Common';
 import { LoggerSetup } from './LoggerSetup';
 import { HasRequirements, CommandRequirements } from './Requirements';
@@ -55,8 +55,18 @@ export abstract class BaseCommand
                 return Logger.child(this.commandName);
             })
             .then((logger) => {
+                // extract the log level flag (if any) and
+                // set the logger's level to this value
+                const logLevelFlag: string | undefined = (
+                    this._flagValues.loglevel as string
+                )
+                    ?.trim()
+                    ?.toUpperCase();
+                const logLevel =
+                    logLevelFlag && (<any>LoggerLevel)[logLevelFlag];
+                logger.setLevel(logLevel);
                 this._logger = logger;
-                return LoggerSetup.initializePluginLoggers();
+                return LoggerSetup.initializePluginLoggers(logLevel);
             })
             .then(() => this.populateCommandRequirements());
     }

@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
-import { Messages, SfError, Logger } from '@salesforce/core';
+import { Logger, LoggerLevel, Messages, SfError } from '@salesforce/core';
 import util from 'util';
 import {
     CustomOptions,
@@ -69,7 +69,9 @@ export class SetUtils {
 
 export enum FlagsConfigType {
     Platform,
-    ApiLevel
+    ApiLevel,
+    LogLevel,
+    Json
 }
 
 // tslint:disable-next-line: max-classes-per-file
@@ -151,6 +153,27 @@ export class CommandLineUtils {
                         ),
                         required: isRequired,
                         validate: CommandLineUtils.validatePlatformFlag
+                    })
+                };
+            case FlagsConfigType.LogLevel:
+                return {
+                    loglevel: Flags.string({
+                        description: messages.getMessage(
+                            'logLevelFlagDescription'
+                        ),
+                        required: false,
+                        default: LoggerLevel[LoggerLevel.WARN],
+                        validate: (level: string) =>
+                            level &&
+                            (<any>LoggerLevel)[level.trim().toUpperCase()]
+                    })
+                };
+            case FlagsConfigType.Json:
+                return {
+                    json: Flags.boolean({
+                        description: messages.getMessage('jsonFlagDescription'),
+                        required: false,
+                        default: false
                     })
                 };
         }
