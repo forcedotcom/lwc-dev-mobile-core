@@ -81,7 +81,11 @@ export class CommonUtils {
      * @param status Optional status message for the action.
      */
     public static startCliAction(action: string, status?: string) {
-        ux.action.start(action, status, { stdout: true });
+        if (process.stdout?.isTTY === true) {
+            ux.action.start(action, status, { stdout: true });
+        } else {
+            console.log(`${action}... ${status ?? ''}`);
+        }
     }
 
     /**
@@ -95,7 +99,11 @@ export class CommonUtils {
         if (!task || !task.active) {
             CommonUtils.startCliAction(status);
         } else {
-            task.status = status;
+            if (process.stdout?.isTTY === true) {
+                task.status = status;
+            } else {
+                console.log(`${task.action}... ${status ?? ''}`);
+            }
         }
     }
 
