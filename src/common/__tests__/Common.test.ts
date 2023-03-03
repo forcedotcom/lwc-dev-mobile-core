@@ -266,4 +266,36 @@ describe('Commons utils tests', () => {
             expect(common.Version.from(invalidVersion)).toBeNull();
         }
     });
+
+    test('compare versions', () => {
+        expect(
+            common.Version.same('1.2.3', common.Version.from('1.2.3')!)
+        ).toBe(true);
+
+        expect(
+            common.Version.sameOrNewer('1.2.3', common.Version.from('3.2.1')!)
+        ).toBe(false);
+
+        expect(common.Version.same('Tiramisu', 'Tiramisu')).toBe(true);
+
+        expect(common.Version.sameOrNewer('Tiramisu', 'Tiramisu')).toBe(true);
+
+        expect(
+            common.Version.sameOrNewer(
+                'Tiramisu',
+                common.Version.from('1.2.3')!
+            )
+        ).toBe(true);
+
+        expect(
+            common.Version.sameOrNewer(
+                common.Version.from('1.2.3')!,
+                'Tiramisu'
+            )
+        ).toBe(false);
+
+        expect(() => {
+            common.Version.sameOrNewer('Tiramisu', 'UpsideDownCake');
+        }).toThrow();
+    });
 });

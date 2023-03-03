@@ -236,7 +236,8 @@ export class IOSUtils {
                         return false;
                     }
 
-                    return configuredRuntimeVersion.sameOrNewer(
+                    return Version.sameOrNewer(
+                        configuredRuntimeVersion,
                         minSupportedRuntimeIOS
                     );
                 }

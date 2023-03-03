@@ -263,7 +263,9 @@ describe('Android utils', () => {
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );
-        expect(apiPackage.version.same(Version.from(testAvdApi)!)).toBe(true);
+        expect(
+            Version.same(apiPackage.version, Version.from(testAvdApi)!)
+        ).toBe(true);
     });
 
     test('Should not find a preferred Android package', async () => {

@@ -72,47 +72,11 @@ describe('Setup Tests', () => {
         }
     });
 
-    test('Checks that Setup fails for invalid API Level flag', async () => {
-        const setup = makeSetup(PlatformType.android, 'not-a-number');
-
-        expect.assertions(2);
-        try {
-            await setup.init();
-            await setup.run();
-        } catch (error) {
-            expect(error instanceof SfError).toBe(true);
-            expect((error as SfError).message).toContain(
-                util.format(
-                    messages.getMessage('error:invalidFlagValue'),
-                    'not-a-number'
-                )
-            );
-        }
-    });
-
     test('Checks that Setup will still validate API Level flag for iOS platform if passed a value', async () => {
-        expect.assertions(3);
-
-        let setup = makeSetup(PlatformType.ios, '1.2.3');
+        const setup = makeSetup(PlatformType.ios, '1.2.3');
         await setup.init();
         await setup.run();
         expect(executeSetupMock).toHaveBeenCalled();
-
-        const invalidVersionFlag = 'not-a-number';
-
-        setup = makeSetup(PlatformType.ios, invalidVersionFlag);
-        try {
-            await setup.init();
-            await setup.run();
-        } catch (error) {
-            expect(error instanceof SfError).toBe(true);
-            expect((error as SfError).message).toContain(
-                util.format(
-                    messages.getMessage('error:invalidFlagValue'),
-                    'not-a-number'
-                )
-            );
-        }
     });
 
     test('Logger must be initialized and invoked', async () => {

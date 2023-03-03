@@ -37,10 +37,7 @@ export class AndroidMockData {
     public static badMockRawPackagesString =
         'Installed packages:=====================]';
 
-    // NB: There are two codename packages in the output above, which should be
-    // ignored by parsing as of this release. This value represents an implicit
-    // test of discarding that data. The real count above is this value + 2.
-    public static mockRawStringPackageLength = 15;
+    public static mockRawStringPackageLength = 17;
 
     public static avdList = `
       Available Android Virtual Devices:
