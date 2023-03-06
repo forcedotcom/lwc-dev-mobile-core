@@ -74,19 +74,13 @@ export class AndroidPackages {
                                 versionString.indexOf(';')
                             );
                         }
-                        const version = Version.from(versionString);
+                        let version: Version | string | null =
+                            Version.from(versionString);
                         if (version === null) {
-                            // Android can deviate from the x[.y[.z]] version pattern when delivering
-                            // "beta" versions, and will instead use a "codename" in its place. For
-                            // example: system-images;android-Tiramisu;google_apis;x86_64
-                            //
-                            // In the future, we'd like to consider these versions as valid "bleeding edge"
-                            // resources available for use. For now, we're ignoring them to avert
-                            // otherwise unhandled errors with the non-standard versioning.
                             this.logger.warn(
-                                `parseRawPackagesString(): Version in '${path}' is in an unsupported version format. Ignoring.`
+                                `parseRawPackagesString(): '${versionString}' does not follow semantic versioning format... will consider it as a codename.`
                             );
-                            continue;
+                            version = versionString;
                         }
                         const description = rawStringSplits[2].trim();
                         const locationOfPack =
@@ -172,13 +166,13 @@ export class AndroidPackage {
     }
 
     public path: string;
-    public version: Version;
+    public version: Version | string;
     public description: string;
     public location: string;
 
     constructor(
         path: string,
-        version: Version,
+        version: Version | string,
         description: string,
         location: string
     ) {
@@ -231,7 +225,7 @@ export class AndroidVirtualDevice {
 
             if (name && device && path && target && api) {
                 const filePath = path.replace(`${name}.avd`, `${name}.ini`);
-                let apiLevel: Version | null = new Version(0, 0, 0);
+                let apiLevel: Version | string | null = null;
                 try {
                     const configFile = fs.readFileSync(filePath, 'utf8');
                     const targetAPI = configFile
@@ -243,17 +237,10 @@ export class AndroidVirtualDevice {
                         .map((entry) => entry.replace('android-', ''));
                     apiLevel = Version.from(targetAPI[0]);
                     if (apiLevel === null) {
-                        // Android can deviate from the x[.y[.z]] version pattern when delivering
-                        // "beta" versions, and will instead use a "codename" in its place. For
-                        // example: system-images;android-Tiramisu;google_apis;x86_64
-                        //
-                        // In the future, we'd like to consider these versions as valid "bleeding edge"
-                        // resources available for use. For now, we're ignoring them to avert
-                        // otherwise unhandled errors with the non-standard versioning.
                         this.logger.warn(
-                            `parseRawString(): Version found in '${targetAPI[0]}' is in an unsupported version format. Ignoring.`
+                            `parseRawString(): '${targetAPI[0]}' does not follow semantic versioning format... will consider it as a codename.`
                         );
-                        continue;
+                        apiLevel = targetAPI[0];
                     }
                 } catch (error) {
                     // fetching apiLevel is a best effort, so ignore and continue
@@ -348,7 +335,7 @@ export class AndroidVirtualDevice {
     public path: string;
     public target: string;
     public api: string;
-    public apiLevel: Version;
+    public apiLevel: Version | string;
 
     constructor(
         name: string,
@@ -356,7 +343,7 @@ export class AndroidVirtualDevice {
         path: string,
         target: string,
         api: string,
-        apiLevel: Version
+        apiLevel: Version | string
     ) {
         this.name = name;
         this.displayName = name.replace(/[_-]/gi, ' ').trim(); // eg. Pixel_XL --> Pixel XL, tv-emulator --> tv emulator

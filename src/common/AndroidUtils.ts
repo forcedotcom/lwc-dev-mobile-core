@@ -304,7 +304,7 @@ export class AndroidUtils {
                 }
 
                 const matchingPlatforms = allPackages.platforms.filter((pkg) =>
-                    pkg.version.sameOrNewer(minSupportedRuntime)
+                    Version.sameOrNewer(pkg.version, minSupportedRuntime)
                 );
                 this.logger.debug(
                     `fetchAllAvailableApiPackages(): Installed platforms with versions >= ${minSupportedRuntime}:\n${AndroidPackages.packageArrayAsString(
@@ -358,7 +358,9 @@ export class AndroidUtils {
                 }
 
                 // Sort the packages with latest version by negating the comparison result
-                results.sort((a, b) => a.version.compare(b.version) * -1);
+                results.sort(
+                    (a, b) => Version.compare(a.version, b.version) * -1
+                );
                 return Promise.resolve(results);
             });
     }
@@ -374,17 +376,17 @@ export class AndroidUtils {
     public static async fetchSupportedAndroidAPIPackage(
         apiLevel?: string
     ): Promise<AndroidPackage> {
-        let targetRuntime: Version | undefined;
+        let targetRuntime: Version | string | undefined;
         if (apiLevel !== undefined) {
             const parsedVersion = Version.from(apiLevel);
             if (parsedVersion === null) {
-                return Promise.reject(
-                    new SfError(
-                        `${apiLevel} is not a supported version format.`
-                    )
+                this.logger.warn(
+                    `fetchSupportedAndroidAPIPackage(): '${apiLevel}' does not follow semantic versioning format... will consider it as a codename.`
                 );
+                targetRuntime = apiLevel;
+            } else {
+                targetRuntime = parsedVersion;
             }
-            targetRuntime = parsedVersion;
         }
 
         return AndroidUtils.fetchAllAvailableApiPackages(true).then(
@@ -392,7 +394,7 @@ export class AndroidUtils {
                 let matchingPlatforms = packages;
                 if (targetRuntime) {
                     matchingPlatforms = packages.filter((pkg) =>
-                        pkg.version.same(targetRuntime!)
+                        Version.same(pkg.version, targetRuntime!)
                     );
                     if (matchingPlatforms.length < 1) {
                         return Promise.reject(
@@ -759,7 +761,9 @@ export class AndroidUtils {
                 }
 
                 // For API 29 or higher there are a few more steps to be done before we can remount after rooting
-                if (emulator.apiLevel.sameOrNewer(Version.from('29')!)) {
+                if (
+                    Version.sameOrNewer(emulator.apiLevel, Version.from('29')!)
+                ) {
                     const verificationIsAlreadyDisabled = (
                         await AndroidUtils.executeAdbCommandWithRetry(
                             'shell avbctl get-verification',
@@ -1377,20 +1381,17 @@ export class AndroidUtils {
         const installedSystemImages =
             await AndroidUtils.fetchInstalledSystemImages();
         const platformAPI = androidPackage.platformAPI;
+        const supportedImages =
+            PlatformConfig.androidConfig().supportedImages.join('|');
+        const supportedArchitectures =
+            PlatformConfig.androidConfig().supportedArchitectures.join('|');
+        const regex = RegExp(
+            `.*(${platformAPI}.*);(${supportedImages});(${supportedArchitectures})`
+        );
 
-        for (const architecture of PlatformConfig.androidConfig()
-            .supportedArchitectures) {
-            for (const image of PlatformConfig.androidConfig()
-                .supportedImages) {
-                for (const img of installedSystemImages) {
-                    if (
-                        img.path.match(
-                            `(${platformAPI};${image};${architecture})`
-                        ) !== null
-                    ) {
-                        return Promise.resolve(img);
-                    }
-                }
+        for (const img of installedSystemImages) {
+            if (img.path.match(regex) !== null) {
+                return Promise.resolve(img);
             }
         }
 

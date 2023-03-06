@@ -214,7 +214,7 @@ export class CommandLineUtils {
     }
 
     private static validateApiLevelFlag(flag: string): boolean {
-        return Version.from(flag) !== null;
+        return flag.trim().length > 0; // if it doesn't follow semver then we'll automatically consider it as a code name
     }
 
     private static validatePlatformFlag(flag: string): boolean {
@@ -276,38 +276,75 @@ export class Version {
     }
 
     /**
-     * Verifies that the input version is an exact match.
-     * @param inputVersion Input version object.
-     * @returns True if the input version is an exact match.
+     * Compares 2 version objects and returns true if they are the same.
+     * @param v1 The first version object (can be of type Version or string)
+     * @param v2 The second version object (can be of type Version or string)
+     * @returns True if the inputs represent the same version.
+     * @throws comparing 2 versions of type string is not supported and an error will be thrown.
      */
-    public same(inputVersion: Version): boolean {
-        return this.compare(inputVersion) === 0;
+    public static same(v1: Version | string, v2: Version | string): boolean {
+        return Version.compare(v1, v2) === 0;
     }
 
     /**
-     * Verifies that the input version is same or newer version.
-     * @param inputVersion Input version object.
-     * @returns True if the input version is same or newer version.
+     * Compares 2 version objects and returns true if the first version is same or newer than the second version.
+     * @param v1 The first version object (can be of type Version or string)
+     * @param v2 The second version object (can be of type Version or string)
+     * @returns True if the first version is same or newer than the second version.
+     * @throws comparing 2 versions of type string is not supported and an error will be thrown.
      */
-    public sameOrNewer(inputVersion: Version): boolean {
-        return this.compare(inputVersion) > -1;
+    public static sameOrNewer(
+        v1: Version | string,
+        v2: Version | string
+    ): boolean {
+        return Version.compare(v1, v2) >= 0;
     }
 
     /**
-     * Compares the version object to an input version and returns a number indicating the comparison result.
-     * @param inputVersion Input version object.
-     * @returns -1 if input version is newer, 0 if it is the same, and 1 if it is older.
+     * Compares 2 version objects and returns a number indicating the comparison result.
+     * @param v1 The first version object (can be of type Version or string)
+     * @param v2 The second version object (can be of type Version or string)
+     * @returns -1 if first version is older, 0 if it is the same, and 1 if it is newer.
+     * @throws comparing 2 versions of type string is not supported and an error will be thrown.
      */
-    public compare(another: Version): number {
-        const v1 = this.major * 100 + this.minor * 10 + this.patch;
-        const v2 = another.major * 100 + another.minor * 10 + another.patch;
+    public static compare(v1: Version | string, v2: Version | string): number {
+        const version1 = typeof v1 === 'string' ? Version.from(v1) : v1;
+        const version2 = typeof v2 === 'string' ? Version.from(v2) : v2;
 
-        if (v1 === v2) {
-            return 0;
-        } else if (v1 < v2) {
+        if (version1 === null && version2 === null) {
+            // They are both strings that represent codename versions. The only
+            // supported scenario is when they both are the same codename, otherwise
+            // we don't have a way of knowing which codename is newer than the other.
+            if (
+                v1.toString().localeCompare(v2.toString(), undefined, {
+                    sensitivity: 'accent'
+                }) === 0
+            ) {
+                return 0;
+            }
+            throw new Error('Comparing 2 codename versions is not supported.');
+        } else if (version1 === null) {
+            // v1 is a codenamed version and since on Android codenamed versions are always
+            // the "bleeding edge" (i.e the latest) then it will always be newer than v2.
+            return 1;
+        } else if (version2 === null) {
+            // same as the above comment, if v2 is a codenamed version then it is
+            // the latest and so v1 will always be older.
             return -1;
         } else {
-            return 1;
+            // they are both semver so convert to number and compare
+            const num1 =
+                version1.major * 100 + version1.minor * 10 + version1.patch;
+            const num2 =
+                version2.major * 100 + version2.minor * 10 + version2.patch;
+
+            if (num1 === num2) {
+                return 0;
+            } else if (num1 < num2) {
+                return -1;
+            } else {
+                return 1;
+            }
         }
     }
 
