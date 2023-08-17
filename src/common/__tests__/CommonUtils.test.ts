@@ -331,7 +331,8 @@ describe('CommonUtils', () => {
             isSocket() {
                 return false;
             },
-            name: name
+            name: name,
+            path: name
         };
     }
 });

@@ -257,9 +257,8 @@ describe('Android utils', () => {
         jest.spyOn(CommonUtils, 'executeCommandAsync').mockImplementation(
             myCommandBlockMock
         );
-        const apiPackage = await AndroidUtils.fetchSupportedAndroidAPIPackage(
-            testAvdApi
-        );
+        const apiPackage =
+            await AndroidUtils.fetchSupportedAndroidAPIPackage(testAvdApi);
         expect(apiPackage !== null && apiPackage.description !== null).toBe(
             true
         );

@@ -192,7 +192,7 @@ export class RequirementProcessor {
             },
             {
                 rendererOptions: {
-                    collapse: false,
+                    collapseSubtasks: false,
                     collapseErrors: false,
                     formatOutput: 'wrap'
                 }
