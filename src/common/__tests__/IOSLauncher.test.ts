@@ -70,7 +70,7 @@ describe('IOS Launcher tests', () => {
 
         expect(launchUrlMock).toHaveBeenCalledWith(
             'F2B4097F-F33E-4D8A-8FFF-CE49F8D6C178',
-            'http://localhost:3333/lwc/preview/c/helloWorld'
+            'http://localhost:3333'
         );
     });
 

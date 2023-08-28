@@ -104,9 +104,8 @@ export class IOSLauncher {
                 const port = useServer ? serverPort : undefined;
 
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
-                    const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
-                    const url = `${address}:${port}/lwc/preview/${compPath}`;
-                    CommonUtils.stopCliAction(
+                    const url = `${address}:${port}`;
+                    CommonUtils.updateCliAction(
                         util.format(
                             messages.getMessage('launchBrowserStatus'),
                             url
@@ -114,7 +113,7 @@ export class IOSLauncher {
                     );
                     return IOSUtils.launchURLInBootedSimulator(deviceUDID, url);
                 } else {
-                    CommonUtils.stopCliAction(
+                    CommonUtils.updateCliAction(
                         util.format(
                             messages.getMessage('launchAppStatus'),
                             targetApp

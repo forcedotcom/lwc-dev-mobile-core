@@ -43,15 +43,6 @@ describe('Preview utils tests', () => {
         ).toBe(androidAppConfig.preview_server_enabled);
     });
 
-    test('Checks for adding prefix to component route', async () => {
-        expect(PreviewUtils.prefixRouteIfNeeded('helloWorld')).toBe(
-            'c/helloWorld'
-        );
-        expect(PreviewUtils.prefixRouteIfNeeded('c/helloWorld')).toBe(
-            'c/helloWorld'
-        );
-    });
-
     test('Config validation fails when app id is not defined', async () => {
         const json = '{"apps": {"ios": [{"name": "LWC Test App"}]}}';
         const configFileJson = JSON.parse(json);
