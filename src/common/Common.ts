@@ -78,6 +78,7 @@ export enum FlagsConfigType {
 export class CommandLineUtils {
     public static IOS_FLAG = 'ios';
     public static ANDROID_FLAG = 'android';
+    public static DESKTOP_FLAG = 'desktop';
 
     /**
      * Checks to see if a flag is targeting iOS.
@@ -85,10 +86,7 @@ export class CommandLineUtils {
      * @returns True if flag is targeting iOS.
      */
     public static platformFlagIsIOS(input: string): boolean {
-        if (input) {
-            return input.toLowerCase() === CommandLineUtils.IOS_FLAG;
-        }
-        return false;
+        return (input ?? '').trim().toLowerCase() === CommandLineUtils.IOS_FLAG;
     }
 
     /**
@@ -97,21 +95,19 @@ export class CommandLineUtils {
      * @returns True if flag is targeting Android.
      */
     public static platformFlagIsAndroid(input: string): boolean {
-        if (input) {
-            return input.toLowerCase() === CommandLineUtils.ANDROID_FLAG;
-        }
-        return false;
+        return (
+            (input ?? '').trim().toLowerCase() === CommandLineUtils.ANDROID_FLAG
+        );
     }
 
     /**
-     * Checks to see if a platform flag has a valid value.
-     * @param platformFlag The platform flag.
-     * @returns True if flag is valid (i.e either targeting iOS or Android).
+     * Checks to see if a flag is targeting Desktop.
+     * @param input The input flag.
+     * @returns True if flag is targeting Desktop.
      */
-    public static platformFlagIsValid(platformFlag: string) {
+    public static platformFlagIsDesktop(input: string): boolean {
         return (
-            CommandLineUtils.platformFlagIsIOS(platformFlag) ||
-            CommandLineUtils.platformFlagIsAndroid(platformFlag)
+            (input ?? '').trim().toLowerCase() === CommandLineUtils.DESKTOP_FLAG
         );
     }
 
@@ -131,7 +127,29 @@ export class CommandLineUtils {
         }
     }
 
-    public static createFlag(type: FlagsConfigType, isRequired: boolean): any {
+    /**
+     * Checks to see if a platform flag has a valid value.
+     * @param platformFlag The platform flag.
+     * @param includeDesktop Indicates whether Desktop is allowed as a target platform. Defaults to false.
+     * @returns True if flag is valid.
+     */
+    public static platformFlagIsValid(
+        platformFlag: string,
+        includeDesktop = false
+    ) {
+        return (
+            CommandLineUtils.platformFlagIsIOS(platformFlag) ||
+            CommandLineUtils.platformFlagIsAndroid(platformFlag) ||
+            (includeDesktop &&
+                CommandLineUtils.platformFlagIsDesktop(platformFlag))
+        );
+    }
+
+    public static createFlag(
+        type: FlagsConfigType,
+        isRequired: boolean,
+        supportsDesktop = false
+    ): any {
         switch (type) {
             case FlagsConfigType.ApiLevel:
                 return {
@@ -148,11 +166,17 @@ export class CommandLineUtils {
                 return {
                     platform: Flags.string({
                         char: 'p',
-                        description: messages.getMessage(
-                            'platformFlagDescription'
-                        ),
+                        description: supportsDesktop
+                            ? messages.getMessage(
+                                  'platformFlagIncludingDesktopDescription'
+                              )
+                            : messages.getMessage(
+                                  'platformFlagMobileOnlyDescription'
+                              ),
                         required: isRequired,
-                        validate: CommandLineUtils.validatePlatformFlag
+                        validate: supportsDesktop
+                            ? CommandLineUtils.validatePlatformFlagIncludingDesktop
+                            : CommandLineUtils.validatePlatformFlagMobileOnly
                     })
                 };
             case FlagsConfigType.LogLevel:
@@ -217,8 +241,12 @@ export class CommandLineUtils {
         return flag.trim().length > 0; // if it doesn't follow semver then we'll automatically consider it as a code name
     }
 
-    private static validatePlatformFlag(flag: string): boolean {
-        return CommandLineUtils.platformFlagIsValid(flag);
+    private static validatePlatformFlagMobileOnly(flag: string): boolean {
+        return CommandLineUtils.platformFlagIsValid(flag, false);
+    }
+
+    private static validatePlatformFlagIncludingDesktop(flag: string): boolean {
+        return CommandLineUtils.platformFlagIsValid(flag, true);
     }
 }
 
