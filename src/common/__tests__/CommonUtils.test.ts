@@ -10,6 +10,11 @@ import fs from 'fs';
 import path from 'path';
 
 describe('CommonUtils', () => {
+    beforeEach(() => {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        jest.spyOn(CommonUtils, 'startCliAction').mockImplementation(() => {});
+    });
+
     test('replaceTokens function', async () => {
         const template =
             // tslint:disable-next-line:no-invalid-template-strings

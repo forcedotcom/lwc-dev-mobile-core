@@ -26,7 +26,8 @@
     "bootTimeOut": "Timeout waiting for %s to boot.",
     "powerOffTimeOut": "Timeout waiting for %s to power off.",
 
-    "platformFlagDescription": "Specify platform ('iOS' or 'Android').",
+    "platformFlagMobileOnlyDescription": "Specify platform ('iOS' or 'Android').",
+    "platformFlagIncludingDesktopDescription": "Specify platform ('Desktop' or 'iOS' or 'Android').",
     "apiLevelFlagDescription": "Specify Android API level. Defaults to the latest API level installed.",
     "jsonFlagDescription": "Format output as json.",
     "logLevelFlagDescription": "Logging level for this command invocation (options: TRACE, DEBUG, INFO, WARN, ERROR, FATAL).",

@@ -152,7 +152,7 @@ describe('Commons utils tests', () => {
         );
         expect(platformFlagConfig.platform).toBeDefined();
         expect(platformFlagConfig.platform!.description).toBe(
-            messages.getMessage('platformFlagDescription')
+            messages.getMessage('platformFlagMobileOnlyDescription')
         );
         let requiredKeyValuePair = Object.entries(
             platformFlagConfig.platform!
