@@ -40,6 +40,7 @@ export class AndroidLauncher {
      * @param targetApp The bundle ID of the app to be launched.
      * @param appConfig An AndroidAppPreviewConfig object containing app configuration info.
      * @param serverPort The port for local dev server.
+     * @param targettingLwrServer Indicates whether we're previewing using LWC Dev Server (default behavior) or LWR Server.
      */
     public async launchPreview(
         compName: string,
@@ -47,7 +48,8 @@ export class AndroidLauncher {
         appBundlePath: string | undefined,
         targetApp: string,
         appConfig: AndroidAppPreviewConfig | undefined,
-        serverPort: string
+        serverPort: string,
+        targettingLwrServer: boolean = false
     ): Promise<void> {
         const preferredPack =
             await AndroidUtils.fetchSupportedEmulatorImagePackage();
@@ -103,9 +105,16 @@ export class AndroidLauncher {
                 const port = useServer ? serverPort : undefined;
 
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
-                    const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
-                    const url = `${address}:${port}/lwc/preview/${compPath}`;
-                    CommonUtils.stopCliAction(
+                    let url = '';
+                    if (targettingLwrServer) {
+                        url = `${address}:${port}`;
+                    } else {
+                        const compPath =
+                            PreviewUtils.prefixRouteIfNeeded(compName);
+                        url = `${address}:${port}/lwc/preview/${compPath}`;
+                    }
+
+                    CommonUtils.updateCliAction(
                         util.format(
                             messages.getMessage('launchBrowserStatus'),
                             url
@@ -113,7 +122,7 @@ export class AndroidLauncher {
                     );
                     return AndroidUtils.launchURLIntent(url, emulatorPort);
                 } else {
-                    CommonUtils.stopCliAction(
+                    CommonUtils.updateCliAction(
                         util.format(
                             messages.getMessage('launchAppStatus'),
                             targetApp
