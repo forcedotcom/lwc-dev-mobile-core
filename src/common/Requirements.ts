@@ -153,7 +153,7 @@ export class RequirementProcessor {
                     });
                     for (const requirement of enabledRequirements) {
                         subTasks.add({
-                            options: { persistentOutput: true },
+                            rendererOptions: { persistentOutput: true },
                             task: (_subCtx, subTask): Promise<void> =>
                                 WrappedPromise(requirement).then((result) => {
                                     testResult.tests.push(result);
