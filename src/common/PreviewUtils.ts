@@ -120,10 +120,9 @@ export class PreviewUtils {
     ): string | undefined {
         if (appConfig.get_app_bundle) {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const module = require(path.resolve(
-                basePath,
-                appConfig.get_app_bundle
-            ));
+            const module = require(
+                path.resolve(basePath, appConfig.get_app_bundle)
+            );
             return module.run();
         } else {
             return undefined;
