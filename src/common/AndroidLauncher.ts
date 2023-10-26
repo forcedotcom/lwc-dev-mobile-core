@@ -40,7 +40,7 @@ export class AndroidLauncher {
      * @param targetApp The bundle ID of the app to be launched.
      * @param appConfig An AndroidAppPreviewConfig object containing app configuration info.
      * @param serverPort The port for local dev server.
-     * @param targettingLwrServer Indicates whether we're previewing using LWC Dev Server (default behavior) or LWR Server.
+     * @param targetingLwrServer Indicates whether we're previewing using LWC Dev Server (default behavior) or LWR Server.
      */
     public async launchPreview(
         compName: string,
@@ -49,7 +49,7 @@ export class AndroidLauncher {
         targetApp: string,
         appConfig: AndroidAppPreviewConfig | undefined,
         serverPort: string,
-        targettingLwrServer: boolean = false
+        targetingLwrServer: boolean = false
     ): Promise<void> {
         const preferredPack =
             await AndroidUtils.fetchSupportedEmulatorImagePackage();
@@ -106,7 +106,7 @@ export class AndroidLauncher {
 
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
                     let url = '';
-                    if (targettingLwrServer) {
+                    if (targetingLwrServer) {
                         url = `${address}:${port}`;
                     } else {
                         const compPath =

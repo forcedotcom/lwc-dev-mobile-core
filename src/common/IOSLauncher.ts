@@ -40,7 +40,7 @@ export class IOSLauncher {
      * @param targetApp The bundle ID of the app to be launched.
      * @param appConfig An AndroidAppPreviewConfig object containing app configuration info.
      * @param serverPort The port for local dev server.
-     * @param targettingLwrServer Indicates whether we're previewing using LWC Dev Server (default behavior) or LWR Server.
+     * @param targetingLwrServer Indicates whether we're previewing using LWC Dev Server (default behavior) or LWR Server.
      */
     public async launchPreview(
         compName: string,
@@ -49,7 +49,7 @@ export class IOSLauncher {
         targetApp: string,
         appConfig: IOSAppPreviewConfig | undefined,
         serverPort: string,
-        targettingLwrServer: boolean = false
+        targetingLwrServer: boolean = false
     ): Promise<void> {
         const availableDevices: string[] = await IOSUtils.getSupportedDevices();
         const supportedRuntimes: string[] =
@@ -107,7 +107,7 @@ export class IOSLauncher {
 
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
                     let url = '';
-                    if (targettingLwrServer) {
+                    if (targetingLwrServer) {
                         url = `${address}:${port}`;
                     } else {
                         const compPath =
