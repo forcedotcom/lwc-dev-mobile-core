@@ -6,7 +6,7 @@
  */
 import { Config } from '@oclif/core/lib/config';
 import { Options } from '@oclif/core/lib/interfaces';
-import { Logger, Messages, SfError } from '@salesforce/core';
+import { Messages, SfError } from '@salesforce/core';
 import util from 'util';
 import { LoggerSetup } from '../../../../../../common/LoggerSetup';
 import { RequirementProcessor } from '../../../../../../common/Requirements';
@@ -80,15 +80,16 @@ describe('Setup Tests', () => {
     });
 
     test('Logger must be initialized and invoked', async () => {
-        const logger = new Logger('test-logger');
-        const loggerSpy = jest.spyOn(logger, 'info');
-        const setup = makeSetup(PlatformType.ios);
-        jest.spyOn(Logger, 'child').mockReturnValue(Promise.resolve(logger));
         const LoggerSetupSpy = jest.spyOn(
             LoggerSetup,
             'initializePluginLoggers'
         );
+
+        const setup = makeSetup(PlatformType.ios);
         await setup.init();
+
+        const loggerSpy = jest.spyOn(setup.logger, 'info');
+
         await setup.run();
         expect(loggerSpy).toHaveBeenCalled();
         expect(LoggerSetupSpy).toHaveBeenCalled();

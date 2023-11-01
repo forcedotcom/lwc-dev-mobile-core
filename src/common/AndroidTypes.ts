@@ -17,14 +17,8 @@ export class AndroidPackages {
     /**
      * Initialize the logger used by AndroidPackages.
      */
-    public static async initializeLogger(
-        level?: LoggerLevelValue
-    ): Promise<void> {
-        AndroidPackages.logger = await Logger.child(
-            ANDROID_PACKAGES_LOGGER_NAME
-        );
+    public static initializeLogger(level?: LoggerLevelValue) {
         AndroidPackages.logger.setLevel(level);
-        return Promise.resolve();
     }
 
     /**
@@ -109,9 +103,6 @@ export class AndroidPackages {
         return packages;
     }
 
-    public platforms: AndroidPackage[] = [];
-    public systemImages: AndroidPackage[] = [];
-
     /**
      * Checks to see if the object is empty (i.e the platforms and system images are both empty)
      * @returns True if empty, false otherwise.
@@ -145,6 +136,8 @@ export class AndroidPackages {
         return retString;
     }
 
+    public platforms: AndroidPackage[] = [];
+    public systemImages: AndroidPackage[] = [];
     private static logger: Logger = new Logger(ANDROID_PACKAGES_LOGGER_NAME);
 }
 
@@ -196,14 +189,8 @@ export class AndroidVirtualDevice {
     /**
      * Initialize the logger used by AndroidVirtualDevice.
      */
-    public static async initializeLogger(
-        level?: LoggerLevelValue
-    ): Promise<void> {
-        AndroidVirtualDevice.logger = await Logger.child(
-            ANDROID_VIRTUAL_DEVICE_LOGGER_NAME
-        );
+    public static initializeLogger(level?: LoggerLevelValue) {
         AndroidVirtualDevice.logger.setLevel(level);
-        return Promise.resolve();
     }
 
     /**

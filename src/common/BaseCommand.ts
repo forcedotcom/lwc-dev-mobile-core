@@ -52,23 +52,17 @@ export abstract class BaseCommand
             .then(() => this.parse())
             .then((parserOutput) => {
                 this._flagValues = parserOutput.flags;
-                return Logger.child(this.commandName);
+                return new Logger(this.commandName);
             })
             .then((logger) => {
                 // extract the log level flag (if any) and
                 // set the logger's level to this value
-                const logLevelFlag: string | undefined = (
-                    this._flagValues.loglevel as string
-                )
-                    ?.trim()
-                    ?.toUpperCase();
-                const logLevel =
-                    logLevelFlag && (<any>LoggerLevel)[logLevelFlag];
+                const logLevel = this.getLogLevel(this._flagValues.loglevel);
                 logger.setLevel(logLevel);
                 this._logger = logger;
-                return LoggerSetup.initializePluginLoggers(logLevel);
-            })
-            .then(() => this.populateCommandRequirements());
+                LoggerSetup.initializePluginLoggers(logLevel);
+                return this.populateCommandRequirements();
+            });
     }
 
     // Loops over all of the flags of a command and checks to see
@@ -95,5 +89,38 @@ export abstract class BaseCommand
                 flag[1].parse = CommandLineUtils.flagParser;
             }
         });
+    }
+
+    private getLogLevel(level?: string): LoggerLevel {
+        const normalized = (level ?? '').trim().toLocaleLowerCase();
+
+        switch (normalized) {
+            case '10':
+            case 'trace':
+                return LoggerLevel.TRACE;
+
+            case '20':
+            case 'debug':
+                return LoggerLevel.DEBUG;
+
+            case '30':
+            case 'info':
+                return LoggerLevel.INFO;
+
+            case '40':
+            case 'warn':
+                return LoggerLevel.WARN;
+
+            case '50':
+            case 'error':
+                return LoggerLevel.ERROR;
+
+            case '60':
+            case 'fatal':
+                return LoggerLevel.FATAL;
+
+            default:
+                return LoggerLevel.WARN;
+        }
     }
 }
