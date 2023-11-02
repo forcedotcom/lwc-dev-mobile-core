@@ -9,7 +9,7 @@ import { CommonUtils } from './CommonUtils';
 import net from 'net';
 import util from 'util';
 
-const LOGGER_NAME = 'force:lightning:local:iosutils';
+const LOGGER_NAME = 'force:lightning:local:macnetworkutils';
 
 export interface ProxySetting {
     proxyAutoConfigEnable?: number;
@@ -26,12 +26,8 @@ export class MacNetworkUtils {
     /**
      * Initialized the logger used by MacNetworkUtils
      */
-    public static async initializeLogger(
-        level?: LoggerLevelValue
-    ): Promise<void> {
-        MacNetworkUtils.logger = await Logger.child(LOGGER_NAME);
+    public static initializeLogger(level?: LoggerLevelValue) {
         MacNetworkUtils.logger.setLevel(level);
-        return Promise.resolve();
     }
 
     /**

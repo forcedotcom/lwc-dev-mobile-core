@@ -32,12 +32,8 @@ export class IOSUtils {
     /**
      * Initialized the logger used by IOSUtils
      */
-    public static async initializeLogger(
-        level?: LoggerLevelValue
-    ): Promise<void> {
-        IOSUtils.logger = await Logger.child(LOGGER_NAME);
+    public static initializeLogger(level?: LoggerLevelValue) {
         IOSUtils.logger.setLevel(level);
-        return Promise.resolve();
     }
 
     /**

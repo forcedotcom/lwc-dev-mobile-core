@@ -50,12 +50,8 @@ export class AndroidUtils {
     /**
      * Initialized the logger used by AndroidUtils
      */
-    public static async initializeLogger(
-        level?: LoggerLevelValue
-    ): Promise<void> {
-        AndroidUtils.logger = await Logger.child(LOGGER_NAME);
+    public static initializeLogger(level?: LoggerLevelValue) {
         AndroidUtils.logger.setLevel(level);
-        return Promise.resolve();
     }
 
     /**

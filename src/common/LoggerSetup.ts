@@ -15,15 +15,12 @@ export class LoggerSetup {
     /**
      * Initializes all of the loggers that various utility libraries use (such as AndroidUtils, IOSUtils, CommonUtils)
      */
-    public static async initializePluginLoggers(
-        level?: LoggerLevelValue
-    ): Promise<void> {
-        await AndroidUtils.initializeLogger(level);
-        await IOSUtils.initializeLogger(level);
-        await CommonUtils.initializeLogger(level);
-        await MacNetworkUtils.initializeLogger(level);
-        await AndroidPackages.initializeLogger(level);
-        await AndroidVirtualDevice.initializeLogger(level);
-        return Promise.resolve();
+    public static initializePluginLoggers(level?: LoggerLevelValue) {
+        AndroidUtils.initializeLogger(level);
+        IOSUtils.initializeLogger(level);
+        CommonUtils.initializeLogger(level);
+        MacNetworkUtils.initializeLogger(level);
+        AndroidPackages.initializeLogger(level);
+        AndroidVirtualDevice.initializeLogger(level);
     }
 }

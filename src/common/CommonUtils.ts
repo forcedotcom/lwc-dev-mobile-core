@@ -34,12 +34,8 @@ export class CommonUtils {
     /**
      * Initializes the logger used by CommonUtils for logging activities.
      */
-    public static async initializeLogger(
-        level?: LoggerLevelValue
-    ): Promise<void> {
-        CommonUtils.logger = await Logger.child(LOGGER_NAME);
+    public static initializeLogger(level?: LoggerLevelValue) {
         CommonUtils.logger.setLevel(level);
-        return Promise.resolve();
     }
 
     /**
