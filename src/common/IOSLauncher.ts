@@ -5,26 +5,18 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Messages } from '@salesforce/core';
-import util from 'util';
-import { IOSUtils } from './IOSUtils';
-import { IOSAppPreviewConfig, LaunchArgument } from './PreviewConfigFile';
-import { CommonUtils } from './CommonUtils';
-import { PreviewUtils } from './PreviewUtils';
+import { IOSUtils } from './IOSUtils.js';
+import { IOSAppPreviewConfig, LaunchArgument } from './PreviewConfigFile.js';
+import { CommonUtils } from './CommonUtils.js';
+import { PreviewUtils } from './PreviewUtils.js';
 
-// Initialize Messages with the current plugin directory
-Messages.importMessagesDirectory(__dirname);
-
-// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
-// or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'common'
-);
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export class IOSLauncher {
     private simulatorName: string;
 
-    constructor(simulatorName: string) {
+    public constructor(simulatorName: string) {
         this.simulatorName = simulatorName;
     }
 
@@ -52,56 +44,29 @@ export class IOSLauncher {
         targetingLwrServer: boolean = false
     ): Promise<void> {
         const availableDevices: string[] = await IOSUtils.getSupportedDevices();
-        const supportedRuntimes: string[] =
-            await IOSUtils.getSupportedRuntimes();
-        const currentSimulator = await IOSUtils.getSimulator(
-            this.simulatorName
-        );
-        const currentSimulatorUDID: string | null =
-            currentSimulator && currentSimulator.udid;
+        const supportedRuntimes: string[] = await IOSUtils.getSupportedRuntimes();
+        const currentSimulator = await IOSUtils.getSimulator(this.simulatorName);
+        const currentSimulatorUDID = currentSimulator?.udid;
         let deviceUDID = '';
         CommonUtils.startCliAction(
             messages.getMessage('startPreviewAction'),
-            util.format(
-                messages.getMessage('searchForDeviceStatus'),
-                this.simulatorName
-            )
+            messages.getMessage('searchForDeviceStatus', [this.simulatorName])
         );
         if (!currentSimulatorUDID || currentSimulatorUDID.length === 0) {
-            CommonUtils.updateCliAction(
-                util.format(
-                    messages.getMessage('createDeviceStatus'),
-                    this.simulatorName
-                )
-            );
-            deviceUDID = await IOSUtils.createNewDevice(
-                this.simulatorName,
-                availableDevices[0],
-                supportedRuntimes[0]
-            );
+            CommonUtils.updateCliAction(messages.getMessage('createDeviceStatus', [this.simulatorName]));
+            deviceUDID = await IOSUtils.createNewDevice(this.simulatorName, availableDevices[0], supportedRuntimes[0]);
         } else {
-            CommonUtils.updateCliAction(
-                util.format(
-                    messages.getMessage('foundDeviceStatus'),
-                    this.simulatorName
-                )
-            );
+            CommonUtils.updateCliAction(messages.getMessage('foundDeviceStatus', [this.simulatorName]));
             deviceUDID = currentSimulatorUDID;
         }
 
         CommonUtils.updateCliAction(
-            util.format(
-                messages.getMessage('startDeviceStatus'),
-                `${this.simulatorName} (${deviceUDID})`
-            )
+            messages.getMessage('startDeviceStatus', [`${this.simulatorName} (${deviceUDID})`])
         );
         return IOSUtils.bootDevice(deviceUDID)
             .then(() => IOSUtils.launchSimulatorApp())
             .then(() => {
-                const useServer = PreviewUtils.useLwcServerForPreviewing(
-                    targetApp,
-                    appConfig
-                );
+                const useServer = PreviewUtils.useLwcServerForPreviewing(targetApp, appConfig);
                 const address = useServer ? 'http://localhost' : undefined; // TODO: dynamically determine server address
                 const port = useServer ? serverPort : undefined;
 
@@ -110,27 +75,15 @@ export class IOSLauncher {
                     if (targetingLwrServer) {
                         url = `${address}:${port}`;
                     } else {
-                        const compPath =
-                            PreviewUtils.prefixRouteIfNeeded(compName);
+                        const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
                         url = `${address}:${port}/lwc/preview/${compPath}`;
                     }
 
-                    CommonUtils.updateCliAction(
-                        util.format(
-                            messages.getMessage('launchBrowserStatus'),
-                            url
-                        )
-                    );
+                    CommonUtils.updateCliAction(messages.getMessage('launchBrowserStatus', [url]));
                     return IOSUtils.launchURLInBootedSimulator(deviceUDID, url);
                 } else {
-                    CommonUtils.updateCliAction(
-                        util.format(
-                            messages.getMessage('launchAppStatus'),
-                            targetApp
-                        )
-                    );
-                    const targetAppArguments: LaunchArgument[] =
-                        (appConfig && appConfig.launch_arguments) || [];
+                    CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
+                    const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
                     return IOSUtils.launchAppInBootedSimulator(
                         deviceUDID,
                         compName,
@@ -148,9 +101,7 @@ export class IOSLauncher {
                 return Promise.resolve();
             })
             .catch((error) => {
-                CommonUtils.stopCliAction(
-                    messages.getMessage('genericErrorStatus')
-                );
+                CommonUtils.stopCliAction(messages.getMessage('genericErrorStatus'));
                 throw error;
             });
     }

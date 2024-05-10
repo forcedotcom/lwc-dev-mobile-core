@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -5,21 +6,17 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, Messages, SfError } from '@salesforce/core';
-import util from 'util';
-import { AndroidUtils } from './AndroidUtils';
-import { PlatformConfig } from './PlatformConfig';
-import { Requirement, RequirementList } from './Requirements';
+import { AndroidUtils } from './AndroidUtils.js';
+import { PlatformConfig } from './PlatformConfig.js';
+import { Requirement, RequirementList } from './Requirements.js';
 
-Messages.importMessagesDirectory(__dirname);
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'requirement-android'
-);
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'requirement-android');
 
 export class AndroidEnvironmentRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    constructor(logger: Logger, apiLevel?: string) {
+    public constructor(logger: Logger, apiLevel?: string) {
         this.requirements = [
             new AndroidSDKRootSetRequirement(logger),
             new Java8AvailableRequirement(logger),
@@ -31,21 +28,16 @@ export class AndroidEnvironmentRequirements implements RequirementList {
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class AndroidSDKRootSetRequirement implements Requirement {
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(logger: Logger) {
+    public constructor(logger: Logger) {
         this.title = messages.getMessage('android:reqs:androidhome:title');
-        this.fulfilledMessage = messages.getMessage(
-            'android:reqs:androidhome:fulfilledMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'android:reqs:androidhome:unfulfilledMessage'
-        );
+        this.fulfilledMessage = 'android:reqs:androidhome:fulfilledMessage';
+        this.unfulfilledMessage = 'android:reqs:androidhome:unfulfilledMessage';
         this.logger = logger;
     }
 
@@ -56,37 +48,27 @@ export class AndroidSDKRootSetRequirement implements Requirement {
         const root = AndroidUtils.getAndroidSdkRoot();
         if (root) {
             return Promise.resolve(
-                AndroidUtils.convertToUnixPath(
-                    util.format(
-                        this.fulfilledMessage,
-                        root.rootSource,
-                        root.rootLocation
-                    )
-                )
+                messages.getMessage(this.fulfilledMessage, [
+                    AndroidUtils.convertToUnixPath(root.rootSource),
+                    AndroidUtils.convertToUnixPath(root.rootLocation)
+                ])
             );
         } else {
-            return Promise.reject(new SfError(this.unfulfilledMessage));
+            return Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage)));
         }
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class Java8AvailableRequirement implements Requirement {
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(logger: Logger) {
-        this.title = messages.getMessage(
-            'android:reqs:androidsdkprerequisitescheck:title'
-        );
-        this.fulfilledMessage = messages.getMessage(
-            'android:reqs:androidsdkprerequisitescheck:fulfilledMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'android:reqs:androidsdkprerequisitescheck:unfulfilledMessage'
-        );
+    public constructor(logger: Logger) {
+        this.title = messages.getMessage('android:reqs:androidsdkprerequisitescheck:title');
+        this.fulfilledMessage = 'android:reqs:androidsdkprerequisitescheck:fulfilledMessage';
+        this.unfulfilledMessage = 'android:reqs:androidsdkprerequisitescheck:unfulfilledMessage';
         this.logger = logger;
     }
 
@@ -94,36 +76,24 @@ export class Java8AvailableRequirement implements Requirement {
      * Verifies that prerequisites for Android SDK are met and that Java 8 is installed.
      */
     public async checkFunction(): Promise<string> {
-        return (
-            AndroidUtils.androidSDKPrerequisitesCheck()
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                .then((result) => Promise.resolve(this.fulfilledMessage))
-                .catch((error) =>
-                    Promise.reject(
-                        new SfError(
-                            util.format(this.unfulfilledMessage, error.message)
-                        )
-                    )
-                )
-        );
+        return AndroidUtils.androidSDKPrerequisitesCheck()
+            .then(() => Promise.resolve(messages.getMessage(this.fulfilledMessage)))
+            .catch((error) =>
+                Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage, [error.message])))
+            );
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class AndroidSDKToolsInstalledRequirement implements Requirement {
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
 
-    constructor(logger: Logger) {
+    public constructor(logger: Logger) {
         this.title = messages.getMessage('android:reqs:cmdlinetools:title');
-        this.fulfilledMessage = messages.getMessage(
-            'android:reqs:cmdlinetools:fulfilledMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'android:reqs:cmdlinetools:unfulfilledMessage'
-        );
+        this.fulfilledMessage = 'android:reqs:cmdlinetools:fulfilledMessage';
+        this.unfulfilledMessage = 'android:reqs:cmdlinetools:unfulfilledMessage';
         this.logger = logger;
     }
 
@@ -131,44 +101,26 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
      * Verifies that user has Android command line tools installed.
      */
     public async checkFunction(): Promise<string> {
-        return (
-            AndroidUtils.fetchAndroidCmdLineToolsLocation()
-                .then((result) =>
-                    Promise.resolve(
-                        AndroidUtils.convertToUnixPath(
-                            util.format(this.fulfilledMessage, result)
-                        )
-                    )
-                )
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                .catch((error) =>
-                    Promise.reject(new SfError(this.unfulfilledMessage))
-                )
-        );
+        return AndroidUtils.fetchAndroidCmdLineToolsLocation()
+            .then((result) =>
+                Promise.resolve(messages.getMessage(this.fulfilledMessage, [AndroidUtils.convertToUnixPath(result)]))
+            )
+            .catch(() => Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage))));
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
-export class AndroidSDKPlatformToolsInstalledRequirement
-    implements Requirement
-{
+export class AndroidSDKPlatformToolsInstalledRequirement implements Requirement {
     public title: string;
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
-    private notFoundMessage: string;
     public logger: Logger;
+    private notFoundMessage: string;
 
-    constructor(logger: Logger) {
+    public constructor(logger: Logger) {
         this.title = messages.getMessage('android:reqs:platformtools:title');
-        this.fulfilledMessage = messages.getMessage(
-            'android:reqs:platformtools:fulfilledMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'android:reqs:platformtools:unfulfilledMessage'
-        );
-        this.notFoundMessage = messages.getMessage(
-            'android:reqs:platformtools:notFound'
-        );
+        this.fulfilledMessage = 'android:reqs:platformtools:fulfilledMessage';
+        this.unfulfilledMessage = 'android:reqs:platformtools:unfulfilledMessage';
+        this.notFoundMessage = 'android:reqs:platformtools:notFound';
         this.logger = logger;
     }
 
@@ -178,30 +130,19 @@ export class AndroidSDKPlatformToolsInstalledRequirement
     public async checkFunction(): Promise<string> {
         return AndroidUtils.fetchAndroidSDKPlatformToolsLocation()
             .then((result) =>
-                Promise.resolve(
-                    AndroidUtils.convertToUnixPath(
-                        util.format(this.fulfilledMessage, result)
-                    )
-                )
+                Promise.resolve(messages.getMessage(this.fulfilledMessage, [AndroidUtils.convertToUnixPath(result)]))
             )
             .catch((error) => {
                 if (error.status === 127) {
                     return Promise.reject(
-                        new SfError(
-                            util.format(
-                                this.notFoundMessage,
-                                AndroidUtils.getAndroidPlatformTools()
-                            )
-                        )
+                        new SfError(messages.getMessage(this.notFoundMessage, [AndroidUtils.getAndroidPlatformTools()]))
                     );
                 } else {
                     return Promise.reject(
                         new SfError(
-                            util.format(
-                                this.unfulfilledMessage,
-                                PlatformConfig.androidConfig()
-                                    .minSupportedRuntime
-                            )
+                            messages.getMessage(this.unfulfilledMessage, [
+                                PlatformConfig.androidConfig().minSupportedRuntime
+                            ])
                         )
                     );
                 }
@@ -209,7 +150,6 @@ export class AndroidSDKPlatformToolsInstalledRequirement
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class PlatformAPIPackageRequirement implements Requirement {
     public title: string;
     public fulfilledMessage: string;
@@ -217,14 +157,10 @@ export class PlatformAPIPackageRequirement implements Requirement {
     public logger: Logger;
     private apiLevel?: string;
 
-    constructor(logger: Logger, apiLevel?: string) {
+    public constructor(logger: Logger, apiLevel?: string) {
         this.title = messages.getMessage('android:reqs:platformapi:title');
-        this.fulfilledMessage = messages.getMessage(
-            'android:reqs:platformapi:fulfilledMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'android:reqs:platformapi:unfulfilledMessage'
-        );
+        this.fulfilledMessage = 'android:reqs:platformapi:fulfilledMessage';
+        this.unfulfilledMessage = 'android:reqs:platformapi:unfulfilledMessage';
         this.logger = logger;
         this.apiLevel = apiLevel;
     }
@@ -233,30 +169,20 @@ export class PlatformAPIPackageRequirement implements Requirement {
      * Verifies that user has a supported Android API package that also has matching supported emulator images installed.
      */
     public async checkFunction(): Promise<string> {
-        return (
-            AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel)
-                .then((result) =>
-                    Promise.resolve(
-                        util.format(this.fulfilledMessage, result.platformAPI)
+        return AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel)
+            .then((result) => Promise.resolve(messages.getMessage(this.fulfilledMessage, [result.platformAPI])))
+            .catch(() =>
+                Promise.reject(
+                    new SfError(
+                        messages.getMessage(this.unfulfilledMessage, [
+                            PlatformConfig.androidConfig().minSupportedRuntime
+                        ])
                     )
                 )
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                .catch((error) =>
-                    Promise.reject(
-                        new SfError(
-                            util.format(
-                                this.unfulfilledMessage,
-                                PlatformConfig.androidConfig()
-                                    .minSupportedRuntime
-                            )
-                        )
-                    )
-                )
-        );
+            );
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class EmulatorImagesRequirement implements Requirement {
     public title: string;
     public fulfilledMessage: string;
@@ -264,14 +190,10 @@ export class EmulatorImagesRequirement implements Requirement {
     public logger: Logger;
     private apiLevel?: string;
 
-    constructor(logger: Logger, apiLevel?: string) {
+    public constructor(logger: Logger, apiLevel?: string) {
         this.title = messages.getMessage('android:reqs:emulatorimages:title');
-        this.fulfilledMessage = messages.getMessage(
-            'android:reqs:emulatorimages:fulfilledMessage'
-        );
-        this.unfulfilledMessage = messages.getMessage(
-            'android:reqs:emulatorimages:unfulfilledMessage'
-        );
+        this.fulfilledMessage = 'android:reqs:emulatorimages:fulfilledMessage';
+        this.unfulfilledMessage = 'android:reqs:emulatorimages:unfulfilledMessage';
         this.logger = logger;
         this.apiLevel = apiLevel;
     }
@@ -280,26 +202,16 @@ export class EmulatorImagesRequirement implements Requirement {
      * Verifies that user has at least one Android package with any of the supported emulator image targets (e.g. Google APIs, default, Google Play).
      */
     public async checkFunction(): Promise<string> {
-        return (
-            AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel)
-                .then((result) =>
-                    Promise.resolve(
-                        util.format(this.fulfilledMessage, result.path)
+        return AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel)
+            .then((result) => Promise.resolve(messages.getMessage(this.fulfilledMessage, [result.path])))
+            .catch(() =>
+                Promise.reject(
+                    new SfError(
+                        messages.getMessage(this.unfulfilledMessage, [
+                            PlatformConfig.androidConfig().supportedImages.join(',')
+                        ])
                     )
                 )
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                .catch((error) =>
-                    Promise.reject(
-                        new SfError(
-                            util.format(
-                                this.unfulfilledMessage,
-                                PlatformConfig.androidConfig().supportedImages.join(
-                                    ','
-                                )
-                            )
-                        )
-                    )
-                )
-        );
+            );
     }
 }

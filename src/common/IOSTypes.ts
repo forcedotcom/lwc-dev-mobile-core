@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/member-ordering */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -13,10 +18,7 @@ export class IOSSimulatorDevice {
      * @param supportedRuntimes String array including the runtimes that are supported.
      * @returns An array of IOSSimulatorDevice objects containing information about each simulator.
      */
-    public static parseJSONString(
-        jsonString: string,
-        supportedRuntimes: string[]
-    ): IOSSimulatorDevice[] {
+    public static parseJSONString(jsonString: string, supportedRuntimes: string[]): IOSSimulatorDevice[] {
         const DEVICES_KEY = 'devices';
         const NAME_KEY = 'name';
         const UDID_KEY = 'udid';
@@ -29,11 +31,9 @@ export class IOSSimulatorDevice {
 
         const simDevices: IOSSimulatorDevice[] = [];
 
-        const devicesJSON: any = JSON.parse(jsonString);
-        const runtimeDevices: any[] = devicesJSON[DEVICES_KEY] || [];
-        let runtimes: any[] = Object.keys(runtimeDevices).filter((key) => {
-            return key && key.match(runtimeMatchRegex);
-        });
+        const devicesJSON = JSON.parse(jsonString);
+        const runtimeDevices = devicesJSON[DEVICES_KEY] || [];
+        let runtimes = Object.keys(runtimeDevices).filter((key) => key?.match(runtimeMatchRegex));
         runtimes = runtimes.sort().reverse();
 
         for (const runtimeIdentifier of runtimes) {
@@ -55,13 +55,7 @@ export class IOSSimulatorDevice {
         // if someone starts a device by name (eg. iPhone 11), rather than udid, then the newer
         // version of iOS will be chosen as it will be first on the list.
         return simDevices.sort((a, b) =>
-            a.name == b.name
-                ? a.runtimeId > b.runtimeId
-                    ? -1
-                    : 1
-                : a.name < b.name
-                ? -1
-                : 1
+            a.name === b.name ? (a.runtimeId > b.runtimeId ? -1 : 1) : a.name < b.name ? -1 : 1
         );
     }
 
@@ -71,13 +65,7 @@ export class IOSSimulatorDevice {
     public runtimeId: string;
     public isAvailable: boolean;
 
-    constructor(
-        name: string,
-        udid: string,
-        state: string,
-        runtimeId: string,
-        isAvailable: boolean
-    ) {
+    public constructor(name: string, udid: string, state: string, runtimeId: string, isAvailable: boolean) {
         const runtime: string = runtimeId
             .replace('com.apple.CoreSimulator.SimRuntime.', '') // com.apple.CoreSimulator.SimRuntime.iOS-13-3-2 --> iOS-13-3-2
             .replace('-', ' ') // iOS-13-3-2 --> iOS 13-3-2

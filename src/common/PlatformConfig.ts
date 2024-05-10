@@ -27,7 +27,7 @@
  * NOTE: The same issue would occur if these classes were defined as JSON files and where imported
  * (i.e import iOSConfig from { IOSConfig.json } or similar for Android)
  */
-import os from 'os';
+import os from 'node:os';
 
 export class PlatformConfig {
     public static iOSConfig(): IOSConfig {
@@ -39,38 +39,27 @@ export class PlatformConfig {
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class IOSConfig {
     public readonly minSupportedRuntime: string = '13';
     public readonly defaultSimulatorName: string = 'SFDXSimulator';
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class AndroidConfig {
     public readonly minSupportedRuntime: string = '23';
-    public readonly supportedImages: string[] = [
-        'google_apis',
-        'default',
-        'google_apis_playstore'
-    ];
-    public readonly supportedDeviceTypes: string[] = [
-        'pixel',
-        'pixel_xl',
-        'pixel_c'
-    ];
+    public readonly supportedImages: string[] = ['google_apis', 'default', 'google_apis_playstore'];
+    public readonly supportedDeviceTypes: string[] = ['pixel', 'pixel_xl', 'pixel_c'];
     public readonly supportedArchitectures: string[];
     public readonly defaultEmulatorName: string = 'SFDXEmulator';
     public readonly defaultAdbPort: number = 5572;
+    // eslint-disable-next-line unicorn/numeric-separators-style
     public readonly deviceReadinessWaitTime: number = 120000;
     public readonly AdbNumRetryAttempts: number = 6;
     public readonly AdbRetryAttemptDelay: number = 500;
 
-    constructor() {
+    public constructor() {
         const cpu = os.cpus()[0].model;
         const isAppleSilicon = cpu.includes('Apple M');
 
-        this.supportedArchitectures = isAppleSilicon
-            ? ['arm64-v8a']
-            : ['x86_64', 'x86', 'arm64-v8a'];
+        this.supportedArchitectures = isAppleSilicon ? ['arm64-v8a'] : ['x86_64', 'x86', 'arm64-v8a'];
     }
 }

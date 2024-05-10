@@ -1,3 +1,10 @@
+/* eslint-disable @typescript-eslint/member-ordering */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -5,23 +12,15 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
-import util from 'util';
-import { Version } from '../common/Common';
-import { CommonUtils } from './CommonUtils';
-import { IOSSimulatorDevice } from './IOSTypes';
-import { PlatformConfig } from './PlatformConfig';
-import { LaunchArgument } from './PreviewConfigFile';
-import { PreviewUtils } from './PreviewUtils';
+import { Version } from '../common/Common.js';
+import { CommonUtils } from './CommonUtils.js';
+import { IOSSimulatorDevice } from './IOSTypes.js';
+import { PlatformConfig } from './PlatformConfig.js';
+import { LaunchArgument } from './PreviewConfigFile.js';
+import { PreviewUtils } from './PreviewUtils.js';
 
-// Initialize Messages with the current plugin directory
-Messages.importMessagesDirectory(__dirname);
-
-// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
-// or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'common'
-);
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 const XCRUN_CMD = '/usr/bin/xcrun';
 const DEVICE_TYPE_PREFIX = 'com.apple.CoreSimulator.SimDeviceType';
@@ -32,7 +31,7 @@ export class IOSUtils {
     /**
      * Initialized the logger used by IOSUtils
      */
-    public static initializeLogger(level?: LoggerLevelValue) {
+    public static initializeLogger(level?: LoggerLevelValue): void {
         IOSUtils.logger.setLevel(level);
     }
 
@@ -42,10 +41,7 @@ export class IOSUtils {
      * @param udid The UDID of the simulator to launch.
      * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
      */
-    public static async bootDevice(
-        udid: string,
-        waitForBoot = true
-    ): Promise<void> {
+    public static async bootDevice(udid: string, waitForBoot = true): Promise<void> {
         const command = `${XCRUN_CMD} simctl boot ${udid}`;
         return CommonUtils.executeCommandAsync(command)
             .then(() => {
@@ -57,11 +53,7 @@ export class IOSUtils {
             })
             .catch((error) => {
                 if (!IOSUtils.isDeviceAlreadyBootedError(error)) {
-                    return Promise.reject(
-                        new SfError(
-                            `The command '${command}' failed to execute ${error}`
-                        )
-                    );
+                    return Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`));
                 } else {
                     return Promise.resolve();
                 }
@@ -75,21 +67,11 @@ export class IOSUtils {
      * @param deviceType The type of device to use for the simulator (e.g iPhone-8)
      * @param runtime The runtime to use for the device (e.g iOS-13)
      */
-    public static async createNewDevice(
-        simulatorName: string,
-        deviceType: string,
-        runtime: string
-    ): Promise<string> {
+    public static async createNewDevice(simulatorName: string, deviceType: string, runtime: string): Promise<string> {
         const command = `${XCRUN_CMD} simctl create '${simulatorName}' ${DEVICE_TYPE_PREFIX}.${deviceType} ${RUNTIME_TYPE_PREFIX}.${runtime}`;
         return CommonUtils.executeCommandAsync(command)
             .then((result) => Promise.resolve(result.stdout.trim()))
-            .catch((error) =>
-                Promise.reject(
-                    new SfError(
-                        `The command '${command}' failed to execute ${error}`
-                    )
-                )
-            );
+            .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
     }
 
     /**
@@ -98,9 +80,7 @@ export class IOSUtils {
      * @param simulatorIdentifier The udid or the name for the simulator.
      * @returns An IOSSimulatorDevice object containing the info of a simulator, or NULL if not found.
      */
-    public static async getSimulator(
-        simulatorIdentifier: string
-    ): Promise<IOSSimulatorDevice | null> {
+    public static async getSimulator(simulatorIdentifier: string): Promise<IOSSimulatorDevice | null> {
         return IOSUtils.getSupportedSimulators()
             .then((devices) => {
                 for (const device of devices) {
@@ -111,9 +91,7 @@ export class IOSUtils {
                     }
                 }
 
-                IOSUtils.logger.info(
-                    `Unable to find simulator: ${simulatorIdentifier}`
-                );
+                IOSUtils.logger.info(`Unable to find simulator: ${simulatorIdentifier}`);
                 return Promise.resolve(null);
             })
             .catch((error) => {
@@ -127,23 +105,16 @@ export class IOSUtils {
      *
      * @returns An array of IOSSimulatorDevice objects containing the info about the supported simulators.
      */
-    public static async getSupportedSimulators(): Promise<
-        IOSSimulatorDevice[]
-    > {
+    public static async getSupportedSimulators(): Promise<IOSSimulatorDevice[]> {
         let supportedRuntimes: string[] = [];
 
         return IOSUtils.getSupportedRuntimes()
             .then((runtimes) => {
                 supportedRuntimes = runtimes;
-                return CommonUtils.executeCommandAsync(
-                    `${XCRUN_CMD} simctl list --json devices available`
-                );
+                return CommonUtils.executeCommandAsync(`${XCRUN_CMD} simctl list --json devices available`);
             })
             .then((result) => {
-                const devices = IOSSimulatorDevice.parseJSONString(
-                    result.stdout,
-                    supportedRuntimes
-                );
+                const devices = IOSSimulatorDevice.parseJSONString(result.stdout, supportedRuntimes);
 
                 return Promise.resolve(devices);
             })
@@ -165,36 +136,21 @@ export class IOSUtils {
                 const identifier = 'identifier';
                 const deviceTypesKey = 'devicetypes';
                 const deviceMatchRegex = /SimDeviceType.iPhone-[8,1,X]/;
-                const devicesObj: any = JSON.parse(result.stdout);
+                const devicesObj = JSON.parse(result.stdout);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const devices: any[] = devicesObj[deviceTypesKey] || [];
-                const matchedDevices: any[] = devices.filter((entry) => {
-                    return (
-                        entry[identifier] &&
-                        entry[identifier].match(deviceMatchRegex)
-                    );
-                });
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const matchedDevices: any[] = devices.filter((entry) => entry[identifier]?.match(deviceMatchRegex));
 
                 if (matchedDevices) {
-                    return Promise.resolve(
-                        matchedDevices.map(
-                            (entry) => entry.identifier.split('.')[4]
-                        )
-                    );
+                    return Promise.resolve(matchedDevices.map((entry) => entry.identifier.split('.')[4]));
                 } else {
                     return Promise.reject(
-                        new SfError(
-                            `Could not find any available devices. Command '${cmd}' returned an empty list.`
-                        )
+                        new SfError(`Could not find any available devices. Command '${cmd}' returned an empty list.`)
                     );
                 }
             })
-            .catch((error) =>
-                Promise.reject(
-                    new SfError(
-                        `Could not find any available devices. ${error}`
-                    )
-                )
-            );
+            .catch((error) => Promise.reject(new SfError(`Could not find any available devices. ${error}`)));
     }
 
     /**
@@ -204,40 +160,27 @@ export class IOSUtils {
      */
     public static async getSupportedRuntimes(): Promise<string[]> {
         return IOSUtils.getSimulatorRuntimes().then((configuredRuntimes) => {
-            const minSupportedRuntimeIOS = Version.from(
-                PlatformConfig.iOSConfig().minSupportedRuntime
-            );
+            const minSupportedRuntimeIOS = Version.from(PlatformConfig.iOSConfig().minSupportedRuntime);
             if (minSupportedRuntimeIOS === null) {
                 return Promise.reject(
-                    new SfError(
-                        `${
-                            PlatformConfig.iOSConfig().minSupportedRuntime
-                        } is not a supported version format.`
-                    )
+                    new SfError(`${PlatformConfig.iOSConfig().minSupportedRuntime} is not a supported version format.`)
                 );
             }
 
-            const rtIntersection = configuredRuntimes.filter(
-                (configuredRuntime) => {
-                    const configuredRuntimeVersion = Version.from(
-                        configuredRuntime.toLowerCase().replace('ios-', '')
+            const rtIntersection = configuredRuntimes.filter((configuredRuntime) => {
+                const configuredRuntimeVersion = Version.from(configuredRuntime.toLowerCase().replace('ios-', ''));
+                if (configuredRuntimeVersion === null) {
+                    // We haven't hit a use case where Apple does unconventional version
+                    // specifications like Google will do with their codename "versions".
+                    // So for now, this is a 'miss' on the iOS side. Prove me wrong, Apple!
+                    IOSUtils.logger.warn(
+                        `getSupportedRuntimes(): getSimulatorRuntimes() returned '${configuredRuntime}', which is not a supported version format.`
                     );
-                    if (configuredRuntimeVersion === null) {
-                        // We haven't hit a use case where Apple does unconventional version
-                        // specifications like Google will do with their codename "versions".
-                        // So for now, this is a 'miss' on the iOS side. Prove me wrong, Apple!
-                        IOSUtils.logger.warn(
-                            `getSupportedRuntimes(): getSimulatorRuntimes() returned '${configuredRuntime}', which is not a supported version format.`
-                        );
-                        return false;
-                    }
-
-                    return Version.sameOrNewer(
-                        configuredRuntimeVersion,
-                        minSupportedRuntimeIOS
-                    );
+                    return false;
                 }
-            );
+
+                return Version.sameOrNewer(configuredRuntimeVersion, minSupportedRuntimeIOS);
+            });
 
             if (rtIntersection.length > 0) {
                 return Promise.resolve(rtIntersection);
@@ -260,37 +203,26 @@ export class IOSUtils {
                 const runtimeMatchRegex = /.*SimRuntime\.((iOS)-[\d\-]+)$/;
                 const RUNTIMES_KEY = 'runtimes';
                 const ID_KEY = 'identifier';
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const runtimesObj: any = JSON.parse(result.stdout);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const runtimes: any[] = runtimesObj[RUNTIMES_KEY] || [];
-                let filteredRuntimes = runtimes.filter((entry) => {
-                    return (
-                        entry[ID_KEY] && entry[ID_KEY].match(runtimeMatchRegex)
-                    );
-                });
+                let filteredRuntimes = runtimes.filter((entry) => entry[ID_KEY]?.match(runtimeMatchRegex));
                 filteredRuntimes = filteredRuntimes.sort().reverse();
-                filteredRuntimes = filteredRuntimes.map((entry) => {
-                    return (entry[ID_KEY] as string).replace(
-                        runtimeMatchRegex,
-                        '$1'
-                    );
-                });
+                filteredRuntimes = filteredRuntimes.map((entry) =>
+                    (entry[ID_KEY] as string).replace(runtimeMatchRegex, '$1')
+                );
                 if (filteredRuntimes && filteredRuntimes.length > 0) {
                     return Promise.resolve(filteredRuntimes);
                 } else {
                     return Promise.reject(
-                        new SfError(
-                            `The command '${runtimesCmd}' could not find any available runtimes`
-                        )
+                        new SfError(`The command '${runtimesCmd}' could not find any available runtimes`)
                     );
                 }
             })
-            .catch((error) => {
-                return Promise.reject(
-                    new SfError(
-                        `The command '${runtimesCmd}' failed: ${error}, error code: ${error.code}`
-                    )
-                );
-            });
+            .catch((error) =>
+                Promise.reject(new SfError(`The command '${runtimesCmd}' failed: ${error}, error code: ${error.code}`))
+            );
     }
 
     /**
@@ -300,29 +232,17 @@ export class IOSUtils {
         const command = `${XCRUN_CMD} simctl bootstatus "${udid}"`;
         return CommonUtils.executeCommandAsync(command)
             .then(() => Promise.resolve())
-            .catch((error) =>
-                Promise.reject(
-                    new SfError(
-                        `The command '${command}' failed to execute ${error}`
-                    )
-                )
-            );
+            .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
     }
 
     /**
      * Attempts to launch the simulator app, which hosts all simulators.
      */
     public static async launchSimulatorApp(): Promise<void> {
-        const command = `open -a Simulator`;
+        const command = 'open -a Simulator';
         return CommonUtils.executeCommandAsync(command)
             .then(() => Promise.resolve())
-            .catch((error) =>
-                Promise.reject(
-                    new SfError(
-                        `The command '${command}' failed to execute ${error}`
-                    )
-                )
-            );
+            .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
     }
 
     /**
@@ -331,24 +251,15 @@ export class IOSUtils {
      * @param udid The UDID of the simulator.
      * @param url The URL to navigate to.
      */
-    public static async launchURLInBootedSimulator(
-        udid: string,
-        url: string
-    ): Promise<void> {
+    public static async launchURLInBootedSimulator(udid: string, url: string): Promise<void> {
         const command = `${XCRUN_CMD} simctl openurl "${udid}" ${url}`;
         CommonUtils.startCliAction(
             messages.getMessage('launchBrowserAction'),
-            util.format(messages.getMessage('openBrowserWithUrlStatus'), url)
+            messages.getMessage('openBrowserWithUrlStatus', [url])
         );
         return CommonUtils.executeCommandAsync(command)
             .then(() => Promise.resolve())
-            .catch((error) =>
-                Promise.reject(
-                    new SfError(
-                        `The command '${command}' failed to execute ${error}`
-                    )
-                )
-            );
+            .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
     }
 
     /**
@@ -375,15 +286,9 @@ export class IOSUtils {
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
-            const installMsg = util.format(
-                messages.getMessage('installAppStatus'),
-                appBundlePath.trim()
-            );
+            const installMsg = messages.getMessage('installAppStatus', [appBundlePath.trim()]);
             IOSUtils.logger.info(installMsg);
-            CommonUtils.startCliAction(
-                messages.getMessage('launchAppAction'),
-                installMsg
-            );
+            CommonUtils.startCliAction(messages.getMessage('launchAppAction'), installMsg);
             const installCommand = `${XCRUN_CMD} simctl install ${udid} '${appBundlePath.trim()}'`;
             thePromise = CommonUtils.executeCommandAsync(installCommand);
         } else {
@@ -414,10 +319,7 @@ export class IOSUtils {
                 // attempt at terminating the app first (in case it is already running) and then try to launch it again with new arguments.
                 // if we hit issues with terminating, just ignore and continue.
                 try {
-                    const terminateMsg = util.format(
-                        messages.getMessage('terminateAppStatus'),
-                        targetApp
-                    );
+                    const terminateMsg = messages.getMessage('terminateAppStatus', [targetApp]);
                     IOSUtils.logger.info(terminateMsg);
                     CommonUtils.updateCliAction(terminateMsg);
                     await CommonUtils.executeCommandAsync(terminateCommand);
@@ -425,10 +327,7 @@ export class IOSUtils {
                     // ignore and continue
                 }
 
-                const launchMsg = util.format(
-                    messages.getMessage('launchAppStatus'),
-                    targetApp
-                );
+                const launchMsg = messages.getMessage('launchAppStatus', [targetApp]);
                 IOSUtils.logger.info(launchMsg);
                 CommonUtils.updateCliAction(launchMsg);
                 return CommonUtils.executeCommandAsync(launchCommand);
@@ -439,8 +338,6 @@ export class IOSUtils {
     private static logger: Logger = new Logger(LOGGER_NAME);
 
     private static isDeviceAlreadyBootedError(error: Error): boolean {
-        return error.message
-            ? error.message.toLowerCase().match('state: booted') !== null
-            : false;
+        return error.message ? error.message.toLowerCase().match('state: booted') !== null : false;
     }
 }

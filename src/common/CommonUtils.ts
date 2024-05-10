@@ -1,32 +1,31 @@
+/* eslint-disable @typescript-eslint/member-ordering */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import * as childProcess from 'node:child_process';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import util from 'node:util';
+import path from 'node:path';
+import os from 'node:os';
 import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
-import * as childProcess from 'child_process';
 import { ux } from '@oclif/core';
-import fs from 'fs';
-import http from 'http';
-import https from 'https';
-import util from 'util';
-import path from 'path';
-import os from 'os';
 
 type StdioOptions = childProcess.StdioOptions;
 
 const LOGGER_NAME = 'force:lightning:local:commonutils';
 
-// Initialize Messages with the current plugin directory
-Messages.importMessagesDirectory(__dirname);
-
-// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
-// or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'common'
-);
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export class CommonUtils {
     public static DEFAULT_LWC_SERVER_PORT = '3333';
@@ -34,7 +33,7 @@ export class CommonUtils {
     /**
      * Initializes the logger used by CommonUtils for logging activities.
      */
-    public static initializeLogger(level?: LoggerLevelValue) {
+    public static initializeLogger(level?: LoggerLevelValue): void {
         CommonUtils.logger.setLevel(level);
     }
 
@@ -86,10 +85,11 @@ export class CommonUtils {
      * @param action Title of the action.
      * @param status Optional status message for the action.
      */
-    public static startCliAction(action: string, status?: string) {
+    public static startCliAction(action: string, status?: string): void {
         if (process.stdout?.isTTY === true) {
             ux.action.start(action, status, { stdout: true });
         } else {
+            // eslint-disable-next-line no-console
             console.log(`${action}... ${status ?? ''}`);
         }
     }
@@ -100,16 +100,15 @@ export class CommonUtils {
      *
      * @param status Status message for the action.
      */
-    public static updateCliAction(status: string) {
+    public static updateCliAction(status: string): void {
         const task = ux.action.task;
         if (!task || !task.active) {
             CommonUtils.startCliAction(status);
+        } else if (process.stdout?.isTTY === true) {
+            task.status = status;
         } else {
-            if (process.stdout?.isTTY === true) {
-                task.status = status;
-            } else {
-                console.log(`${task.action}... ${status ?? ''}`);
-            }
+            // eslint-disable-next-line no-console
+            console.log(`${task.action}... ${status ?? ''}`);
         }
     }
 
@@ -118,7 +117,7 @@ export class CommonUtils {
      *
      * @param message Optional status message for the action.
      */
-    public static stopCliAction(message?: string) {
+    public static stopCliAction(message?: string): void {
         ux.action.stop(message);
     }
 
@@ -132,11 +131,7 @@ export class CommonUtils {
     public static resolveUserHomePath(inputPath: string): string {
         let newPath = inputPath.trim();
         if (newPath.startsWith('~')) {
-            const userHome =
-                process.env.HOME ||
-                process.env.HOMEPATH ||
-                process.env.USERPROFILE ||
-                '';
+            const userHome = process.env.HOME ?? process.env.HOMEPATH ?? process.env.USERPROFILE ?? '';
             newPath = newPath.replace('~', userHome);
         }
         return newPath;
@@ -148,6 +143,7 @@ export class CommonUtils {
      * @param file The path to the JSON file.
      * @returns Content of the file as JSON object.
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public static loadJsonFromFile(file: string): any {
         const fileContent = fs.readFileSync(file, 'utf8');
         const json = JSON.parse(fileContent);
@@ -165,10 +161,7 @@ export class CommonUtils {
      * @param variables List of token names and values.
      * @returns Resolved string.
      */
-    public static replaceTokens(
-        template: string,
-        variables: { [name: string]: string }
-    ): string {
+    public static replaceTokens(template: string, variables: { [name: string]: string }): string {
         const regex = /\$\{\w+\}/g;
         return template.replace(regex, (match) => {
             const key = match.slice(2, -1);
@@ -189,21 +182,15 @@ export class CommonUtils {
         const folderPrefix = 'lwc-mobile-';
         const tempFolderPath = path.join(os.tmpdir(), folderPrefix);
         return mkdtemp(tempFolderPath)
-            .then((folder) => {
-                return Promise.resolve(folder);
-            })
-            .catch((error) => {
-                return Promise.reject(
+            .then((folder) => Promise.resolve(folder))
+            .catch((error) =>
+                Promise.reject(
                     new SfError(
-                        util.format(
-                            'Could not create a temp folder at %s: %s',
-                            tempFolderPath,
-                            error
-                        ),
+                        messages.getMessage('error:tempfolder:create', [tempFolderPath, error]),
                         'lwc-dev-mobile-core'
                     )
-                );
-            });
+                )
+            );
     }
 
     /**
@@ -237,35 +224,29 @@ export class CommonUtils {
      * @param command The command to be executed.
      * @returns A promise containing the results of stdout and stderr
      */
-    public static async executeCommandAsync(
-        command: string
-    ): Promise<{ stdout: string; stderr: string }> {
-        return new Promise<{ stdout: string; stderr: string }>(
-            (resolve, reject) => {
-                CommonUtils.logger.debug(`Executing command: '${command}'`);
-                childProcess.exec(command, (error, stdout, stderr) => {
-                    if (error) {
-                        CommonUtils.logger.error(
-                            `Error executing command '${command}':`
-                        );
+    public static async executeCommandAsync(command: string): Promise<{ stdout: string; stderr: string }> {
+        return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+            CommonUtils.logger.debug(`Executing command: '${command}'`);
+            childProcess.exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    CommonUtils.logger.error(`Error executing command '${command}':`);
 
-                        // also include stderr & stdout for more detailed error
-                        let msg = error.message;
-                        if (stderr && stderr.length > 0) {
-                            msg = `${msg}\nstderr:\n${stderr}`;
-                        }
-                        if (stdout && stdout.length > 0) {
-                            msg = `${msg}\nstdout:\n${stdout}`;
-                        }
-
-                        CommonUtils.logger.error(msg);
-                        reject(error);
-                    } else {
-                        resolve({ stdout, stderr });
+                    // also include stderr & stdout for more detailed error
+                    let msg = error.message;
+                    if (stderr && stderr.length > 0) {
+                        msg = `${msg}\nstderr:\n${stderr}`;
                     }
-                });
-            }
-        );
+                    if (stdout && stdout.length > 0) {
+                        msg = `${msg}\nstdout:\n${stdout}`;
+                    }
+
+                    CommonUtils.logger.error(msg);
+                    reject(error);
+                } else {
+                    resolve({ stdout, stderr });
+                }
+            });
+        });
     }
 
     /**
@@ -281,52 +262,47 @@ export class CommonUtils {
         args: string[] = [],
         stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
     ): Promise<{ stdout: string; stderr: string }> {
-        return new Promise<{ stdout: string; stderr: string }>(
-            (resolve, reject) => {
-                const capturedStdout: string[] = [];
-                const capturedStderr: string[] = [];
+        return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+            const capturedStdout: string[] = [];
+            const capturedStderr: string[] = [];
 
-                const fullCommand =
-                    args.length > 0 ? `${command} ${args.join(' ')}` : command;
+            const fullCommand = args.length > 0 ? `${command} ${args.join(' ')}` : command;
 
-                CommonUtils.logger.debug(`Executing command: '${fullCommand}'`);
+            CommonUtils.logger.debug(`Executing command: '${fullCommand}'`);
 
-                const prc = childProcess.spawn(command, args, {
-                    shell: true,
-                    stdio: stdioOptions
-                });
+            const prc = childProcess.spawn(command, args, {
+                shell: true,
+                stdio: stdioOptions
+            });
 
-                prc.stdout?.on('data', (data) => {
-                    capturedStdout.push(data.toString());
-                });
+            prc.stdout?.on('data', (data) => {
+                capturedStdout.push(data.toString());
+            });
 
-                prc.stderr?.on('data', (data) => {
-                    capturedStderr.push(data.toString());
-                });
+            prc.stderr?.on('data', (data) => {
+                capturedStderr.push(data.toString());
+            });
 
-                prc.on('close', (code) => {
-                    if (code !== 0) {
-                        CommonUtils.logger.error(
-                            `Error executing command '${fullCommand}':`
-                        );
+            prc.on('close', (code) => {
+                if (code !== 0) {
+                    CommonUtils.logger.error(`Error executing command '${fullCommand}':`);
 
-                        // also include stderr & stdout for more detailed error
-                        let msg = `stderr:\n${capturedStderr.join()}`;
-                        if (capturedStdout.length > 0) {
-                            msg = `${msg}\nstdout:\n${capturedStdout}`;
-                        }
-
-                        CommonUtils.logger.error(msg);
-                        reject(new Error(capturedStderr.join()));
-                    } else {
-                        resolve({
-                            stdout: capturedStdout.join(),
-                            stderr: capturedStderr.join()
-                        });
+                    // also include stderr & stdout for more detailed error
+                    let msg = `stderr:\n${capturedStderr.join()}`;
+                    if (capturedStdout.length > 0) {
+                        msg = `${msg}\nstdout:\n${capturedStdout}`;
                     }
-                });
-            }
-        );
+
+                    CommonUtils.logger.error(msg);
+                    reject(new Error(capturedStderr.join()));
+                } else {
+                    resolve({
+                        stdout: capturedStdout.join(),
+                        stderr: capturedStderr.join()
+                    });
+                }
+            });
+        });
     }
 
     /**
@@ -335,16 +311,11 @@ export class CommonUtils {
      * @returns A Promise that launches the desktop browser and navigates to the provided URL.
      */
     public static async launchUrlInDesktopBrowser(url: string): Promise<void> {
-        const openCmd =
-            process.platform === 'darwin'
-                ? 'open'
-                : process.platform === 'win32'
-                ? 'start'
-                : 'xdg-open';
+        const openCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
 
         CommonUtils.startCliAction(
             messages.getMessage('launchBrowserAction'),
-            util.format(messages.getMessage('openBrowserWithUrlStatus'), url)
+            messages.getMessage('openBrowserWithUrlStatus', [url])
         );
         return CommonUtils.executeCommandAsync(`${openCmd} ${url}`).then(() => {
             CommonUtils.stopCliAction();
@@ -360,9 +331,7 @@ export class CommonUtils {
      */
     public static async isLwcServerPluginInstalled(): Promise<void> {
         const command = 'sfdx force:lightning:lwc:start --help';
-        return CommonUtils.executeCommandAsync(command).then(() =>
-            Promise.resolve()
-        );
+        return CommonUtils.executeCommandAsync(command).then(() => Promise.resolve());
     }
 
     /**
@@ -383,15 +352,9 @@ export class CommonUtils {
                 const startIndex = output.indexOf(portPattern);
                 let port = CommonUtils.DEFAULT_LWC_SERVER_PORT;
                 if (startIndex > 0) {
-                    const endIndex = output.indexOf(
-                        '\n',
-                        startIndex + portPattern.length
-                    );
+                    const endIndex = output.indexOf('\n', startIndex + portPattern.length);
                     if (endIndex > startIndex) {
-                        port = output.substring(
-                            startIndex + portPattern.length,
-                            endIndex
-                        );
+                        port = output.substring(startIndex + portPattern.length, endIndex);
                     } else {
                         port = output.substr(startIndex + portPattern.length);
                     }
@@ -399,9 +362,7 @@ export class CommonUtils {
                 return Promise.resolve(port.trim());
             })
             .catch((error) => {
-                CommonUtils.logger.warn(
-                    `Unable to determine server port: ${error}`
-                );
+                CommonUtils.logger.warn(`Unable to determine server port: ${error}`);
                 return Promise.resolve(undefined);
             });
     }
@@ -410,20 +371,16 @@ export class CommonUtils {
      * Downloads a resource from a given url into a destination file.
      */
     public static async downloadFile(url: string, dest: string): Promise<void> {
-        const finalUrl = url.toLowerCase().startsWith('http')
-            ? url
-            : `http://${url}`;
+        const finalUrl = url.toLowerCase().startsWith('http') ? url : `http://${url}`;
 
-        const protocol = finalUrl.toLowerCase().startsWith('https')
-            ? https
-            : http;
+        const protocol = finalUrl.toLowerCase().startsWith('https') ? https : http;
 
         return new Promise((resolve, reject) => {
             const destFile = fs.createWriteStream(dest);
 
             const request = protocol.get(finalUrl, (response) => {
                 if (response.statusCode !== 200) {
-                    const msg = `Error downloading ${finalUrl} - ${response.socket}: ${response.statusMessage}`;
+                    const msg = `Error downloading ${finalUrl}: ${response.statusMessage}`;
                     this.logger.error(msg);
                     fs.unlink(dest, () => reject(new Error(msg)));
                     return;
@@ -455,14 +412,11 @@ export class CommonUtils {
     /**
      * Creates a text file at a destination location with the given content
      */
-    public static async createTextFile(
-        dest: string,
-        content: string
-    ): Promise<void> {
+    public static async createTextFile(dest: string, content: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            fs.writeFile(dest, content, function (err) {
+            fs.writeFile(dest, content, (err) => {
                 if (err) {
-                    const msg = `Error creating file ${dest} - ${err}`;
+                    const msg = `Error creating file ${dest} - ${err.message}`;
                     CommonUtils.logger.error(msg);
                     reject(err);
                 }
@@ -474,11 +428,11 @@ export class CommonUtils {
     /**
      * Creates a text file at a destination location with the given content
      */
-    public static async readTextFile(path: string): Promise<string> {
+    public static async readTextFile(filePath: string): Promise<string> {
         return new Promise((resolve, reject) => {
-            fs.readFile(path, function (err, data) {
+            fs.readFile(filePath, (err, data) => {
                 if (err) {
-                    const msg = `Error reading file ${path} - ${err}`;
+                    const msg = `Error reading file ${filePath} - ${err.message}`;
                     CommonUtils.logger.error(msg);
                     reject(err);
                 }
@@ -497,10 +451,7 @@ export class CommonUtils {
      * @param filterRegEx Optional regular expression to use for further filtering the results.
      * @returns Array of file paths that are contained under the provided input path.
      */
-    public static enumerateFiles(
-        atPath: string,
-        filterRegEx?: RegExp
-    ): string[] {
+    public static enumerateFiles(atPath: string, filterRegEx?: RegExp): string[] {
         const inputPath = path.normalize(atPath);
 
         const stat = fs.statSync(inputPath);
@@ -508,10 +459,7 @@ export class CommonUtils {
         const filterFunc = (input: string): string | undefined => {
             const trimmed = input.trim();
 
-            return (filterRegEx && !filterRegEx.test(trimmed)) ||
-                trimmed.length === 0
-                ? undefined
-                : trimmed;
+            return (filterRegEx && !filterRegEx.test(trimmed)) ?? trimmed.length === 0 ? undefined : trimmed;
         };
 
         if (stat.isFile()) {
@@ -526,10 +474,7 @@ export class CommonUtils {
         items.forEach((item) => {
             const itemPath = path.join(inputPath, item.name);
             if (item.isDirectory()) {
-                files = [
-                    ...files,
-                    ...this.enumerateFiles(itemPath, filterRegEx)
-                ];
+                files = [...files, ...this.enumerateFiles(itemPath, filterRegEx)];
             } else {
                 const result = filterFunc(itemPath);
                 if (result) {

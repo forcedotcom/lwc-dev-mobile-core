@@ -1,34 +1,46 @@
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# -- CLEAN
+tmp/
+# use yarn by default, so ignore npm
+package-lock.json
+
+# debug logs
+npm-error.log
+yarn-error.log
+
 junit.xml
 
-# Dependency directories
-node_modules/
+# compile source
+dist
 
-# Build directories
-lib/
-dist/
-virtual-modules/
-.localdevserver
-
-# config
-.env*
-
-# tests
-reports
-errorShots
+# test artifacts
+*xunit.xml
+*checkstyle.xml
+*unitcoverage
+.nyc_output
 coverage
-autoreloadtestingcopy
+test_session*
 
-# Stores custom attributes of its containing folder, such as the position of icons or the choice of a background image
+# generated docs
+docs
+
+# ignore sfdx-trust files
+*.tgz
+*.sig
+package.json.bak.
+
+# -- CLEAN ALL
+*.tsbuildinfo
+.eslintcache
+.wireit
+node_modules
+
+# --
+# put files here you don't want cleaned with sf-clean
+
+# os specific files
 .DS_Store
+.idea
 
-# Don't watch git for publishing to npm
-.git
-
-# oclif
-tmp/
 oclif.manifest.json
+
+oclif.lock
