@@ -7,9 +7,9 @@
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { CommonUtils } from '../../src/common/CommonUtils.js';
-import { AndroidLauncher } from '../../src/common/AndroidLauncher.js';
-import { AndroidUtils } from '../../src/common/AndroidUtils.js';
+import { CommonUtils } from '../../../src/common/CommonUtils.js';
+import { AndroidLauncher } from '../../../src/common/AndroidLauncher.js';
+import { AndroidUtils } from '../../../src/common/AndroidUtils.js';
 import { AndroidMockData } from './AndroidMockData.js';
 
 describe('Android Launcher tests', () => {

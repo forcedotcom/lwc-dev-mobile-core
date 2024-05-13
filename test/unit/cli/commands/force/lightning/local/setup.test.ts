@@ -8,9 +8,9 @@ import { Logger, Messages, SfError } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { LoggerSetup } from '../../../../../../src/common/LoggerSetup.js';
-import { Setup } from '../../../../../../src/cli/commands/force/lightning/local/setup.js';
-import { RequirementProcessor } from '../../../../../../src/common/Requirements.js';
+import { LoggerSetup } from '../../../../../../../src/common/LoggerSetup.js';
+import { Setup } from '../../../../../../../src/cli/commands/force/lightning/local/setup.js';
+import { RequirementProcessor } from '../../../../../../../src/common/Requirements.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 

@@ -8,8 +8,8 @@ import { Messages } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { CommonUtils } from '../../src/common/CommonUtils.js';
-import { MacNetworkUtils } from '../../src/common/MacNetworkUtils.js';
+import { CommonUtils } from '../../../src/common/CommonUtils.js';
+import { MacNetworkUtils } from '../../../src/common/MacNetworkUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 

@@ -8,13 +8,13 @@ import { Logger, Messages } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { CommonUtils } from '../../src/common/CommonUtils.js';
+import { CommonUtils } from '../../../src/common/CommonUtils.js';
 import {
     SupportedEnvironmentRequirement,
     SupportedSimulatorRuntimeRequirement,
     XcodeInstalledRequirement
-} from '../../src/common/IOSEnvironmentRequirements.js';
-import { IOSUtils } from '../../src/common/IOSUtils.js';
+} from '../../../src/common/IOSEnvironmentRequirements.js';
+import { IOSUtils } from '../../../src/common/IOSUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 

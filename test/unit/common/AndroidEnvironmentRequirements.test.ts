@@ -21,12 +21,12 @@ import {
     EmulatorImagesRequirement,
     Java8AvailableRequirement,
     PlatformAPIPackageRequirement
-} from '../../src/common/AndroidEnvironmentRequirements.js';
-import { AndroidPackage } from '../../src/common/AndroidTypes.js';
-import { AndroidSDKRootSource, AndroidUtils } from '../../src/common/AndroidUtils.js';
-import { Version } from '../../src/common/Common.js';
-import { CommonUtils } from '../../src/common/CommonUtils.js';
-import { PlatformConfig } from '../../src/common/PlatformConfig.js';
+} from '../../../src/common/AndroidEnvironmentRequirements.js';
+import { AndroidPackage } from '../../../src/common/AndroidTypes.js';
+import { AndroidSDKRootSource, AndroidUtils } from '../../../src/common/AndroidUtils.js';
+import { Version } from '../../../src/common/Common.js';
+import { CommonUtils } from '../../../src/common/CommonUtils.js';
+import { PlatformConfig } from '../../../src/common/PlatformConfig.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 

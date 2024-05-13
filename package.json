@@ -196,12 +196,12 @@
             ]
         },
         "test:only": {
-            "command": "nyc mocha \"test/**/*.test.ts\"",
+            "command": "nyc mocha \"test/unit/**/*.test.ts\"",
             "env": {
                 "FORCE_COLOR": "2"
             },
             "files": [
-                "test/**/*.ts",
+                "test/unit/**/*.ts",
                 "src/**/*.ts",
                 "**/tsconfig.json",
                 ".mocha*",

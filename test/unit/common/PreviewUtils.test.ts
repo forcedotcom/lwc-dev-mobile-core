@@ -9,9 +9,9 @@ import { fileURLToPath } from 'node:url';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { AndroidAppPreviewConfig, IOSAppPreviewConfig } from '../../src/common/PreviewConfigFile.js';
-import { CommonUtils } from '../../src/common/CommonUtils.js';
-import { PreviewUtils } from '../../src/common/PreviewUtils.js';
+import { AndroidAppPreviewConfig, IOSAppPreviewConfig } from '../../../src/common/PreviewConfigFile.js';
+import { CommonUtils } from '../../../src/common/CommonUtils.js';
+import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
 import { mockSchema } from './PreviewMockConfigurationSchema.js';
 
 describe('Preview utils tests', () => {

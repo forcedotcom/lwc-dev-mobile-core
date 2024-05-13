@@ -10,10 +10,10 @@ import path from 'node:path';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { AndroidSDKRootSource, AndroidUtils } from '../../src/common/AndroidUtils.js';
-import { Version } from '../../src/common/Common.js';
-import { CommonUtils } from '../../src/common/CommonUtils.js';
-import { PreviewUtils } from '../../src/common/PreviewUtils.js';
+import { AndroidSDKRootSource, AndroidUtils } from '../../../src/common/AndroidUtils.js';
+import { Version } from '../../../src/common/Common.js';
+import { CommonUtils } from '../../../src/common/CommonUtils.js';
+import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
 import { AndroidMockData } from './AndroidMockData.js';
 
 describe('Android utils', () => {

@@ -6,7 +6,7 @@
  */
 import { expect } from 'chai';
 import { Logger, Messages, SfError } from '@salesforce/core';
-import { RequirementProcessor, HasRequirements, CommandRequirements } from '../../src/common/Requirements.js';
+import { RequirementProcessor, HasRequirements, CommandRequirements } from '../../../src/common/Requirements.js';
 
 const logger = new Logger('test');
 

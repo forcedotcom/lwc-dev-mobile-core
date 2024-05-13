@@ -6,7 +6,7 @@
  */
 import { Messages } from '@salesforce/core';
 import { expect } from 'chai';
-import * as common from '../../src/common/Common.js';
+import * as common from '../../../src/common/Common.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 

@@ -7,9 +7,9 @@
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { CommonUtils } from '../../src/common/CommonUtils.js';
-import { IOSUtils } from '../../src/common/IOSUtils.js';
-import { PreviewUtils } from '../../src/common/PreviewUtils.js';
+import { CommonUtils } from '../../../src/common/CommonUtils.js';
+import { IOSUtils } from '../../../src/common/IOSUtils.js';
+import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
 import { IOSMockData } from './IOSMockData.js';
 
 describe('IOS utils tests', () => {
