@@ -8,6 +8,9 @@ npm-error.log
 yarn-error.log
 
 junit.xml
+npm-shrinkwrap.json
+oclif.manifest.json
+oclif.lock
 
 # compile source
 dist
@@ -28,19 +31,16 @@ docs
 *.sig
 package.json.bak.
 
-# -- CLEAN ALL
-*.tsbuildinfo
-.eslintcache
-.wireit
-node_modules
-
-# --
-# put files here you don't want cleaned with sf-clean
-
 # os specific files
 .DS_Store
 .idea
 
-oclif.manifest.json
+# -- CLEAN ALL
+*.tsbuildinfo
+.eslintcache
+.wireit
 
-oclif.lock
+# --
+# put files here you don't want cleaned with sf-clean
+
+node_modules
