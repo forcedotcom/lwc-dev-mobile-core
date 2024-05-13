@@ -41,6 +41,8 @@ package.json.bak.
 .wireit
 
 # --
-# put files here you don't want cleaned with sf-clean
+# *********************************************************
+# NOTE: put files here you don't want cleaned with sf-clean
+# *********************************************************
 
 node_modules

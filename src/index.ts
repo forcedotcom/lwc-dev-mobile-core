@@ -5,8 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-// export default {};
-
 export * from './cli/commands/force/lightning/local/setup.js';
 
 export * from './common/AndroidEnvironmentRequirements.js';
