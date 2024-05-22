@@ -183,4 +183,39 @@ describe('Preview utils tests', () => {
         );
         expect(bundlePath).to.be.equal('sample/path/to/app/bundle');
     });
+
+    it('Generates correct websocket url', async () => {
+        // ensure that for iOS the proper url is generated
+        expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('ios', '1234')).to.be.equal('wss://localhost:1234');
+
+        // ensure that for Android the proper url is generated
+        expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('android', '1234')).to.be.equal(
+            'wss://10.0.2.2:1234'
+        );
+
+        // ensure that for non-Mac desktop, the proper url is generated
+        let stub1 = $$.SANDBOX.stub(process, 'platform').value('win32'); // sinon.stub(process, 'platform').value('win32');
+        expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('desktop', '1234')).to.be.equal(
+            'ws://localhost:1234'
+        );
+        stub1.restore();
+
+        // ensure that for Mac desktop where Safari IS NOT default browser, the proper url is generated
+        stub1 = $$.SANDBOX.stub(process, 'platform').value('darwin');
+        let stub2 = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandSync').returns('com.google.chrome');
+        expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('desktop', '1234')).to.be.equal(
+            'ws://localhost:1234'
+        );
+        stub1.restore();
+        stub2.restore();
+
+        // ensure that for Mac desktop where Safari IS default browser, the proper url is generated
+        stub1 = $$.SANDBOX.stub(process, 'platform').value('darwin');
+        stub2 = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandSync').returns('com.apple.safari');
+        expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('desktop', '1234')).to.be.equal(
+            'wss://localhost:1234'
+        );
+        stub1.restore();
+        stub2.restore();
+    });
 });

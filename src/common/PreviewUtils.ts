@@ -12,6 +12,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
+import { CommandLineUtils } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { AndroidAppPreviewConfig, IOSAppPreviewConfig, PreviewConfigFile } from './PreviewConfigFile.js';
 
@@ -127,5 +128,46 @@ export class PreviewUtils {
         } else {
             return undefined;
         }
+    }
+
+    /**
+     * For the new Local Development Preview approach where a new local dev server is being used,
+     * the local dev server needs to be configured to use a web socket url for local previewing.
+     * This method generates an appropriate web socket url to be used by the local dev server.
+     *
+     * @param platform a platform flag (desktop , ios, android).
+     * @param port the port number that the local dev server is configured to use.
+     * @returns A string representing a web socket url to be used by the local dev server.
+     */
+    public static generateWebSocketUrlForLocalDevServer(platform: string, port: string): string {
+        /*
+          - For desktop browsers other than Safari, local development use cases will target ws://localhost:<port> connections to the local dev server
+          - For the Safari desktop browser, target wss://localhost:<port>
+            
+          - For mobile (webview in native apps), local development use cases will target:
+            - iOS: wss://localhost:<port>
+            - Android: wss://10.0.2.2:<port>
+        */
+
+        if (CommandLineUtils.platformFlagIsIOS(platform)) {
+            return `wss://localhost:${port}`;
+        }
+
+        if (CommandLineUtils.platformFlagIsAndroid(platform)) {
+            return `wss://10.0.2.2:${port}`;
+        }
+
+        if (process.platform !== 'darwin') {
+            return `ws://localhost:${port}`; // cannot be Safari since it is only available on Mac
+        }
+
+        // If we've made it this far then it means that platform=desktop and we're on a Mac
+        // macOS use case: check to see if the default browser is Safari
+        // From https://apple.stackexchange.com/questions/313454/applescript-find-the-users-set-default-browser
+        const cmd =
+            "defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR)-1]}{window[NR]=$2}'";
+        const result = CommonUtils.executeCommandSync(cmd).trim().toLowerCase();
+        const isSafari = result.includes('safari') || result === '';
+        return isSafari ? `wss://localhost:${port}` : `ws://localhost:${port}`;
     }
 }
