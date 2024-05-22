@@ -161,7 +161,8 @@ export class PreviewUtils {
             return `ws://localhost:${port}`; // cannot be Safari since it is only available on Mac
         }
 
-        // Check to see if the default browser is Safari
+        // If we've made it this far then it means that platform=desktop and we're on a Mac
+        // macOS use case: check to see if the default browser is Safari
         // From https://apple.stackexchange.com/questions/313454/applescript-find-the-users-set-default-browser
         const cmd =
             "defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR)-1]}{window[NR]=$2}'";
