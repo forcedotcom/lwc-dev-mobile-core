@@ -9,7 +9,6 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
@@ -145,13 +144,13 @@ export class PreviewUtils {
           - For desktop browsers other than Safari, local development use cases will target ws://localhost:<port> connections to the local dev server
           - For the Safari desktop browser, target wss://localhost:<port>
             
-          - For mobile (Salesforce App), local development use cases will target:
-            - iOS: wss://<local hostname>:<port>
+          - For mobile (webview in native apps), local development use cases will target:
+            - iOS: wss://localhost:<port>
             - Android: wss://10.0.2.2:<port>
         */
 
         if (CommandLineUtils.platformFlagIsIOS(platform)) {
-            return `wss://${os.hostname()}:${port}`;
+            return `wss://localhost:${port}`;
         }
 
         if (CommandLineUtils.platformFlagIsAndroid(platform)) {

@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TestContext } from '@salesforce/core/testSetup';
@@ -187,9 +186,7 @@ describe('Preview utils tests', () => {
 
     it('Generates correct websocket url', async () => {
         // ensure that for iOS the proper url is generated
-        expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('ios', '1234')).to.be.equal(
-            `wss://${os.hostname()}:1234`
-        );
+        expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('ios', '1234')).to.be.equal('wss://localhost:1234');
 
         // ensure that for Android the proper url is generated
         expect(PreviewUtils.generateWebSocketUrlForLocalDevServer('android', '1234')).to.be.equal(
