@@ -1,24 +1,27 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import path from 'node:path';
+import { createRequire } from 'node:module';
 import Ajv from 'ajv';
-import path from 'path';
-import { CommonUtils } from './CommonUtils';
-import {
-    AndroidAppPreviewConfig,
-    IOSAppPreviewConfig,
-    PreviewConfigFile
-} from './PreviewConfigFile';
+import { CommandLineUtils } from './Common.js';
+import { CommonUtils } from './CommonUtils.js';
+import { AndroidAppPreviewConfig, IOSAppPreviewConfig, PreviewConfigFile } from './PreviewConfigFile.js';
 
 const NAMESPACE = 'com.salesforce.mobile-tooling';
 
-export interface ValidationResult {
+export type ValidationResult = {
     errorMessage: string | null;
     passed: boolean;
-}
+};
 
 export class PreviewUtils {
     public static BROWSER_TARGET_APP = 'browser';
@@ -29,17 +32,17 @@ export class PreviewUtils {
 
     /**
      * Checks to see if browser is the target for previewing an LWC.
+     *
      * @param targetApp The desired target app ('browser' or app bundle id).
      * @returns True if targetApp is browser.
      */
     public static isTargetingBrowser(targetApp: string): boolean {
-        return (
-            targetApp.trim().toLowerCase() === PreviewUtils.BROWSER_TARGET_APP
-        );
+        return targetApp.trim().toLowerCase() === PreviewUtils.BROWSER_TARGET_APP;
     }
 
     /**
      * Checks to see if an LWC local dev server is needed for previewing an LWC for a provided target app.
+     *
      * @param targetApp The target app.
      * @param appConfig A preview configuration file.
      * @returns True if local dev server is needed for previewing.
@@ -50,13 +53,13 @@ export class PreviewUtils {
     ): boolean {
         return (
             PreviewUtils.isTargetingBrowser(targetApp) ||
-            (appConfig !== undefined &&
-                appConfig.preview_server_enabled === true)
+            (appConfig !== undefined && appConfig.preview_server_enabled === true)
         );
     }
 
     /**
      * Checks to see if a component route needs to be prefixed.
+     *
      * @param compName A component route or name.
      * @returns The updated route which now starts with `c/` if compName did not start with `c/` already.
      */
@@ -69,21 +72,19 @@ export class PreviewUtils {
 
     /**
      * Validates a preview configuration file against a schema.
+     *
      * @param configFile The path to the preview configuration file.
      * @param schema The schema object to be used for validation.
      * @returns A ValidationResult object containing a pass/fail boolean and, for failure, an error message string.
      */
-    public static async validateConfigFileWithSchema(
-        configFile: string,
-        schema: object
-    ): Promise<ValidationResult> {
+    public static validateConfigFileWithSchema(configFile: string, schema: object): Promise<ValidationResult> {
         try {
             const configFileJson = CommonUtils.loadJsonFromFile(configFile);
 
-            const ajv = new Ajv({ allErrors: true });
-            const validationResult = await ajv.validate(schema, configFileJson);
-            const hasError = ajv.errors ? ajv.errors.length > 0 : false;
-            const errorText = ajv.errors ? ajv.errorsText() : '';
+            const validator = new Ajv.default({ allErrors: true });
+            const validationResult = validator.validate(schema, configFileJson);
+            const hasError = validator.errors ? validator.errors.length > 0 : false;
+            const errorText = validator.errors ? validator.errorsText() : '';
             const isValid = validationResult === true && hasError === false;
             return Promise.resolve({
                 errorMessage: errorText,
@@ -91,7 +92,7 @@ export class PreviewUtils {
             });
         } catch (err) {
             return Promise.resolve({
-                errorMessage: (err as any).toString(),
+                errorMessage: (err as Error).toString(),
                 passed: false
             });
         }
@@ -99,6 +100,7 @@ export class PreviewUtils {
 
     /**
      * Loads a preview configuration file.
+     *
      * @param file The path to a preview configuration file.
      * @returns The content of the file parsed into a PreviewConfigFile object.
      */
@@ -110,6 +112,7 @@ export class PreviewUtils {
 
     /**
      * Attempts to obtain the app bundle path from an app preview config.
+     *
      * @param basePath Path to the directory that contains the preview configuration file.
      * @param appConfig An app preview configuration.
      * @returns A string representing the app bundle path.
@@ -119,13 +122,52 @@ export class PreviewUtils {
         appConfig: IOSAppPreviewConfig | AndroidAppPreviewConfig
     ): string | undefined {
         if (appConfig.get_app_bundle) {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const module = require(
-                path.resolve(basePath, appConfig.get_app_bundle)
-            );
+            const require = createRequire(import.meta.url);
+            const module = require(path.resolve(basePath, appConfig.get_app_bundle));
             return module.run();
         } else {
             return undefined;
         }
+    }
+
+    /**
+     * For the new Local Development Preview approach where a new local dev server is being used,
+     * the local dev server needs to be configured to use a web socket url for local previewing.
+     * This method generates an appropriate web socket url to be used by the local dev server.
+     *
+     * @param platform a platform flag (desktop , ios, android).
+     * @param port the port number that the local dev server is configured to use.
+     * @returns A string representing a web socket url to be used by the local dev server.
+     */
+    public static generateWebSocketUrlForLocalDevServer(platform: string, port: string): string {
+        /*
+          - For desktop browsers other than Safari, local development use cases will target ws://localhost:<port> connections to the local dev server
+          - For the Safari desktop browser, target wss://localhost:<port>
+            
+          - For mobile (webview in native apps), local development use cases will target:
+            - iOS: wss://localhost:<port>
+            - Android: wss://10.0.2.2:<port>
+        */
+
+        if (CommandLineUtils.platformFlagIsIOS(platform)) {
+            return `wss://localhost:${port}`;
+        }
+
+        if (CommandLineUtils.platformFlagIsAndroid(platform)) {
+            return `wss://10.0.2.2:${port}`;
+        }
+
+        if (process.platform !== 'darwin') {
+            return `ws://localhost:${port}`; // cannot be Safari since it is only available on Mac
+        }
+
+        // If we've made it this far then it means that platform=desktop and we're on a Mac
+        // macOS use case: check to see if the default browser is Safari
+        // From https://apple.stackexchange.com/questions/313454/applescript-find-the-users-set-default-browser
+        const cmd =
+            "defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR)-1]}{window[NR]=$2}'";
+        const result = CommonUtils.executeCommandSync(cmd).trim().toLowerCase();
+        const isSafari = result.includes('safari') || result === '';
+        return isSafari ? `wss://localhost:${port}` : `ws://localhost:${port}`;
     }
 }

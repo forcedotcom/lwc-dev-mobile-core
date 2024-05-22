@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/member-ordering */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -6,22 +12,10 @@
  */
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 import { Logger, LoggerLevel, Messages, SfError } from '@salesforce/core';
-import util from 'util';
-import {
-    CustomOptions,
-    FlagParserContext,
-    OptionFlag
-} from '@oclif/core/lib/interfaces/parser';
+import { CustomOptions, FlagParserContext, OptionFlag } from '@oclif/core/lib/interfaces/parser.js';
 
-// Initialize Messages with the current plugin directory
-Messages.importMessagesDirectory(__dirname);
-
-// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
-// or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'common'
-);
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 const LOGGER_NAME = 'force:lightning:local:common';
 
@@ -29,10 +23,7 @@ export class MapUtils {
     /**
      * Enables filtering operation on Map types.
      */
-    public static filter<K, V>(
-        map: Map<K, V>,
-        predicate: (k: K, v: V) => boolean
-    ) {
+    public static filter<K, V>(map: Map<K, V>, predicate: (k: K, v: V) => boolean): Map<K, V> {
         const aMap = new Map<K, V>();
         if (map == null) {
             return aMap;
@@ -47,12 +38,11 @@ export class MapUtils {
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class SetUtils {
     /**
      * Enables filtering operation on Set types.
      */
-    public static filter<V>(set: Set<V>, predicate: (v: V) => boolean) {
+    public static filter<V>(set: Set<V>, predicate: (v: V) => boolean): Set<V> {
         const aSet = new Set<V>();
         if (set == null) {
             return aSet;
@@ -74,7 +64,6 @@ export enum FlagsConfigType {
     Json
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class CommandLineUtils {
     public static IOS_FLAG = 'ios';
     public static ANDROID_FLAG = 'android';
@@ -82,6 +71,7 @@ export class CommandLineUtils {
 
     /**
      * Checks to see if a flag is targeting iOS.
+     *
      * @param input The input flag.
      * @returns True if flag is targeting iOS.
      */
@@ -91,28 +81,27 @@ export class CommandLineUtils {
 
     /**
      * Checks to see if a flag is targeting Android.
+     *
      * @param input The input flag.
      * @returns True if flag is targeting Android.
      */
     public static platformFlagIsAndroid(input: string): boolean {
-        return (
-            (input ?? '').trim().toLowerCase() === CommandLineUtils.ANDROID_FLAG
-        );
+        return (input ?? '').trim().toLowerCase() === CommandLineUtils.ANDROID_FLAG;
     }
 
     /**
      * Checks to see if a flag is targeting Desktop.
+     *
      * @param input The input flag.
      * @returns True if flag is targeting Desktop.
      */
     public static platformFlagIsDesktop(input: string): boolean {
-        return (
-            (input ?? '').trim().toLowerCase() === CommandLineUtils.DESKTOP_FLAG
-        );
+        return (input ?? '').trim().toLowerCase() === CommandLineUtils.DESKTOP_FLAG;
     }
 
     /**
      * Helper method for resolving flag values.
+     *
      * @param flag The input flag.
      * @param defaultValue The default value for a flag.
      * @returns If the input flag can be cast to a string that is not undefined/null/empty then
@@ -129,35 +118,26 @@ export class CommandLineUtils {
 
     /**
      * Checks to see if a platform flag has a valid value.
+     *
      * @param platformFlag The platform flag.
      * @param includeDesktop Indicates whether Desktop is allowed as a target platform. Defaults to false.
      * @returns True if flag is valid.
      */
-    public static platformFlagIsValid(
-        platformFlag: string,
-        includeDesktop = false
-    ) {
+    public static platformFlagIsValid(platformFlag: string, includeDesktop = false): boolean {
         return (
             CommandLineUtils.platformFlagIsIOS(platformFlag) ||
             CommandLineUtils.platformFlagIsAndroid(platformFlag) ||
-            (includeDesktop &&
-                CommandLineUtils.platformFlagIsDesktop(platformFlag))
+            (includeDesktop && CommandLineUtils.platformFlagIsDesktop(platformFlag))
         );
     }
 
-    public static createFlag(
-        type: FlagsConfigType,
-        isRequired: boolean,
-        supportsDesktop = false
-    ): any {
+    public static createFlag(type: FlagsConfigType, isRequired: boolean, supportsDesktop = false): any {
         switch (type) {
             case FlagsConfigType.ApiLevel:
                 return {
                     apilevel: Flags.string({
                         char: 'l',
-                        description: messages.getMessage(
-                            'apiLevelFlagDescription'
-                        ),
+                        description: messages.getMessage('apiLevelFlagDescription'),
                         required: isRequired,
                         validate: CommandLineUtils.validateApiLevelFlag
                     })
@@ -167,12 +147,8 @@ export class CommandLineUtils {
                     platform: Flags.string({
                         char: 'p',
                         description: supportsDesktop
-                            ? messages.getMessage(
-                                  'platformFlagIncludingDesktopDescription'
-                              )
-                            : messages.getMessage(
-                                  'platformFlagMobileOnlyDescription'
-                              ),
+                            ? messages.getMessage('platformFlagIncludingDesktopDescription')
+                            : messages.getMessage('platformFlagMobileOnlyDescription'),
                         required: isRequired,
                         validate: supportsDesktop
                             ? CommandLineUtils.validatePlatformFlagIncludingDesktop
@@ -182,14 +158,10 @@ export class CommandLineUtils {
             case FlagsConfigType.LogLevel:
                 return {
                     loglevel: Flags.string({
-                        description: messages.getMessage(
-                            'logLevelFlagDescription'
-                        ),
+                        description: messages.getMessage('logLevelFlagDescription'),
                         required: false,
                         default: LoggerLevel[LoggerLevel.WARN],
-                        validate: (level: string) =>
-                            level &&
-                            (<any>LoggerLevel)[level.trim().toUpperCase()]
+                        validate: (level: string) => level && (LoggerLevel as any)[level.trim().toUpperCase()]
                     })
                 };
             case FlagsConfigType.Json:
@@ -213,24 +185,18 @@ export class CommandLineUtils {
         if (validateFunction && !validateFunction(input)) {
             // get the examples array (if any) and reduce it
             // to only keep the string examples
-            const examples = (<typeof SfCommand>(
-                context.constructor
-            )).examples?.reduce((results: string[], item: any) => {
-                if (typeof item === 'string') {
-                    results.push(item.toString());
-                }
-                return results;
-            }, []);
+            const examples = (context.constructor as typeof SfCommand).examples?.reduce(
+                (results: string[], item: any) => {
+                    if (typeof item === 'string') {
+                        results.push(item.toString());
+                    }
+                    return results;
+                },
+                []
+            );
 
             return Promise.reject(
-                new SfError(
-                    util.format(
-                        messages.getMessage('error:invalidFlagValue'),
-                        input
-                    ),
-                    undefined,
-                    examples
-                )
+                new SfError(messages.getMessage('error:invalidFlagValue', [input]), undefined, examples)
             );
         }
 
@@ -250,11 +216,11 @@ export class CommandLineUtils {
     }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class Version {
     /**
      * Creates a Version object from a string that follows a basic versioning syntax
      * of x[.y[.z]] or x[-y[-z]].
+     *
      * @param input A version string that follows the basic syntax of x[.y[.z]] or x[-y[-z]].
      * @returns A Version object from the parsed data, or null if the string does not follow
      * the format.
@@ -277,18 +243,9 @@ export class Version {
             return null;
         }
 
-        const major =
-            versionMatch.groups?.Major !== undefined
-                ? Number.parseInt(versionMatch.groups.Major, 10)
-                : 0;
-        const minor =
-            versionMatch.groups?.Minor !== undefined
-                ? Number.parseInt(versionMatch.groups.Minor, 10)
-                : 0;
-        const patch =
-            versionMatch.groups?.Patch !== undefined
-                ? Number.parseInt(versionMatch.groups.Patch, 10)
-                : 0;
+        const major = versionMatch.groups?.Major !== undefined ? Number.parseInt(versionMatch.groups.Major, 10) : 0;
+        const minor = versionMatch.groups?.Minor !== undefined ? Number.parseInt(versionMatch.groups.Minor, 10) : 0;
+        const patch = versionMatch.groups?.Patch !== undefined ? Number.parseInt(versionMatch.groups.Patch, 10) : 0;
 
         return new Version(major, minor, patch);
     }
@@ -297,7 +254,7 @@ export class Version {
     public readonly minor: number;
     public readonly patch: number;
 
-    constructor(major: number, minor: number, patch: number) {
+    public constructor(major: number, minor: number, patch: number) {
         this.major = major;
         this.minor = minor;
         this.patch = patch;
@@ -305,6 +262,7 @@ export class Version {
 
     /**
      * Compares 2 version objects and returns true if they are the same.
+     *
      * @param v1 The first version object (can be of type Version or string)
      * @param v2 The second version object (can be of type Version or string)
      * @returns True if the inputs represent the same version.
@@ -316,20 +274,19 @@ export class Version {
 
     /**
      * Compares 2 version objects and returns true if the first version is same or newer than the second version.
+     *
      * @param v1 The first version object (can be of type Version or string)
      * @param v2 The second version object (can be of type Version or string)
      * @returns True if the first version is same or newer than the second version.
      * @throws comparing 2 versions of type string is not supported and an error will be thrown.
      */
-    public static sameOrNewer(
-        v1: Version | string,
-        v2: Version | string
-    ): boolean {
+    public static sameOrNewer(v1: Version | string, v2: Version | string): boolean {
         return Version.compare(v1, v2) >= 0;
     }
 
     /**
      * Compares 2 version objects and returns a number indicating the comparison result.
+     *
      * @param v1 The first version object (can be of type Version or string)
      * @param v2 The second version object (can be of type Version or string)
      * @returns -1 if first version is older, 0 if it is the same, and 1 if it is newer.
@@ -350,7 +307,7 @@ export class Version {
             ) {
                 return 0;
             }
-            throw new Error('Comparing 2 codename versions is not supported.');
+            throw new Error(messages.getMessage('error:version:codename:comparing'));
         } else if (version1 === null) {
             // v1 is a codenamed version and since on Android codenamed versions are always
             // the "bleeding edge" (i.e the latest) then it will always be newer than v2.
@@ -361,10 +318,8 @@ export class Version {
             return -1;
         } else {
             // they are both semver so convert to number and compare
-            const num1 =
-                version1.major * 100 + version1.minor * 10 + version1.patch;
-            const num2 =
-                version2.major * 100 + version2.minor * 10 + version2.patch;
+            const num1 = version1.major * 100 + version1.minor * 10 + version1.patch;
+            const num2 = version2.major * 100 + version2.minor * 10 + version2.patch;
 
             if (num1 === num2) {
                 return 0;
@@ -378,6 +333,7 @@ export class Version {
 
     /**
      * Logging-friendly format is x.y.z.
+     *
      * @returns String representation of the version, i.e. x.y.z.
      */
     public toString(): string {

@@ -1,37 +1,41 @@
+/* eslint-disable @typescript-eslint/member-ordering */
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, LoggerLevelValue, SfError } from '@salesforce/core';
-import { CommonUtils } from './CommonUtils';
-import net from 'net';
-import util from 'util';
+import net from 'node:net';
+import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
+import { CommonUtils } from './CommonUtils.js';
 
 const LOGGER_NAME = 'force:lightning:local:macnetworkutils';
 
-export interface ProxySetting {
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
+
+export type ProxySetting = {
     proxyAutoConfigEnable?: number;
     proxyAutoConfigURLString?: string;
-}
+};
 
-export interface HardwarePort {
+export type HardwarePort = {
     name: string;
     device: string;
     address: string;
-}
+};
 
 export class MacNetworkUtils {
     /**
      * Initialized the logger used by MacNetworkUtils
      */
-    public static initializeLogger(level?: LoggerLevelValue) {
+    public static initializeLogger(level?: LoggerLevelValue): void {
         MacNetworkUtils.logger.setLevel(level);
     }
 
     /**
      * Obtains a list of all available network ports on the host machine.
+     *
      * @returns An array of HardwarePort objects containing a list of all available network ports on the host machine.
      */
     public static async getNetworkHardwarePorts(): Promise<HardwarePort[]> {
@@ -62,18 +66,8 @@ export class MacNetworkUtils {
             .then((result) => {
                 const parsedLines = result.stdout
                     .split('\n')
-                    .filter((line) => {
-                        return (
-                            line.includes(hardwarePortPrefix) ||
-                            line.includes(devicePrefix)
-                        );
-                    })
-                    .map((line) => {
-                        return line
-                            .replace(hardwarePortPrefix, '')
-                            .replace(devicePrefix, '')
-                            .trim();
-                    });
+                    .filter((line) => line.includes(hardwarePortPrefix) || line.includes(devicePrefix))
+                    .map((line) => line.replace(hardwarePortPrefix, '').replace(devicePrefix, '').trim());
 
                 const hardwarePorts: HardwarePort[] = [];
                 for (let i = 0; i < parsedLines.length - 1; i += 2) {
@@ -90,9 +84,7 @@ export class MacNetworkUtils {
                     //     status: active
                     // '''
 
-                    const ifconfigCmd = `ifconfig ${
-                        parsedLines[i + 1]
-                    } | awk '$1 == "inet" {print $2}'`;
+                    const ifconfigCmd = `ifconfig ${parsedLines[i + 1]} | awk '$1 == "inet" {print $2}'`;
 
                     let ipAddress = CommonUtils.executeCommandSync(ifconfigCmd);
                     if (ipAddress) {
@@ -104,27 +96,18 @@ export class MacNetworkUtils {
                                 address: ipAddress
                             });
                         } else {
-                            MacNetworkUtils.logger.warn(
-                                `Invalid IP address ${ipAddress}`
-                            );
+                            MacNetworkUtils.logger.warn(`Invalid IP address ${ipAddress}`);
                         }
                     }
                 }
                 return Promise.resolve(hardwarePorts);
             })
-            .catch((error) => {
-                return Promise.reject(
-                    new SfError(
-                        util.format(
-                            `Error collecting network hardware ports: ${error}`
-                        )
-                    )
-                );
-            });
+            .catch((error) => Promise.reject(new SfError(messages.getMessage('error:network:hardware:port', [error]))));
     }
 
     /**
      * Obtains the proxy settings of the host machine.
+     *
      * @returns A ProxySetting object containing the proxy settings of the host machine.
      */
     public static async getProxySetting(): Promise<ProxySetting> {
@@ -143,29 +126,18 @@ export class MacNetworkUtils {
         return CommonUtils.executeCommandAsync(cmd).then((result) => {
             const proxySettings = result.stdout
                 .split('\n')
-                .filter((line) => {
-                    return (
-                        line.includes(proxyAutoConfigEnabled) ||
-                        line.includes(proxyAutoConfigUrlString)
-                    );
-                })
+                .filter((line) => line.includes(proxyAutoConfigEnabled) || line.includes(proxyAutoConfigUrlString))
                 .map((line) => {
-                    const keyValuePair = line.split(' : ', 2).map((value) => {
-                        return value.trim();
-                    });
+                    const keyValuePair = line.split(' : ', 2).map((value) => value.trim());
 
                     if (keyValuePair[0] === proxyAutoConfigEnabled) {
                         return {
-                            key:
-                                keyValuePair[0].charAt(0).toLowerCase() +
-                                keyValuePair[0].slice(1),
+                            key: keyValuePair[0].charAt(0).toLowerCase() + keyValuePair[0].slice(1),
                             value: parseInt(keyValuePair[1], 10)
                         };
                     } else {
                         return {
-                            key:
-                                keyValuePair[0].charAt(0).toLowerCase() +
-                                keyValuePair[0].slice(1),
+                            key: keyValuePair[0].charAt(0).toLowerCase() + keyValuePair[0].slice(1),
                             value: keyValuePair[1]
                         };
                     }

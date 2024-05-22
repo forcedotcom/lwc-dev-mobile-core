@@ -4,47 +4,44 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { performance, PerformanceObserver } from 'node:perf_hooks';
 import { Logger, Messages, SfError } from '@salesforce/core';
 import chalk from 'chalk';
-import util from 'util';
 import { Listr } from 'listr2';
-import { performance, PerformanceObserver } from 'perf_hooks';
-import { PerformanceMarkers } from './PerformanceMarkers';
+import { PerformanceMarkers } from './PerformanceMarkers.js';
 export type CheckRequirementsFunc = () => Promise<string | undefined>;
-// Initialize Messages with the current plugin directory
-Messages.importMessagesDirectory(__dirname);
 
-export interface Requirement {
+export type Requirement = {
     title: string;
     checkFunction: CheckRequirementsFunc;
     fulfilledMessage?: string;
     unfulfilledMessage?: string;
     supplementalMessage?: string;
     logger: Logger;
-}
+};
 
-interface RequirementResult {
+type RequirementResult = {
     duration: number;
     hasPassed: boolean;
     message: string;
     title: string;
-}
+};
 
-interface RequirementCheckResult {
+type RequirementCheckResult = {
     hasMetAllRequirements: boolean;
     tests: RequirementResult[];
-}
+};
 
-export interface RequirementList {
+export type RequirementList = {
     requirements: Requirement[];
     enabled: boolean;
-}
+};
 
 export type CommandRequirements = { [key: string]: RequirementList };
 
-export interface HasRequirements {
+export type HasRequirements = {
     commandRequirements: CommandRequirements;
-}
+};
 
 /**
  * This function wraps existing promises with the intention to allow the collection of promises
@@ -52,16 +49,13 @@ export interface HasRequirements {
  * rejection. We are looking for the equivalent of Promise.allSettled() which is scheduled for ES2020.
  * When the functionality is available this function can be removed.
  * See https://github.com/tc39/proposal-promise-allSettled
+ *
  * @param requirement A Requirement object
  * @returns A Promise object that runs the requirement check and returns a RequirementResult object.
  */
-export async function WrappedPromise(
-    requirement: Requirement
-): Promise<RequirementResult> {
+export async function WrappedPromise(requirement: Requirement): Promise<RequirementResult> {
     const promise = requirement.checkFunction();
-    const perfMarker = PerformanceMarkers.getByName(
-        PerformanceMarkers.REQUIREMENTS_MARKER_KEY
-    )!;
+    const perfMarker = PerformanceMarkers.getByName(PerformanceMarkers.REQUIREMENTS_MARKER_KEY)!;
 
     let stepDuration = 0;
     const obs = new PerformanceObserver((items) => {
@@ -79,9 +73,7 @@ export async function WrappedPromise(
             performance.mark(end);
             performance.measure(step, start, end);
             const msg = `${fulfilledMessage ? fulfilledMessage : ''} ${
-                requirement.supplementalMessage
-                    ? requirement.supplementalMessage
-                    : ''
+                requirement.supplementalMessage ? requirement.supplementalMessage : ''
             }`;
             return {
                 duration: stepDuration,
@@ -94,9 +86,7 @@ export async function WrappedPromise(
             performance.mark(end);
             performance.measure(step, start, end);
             const msg = `${unfulfilledMessage ? unfulfilledMessage : ''} ${
-                requirement.supplementalMessage
-                    ? requirement.supplementalMessage
-                    : ''
+                requirement.supplementalMessage ? requirement.supplementalMessage : ''
             }`;
             return {
                 duration: stepDuration,
@@ -110,18 +100,14 @@ export async function WrappedPromise(
         });
 }
 
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'requirement'
-);
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'requirement');
 
 export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(
-        requirements: CommandRequirements
-    ): Promise<void> {
+    public static async execute(requirements: CommandRequirements): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -133,9 +119,7 @@ export class RequirementProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         Object.entries(requirements).forEach(([_, requirementList]) => {
             if (requirementList.enabled) {
-                enabledRequirements = enabledRequirements.concat(
-                    requirementList.requirements
-                );
+                enabledRequirements = enabledRequirements.concat(requirementList.requirements);
             }
         });
 
@@ -158,17 +142,16 @@ export class RequirementProcessor {
                                 WrappedPromise(requirement).then((result) => {
                                     testResult.tests.push(result);
                                     if (!result.hasPassed) {
-                                        testResult.hasMetAllRequirements =
-                                            false;
+                                        testResult.hasMetAllRequirements = false;
                                     }
 
-                                    subTask.title =
-                                        RequirementProcessor.getFormattedTitle(
-                                            result
-                                        );
+                                    // eslint-disable-next-line no-param-reassign
+                                    subTask.title = RequirementProcessor.getFormattedTitle(result);
+                                    // eslint-disable-next-line no-param-reassign
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;
+                                    // eslint-disable-next-line no-param-reassign
                                     rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
                                         totalDuration
                                     )})`;
@@ -178,9 +161,7 @@ export class RequirementProcessor {
                                     // so that Listr would not replace the task title & output with the error message.
                                     // We want those to be formatted in a certain way so we update the task title and
                                     // output further up ourselves.
-                                    return result.hasPassed
-                                        ? Promise.resolve()
-                                        : Promise.reject(new Error());
+                                    return result.hasPassed ? Promise.resolve() : Promise.reject(new Error());
                                 }),
                             title: requirement.title
                         });
@@ -201,48 +182,31 @@ export class RequirementProcessor {
 
         try {
             await requirementTasks.run();
-
-            if (!testResult.hasMetAllRequirements) {
-                return Promise.reject(
-                    new SfError(
-                        messages.getMessage('error:requirementCheckFailed'),
-                        'lwc-dev-mobile-core',
-                        [
-                            messages.getMessage(
-                                'error:requirementCheckFailed:recommendation'
-                            )
-                        ]
-                    )
-                );
-            }
-
-            return Promise.resolve();
         } catch (error) {
             return Promise.reject(
-                new SfError(
-                    util.format('unexpected error %s', error),
-                    'lwc-dev-mobile-core'
-                )
+                new SfError(messages.getMessage('error:unexpected', [(error as Error).message]), 'lwc-dev-mobile-core')
             );
         }
+
+        if (!testResult.hasMetAllRequirements) {
+            return Promise.reject(
+                new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
+                    messages.getMessage('error:requirementCheckFailed:recommendation')
+                ])
+            );
+        }
+
+        return Promise.resolve();
     }
 
-    private static getFormattedTitle(
-        testCaseResult: RequirementResult
-    ): string {
-        const statusMsg = testCaseResult.hasPassed
-            ? messages.getMessage('passed')
-            : messages.getMessage('failed');
+    private static getFormattedTitle(testCaseResult: RequirementResult): string {
+        const statusMsg = testCaseResult.hasPassed ? messages.getMessage('passed') : messages.getMessage('failed');
 
-        const title = `${statusMsg}: ${
-            testCaseResult.title
-        } (${RequirementProcessor.formatDurationAsSeconds(
+        const title = `${statusMsg}: ${testCaseResult.title} (${RequirementProcessor.formatDurationAsSeconds(
             testCaseResult.duration
         )})`;
 
-        return testCaseResult.hasPassed
-            ? chalk.bold.green(title)
-            : chalk.bold.red(title);
+        return testCaseResult.hasPassed ? chalk.bold.green(title) : chalk.bold.red(title);
     }
 
     private static formatDurationAsSeconds(duration: number): string {

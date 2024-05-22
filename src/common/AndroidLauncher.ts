@@ -5,26 +5,18 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Messages } from '@salesforce/core';
-import util from 'util';
-import { AndroidUtils } from './AndroidUtils';
-import { AndroidAppPreviewConfig, LaunchArgument } from './PreviewConfigFile';
-import { CommonUtils } from './CommonUtils';
-import { PreviewUtils } from './PreviewUtils';
+import { AndroidUtils } from './AndroidUtils.js';
+import { AndroidAppPreviewConfig, LaunchArgument } from './PreviewConfigFile.js';
+import { CommonUtils } from './CommonUtils.js';
+import { PreviewUtils } from './PreviewUtils.js';
 
-// Initialize Messages with the current plugin directory
-Messages.importMessagesDirectory(__dirname);
-
-// Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
-// or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages(
-    '@salesforce/lwc-dev-mobile-core',
-    'common'
-);
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export class AndroidLauncher {
     private emulatorName: string;
 
-    constructor(emulatorName: string) {
+    public constructor(emulatorName: string) {
         this.emulatorName = emulatorName;
     }
 
@@ -51,8 +43,7 @@ export class AndroidLauncher {
         serverPort: string,
         targetingLwrServer: boolean = false
     ): Promise<void> {
-        const preferredPack =
-            await AndroidUtils.fetchSupportedEmulatorImagePackage();
+        const preferredPack = await AndroidUtils.fetchSupportedEmulatorImagePackage();
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
@@ -60,47 +51,23 @@ export class AndroidLauncher {
         const emuName = this.emulatorName;
         CommonUtils.startCliAction(
             messages.getMessage('startPreviewAction'),
-            util.format(messages.getMessage('searchForDeviceStatus'), emuName)
+            messages.getMessage('searchForDeviceStatus', [emuName])
         );
         return AndroidUtils.hasEmulator(emuName)
             .then((result) => {
                 if (!result) {
-                    CommonUtils.updateCliAction(
-                        util.format(
-                            messages.getMessage('createDeviceStatus'),
-                            emuName
-                        )
-                    );
-                    return AndroidUtils.createNewVirtualDevice(
-                        emuName,
-                        emuImage,
-                        androidApi,
-                        device,
-                        abi
-                    );
+                    CommonUtils.updateCliAction(messages.getMessage('createDeviceStatus', [emuName]));
+                    return AndroidUtils.createNewVirtualDevice(emuName, emuImage, androidApi, device, abi);
                 }
-                CommonUtils.updateCliAction(
-                    util.format(
-                        messages.getMessage('foundDeviceStatus'),
-                        emuName
-                    )
-                );
+                CommonUtils.updateCliAction(messages.getMessage('foundDeviceStatus', [emuName]));
                 return Promise.resolve();
             })
             .then(() => {
-                CommonUtils.updateCliAction(
-                    util.format(
-                        messages.getMessage('startDeviceStatus'),
-                        emuName
-                    )
-                );
+                CommonUtils.updateCliAction(messages.getMessage('startDeviceStatus', [emuName]));
                 return AndroidUtils.startEmulator(emuName);
             })
             .then((emulatorPort) => {
-                const useServer = PreviewUtils.useLwcServerForPreviewing(
-                    targetApp,
-                    appConfig
-                );
+                const useServer = PreviewUtils.useLwcServerForPreviewing(targetApp, appConfig);
                 const address = useServer ? 'http://10.0.2.2' : undefined; // TODO: dynamically determine server address
                 const port = useServer ? serverPort : undefined;
 
@@ -109,31 +76,18 @@ export class AndroidLauncher {
                     if (targetingLwrServer) {
                         url = `${address}:${port}`;
                     } else {
-                        const compPath =
-                            PreviewUtils.prefixRouteIfNeeded(compName);
+                        const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
                         url = `${address}:${port}/lwc/preview/${compPath}`;
                     }
 
-                    CommonUtils.updateCliAction(
-                        util.format(
-                            messages.getMessage('launchBrowserStatus'),
-                            url
-                        )
-                    );
+                    CommonUtils.updateCliAction(messages.getMessage('launchBrowserStatus', [url]));
                     return AndroidUtils.launchURLIntent(url, emulatorPort);
                 } else {
-                    CommonUtils.updateCliAction(
-                        util.format(
-                            messages.getMessage('launchAppStatus'),
-                            targetApp
-                        )
-                    );
+                    CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
 
-                    const launchActivity =
-                        (appConfig && appConfig.activity) || '';
+                    const launchActivity = appConfig?.activity ?? '';
 
-                    const targetAppArguments: LaunchArgument[] =
-                        (appConfig && appConfig.launch_arguments) || [];
+                    const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
                     return AndroidUtils.launchNativeApp(
                         compName,
                         projectDir,
@@ -152,9 +106,7 @@ export class AndroidLauncher {
                 return Promise.resolve();
             })
             .catch((error) => {
-                CommonUtils.stopCliAction(
-                    messages.getMessage('genericErrorStatus')
-                );
+                CommonUtils.stopCliAction(messages.getMessage('genericErrorStatus'));
                 throw error;
             });
     }

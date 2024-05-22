@@ -1,3 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable class-methods-use-this */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/member-ordering */
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /*
  * Copyright (c) 2023, salesforce.com, inc.
  * All rights reserved.
@@ -6,14 +14,11 @@
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Logger, LoggerLevel } from '@salesforce/core';
-import { CommandLineUtils } from './Common';
-import { LoggerSetup } from './LoggerSetup';
-import { HasRequirements, CommandRequirements } from './Requirements';
+import { CommandLineUtils } from './Common.js';
+import { LoggerSetup } from './LoggerSetup.js';
+import { HasRequirements, CommandRequirements } from './Requirements.js';
 
-export abstract class BaseCommand
-    extends SfCommand<any>
-    implements HasRequirements
-{
+export abstract class BaseCommand extends SfCommand<any> implements HasRequirements {
     protected _commandName = 'BaseCommand';
     public get commandName(): string {
         return this._commandName;
@@ -69,8 +74,8 @@ export abstract class BaseCommand
     // if a flag has a `validate` function defined. If so then we
     // mark it to use `CommandLineUtils.flagParser` as a parser,
     // which will execute the validation function.
-    private injectFlagParser() {
-        const flags = (<typeof SfCommand>this.constructor).flags;
+    private injectFlagParser(): void {
+        const flags = (this.constructor as typeof SfCommand).flags;
         const flagEntries = Object.entries(flags);
         flagEntries.forEach((flag) => {
             // Object.entries returns an array of KeyValue pairs where item[0]
@@ -82,10 +87,9 @@ export abstract class BaseCommand
             // If so then we override the default parser with our parser which runs
             // the validation check and only accepts the flag value if validation passes.
             const configEntries = Object.entries(flag[1]);
-            const hasValidate = configEntries.find(
-                (keyValuePair) => keyValuePair[0] === 'validate'
-            );
+            const hasValidate = configEntries.find((keyValuePair) => keyValuePair[0] === 'validate');
             if (hasValidate) {
+                // eslint-disable-next-line @typescript-eslint/unbound-method, no-param-reassign
                 flag[1].parse = CommandLineUtils.flagParser;
             }
         });
