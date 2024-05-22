@@ -9,9 +9,11 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
+import { CommandLineUtils } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { AndroidAppPreviewConfig, IOSAppPreviewConfig, PreviewConfigFile } from './PreviewConfigFile.js';
 
@@ -127,5 +129,45 @@ export class PreviewUtils {
         } else {
             return undefined;
         }
+    }
+
+    /**
+     * For the new Local Development Preview approach where a new local dev server is being used,
+     * the local dev server needs to be configured to use a web socket url for local previewing.
+     * This method generates an appropriate web socket url to be used by the local dev server.
+     *
+     * @param platform a platform flag (desktop , ios, android).
+     * @param port the port number that the local dev server is configured to use.
+     * @returns A string representing a web socket url to be used by the local dev server.
+     */
+    public static generateWebSocketUrlForLocalDevServer(platform: string, portNumber: string): string {
+        /*
+          - For desktop browsers other than Safari, local development use cases will target ws://localhost:<port> connections to the local dev server
+          - For the Safari desktop browser, target wss://localhost:<port>
+            
+          - For mobile (Salesforce App), local development use cases will target:
+            - iOS: wss://<local hostname>:<port>
+            - Android: wss://10.0.2.2:<port>
+        */
+
+        if (CommandLineUtils.platformFlagIsIOS(platform)) {
+            return `wss://${os.hostname()}:${portNumber}`;
+        }
+
+        if (CommandLineUtils.platformFlagIsAndroid(platform)) {
+            return `wss://10.0.2.2:${portNumber}`;
+        }
+
+        if (process.platform !== 'darwin') {
+            return `ws://localhost:${portNumber}`; // cannot be Safari since it is only available on Mac
+        }
+
+        // Check to see if the default browser is Safari
+        // From https://apple.stackexchange.com/questions/313454/applescript-find-the-users-set-default-browser
+        const cmd =
+            "defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR)-1]}{window[NR]=$2}'";
+        const result = CommonUtils.executeCommandSync(cmd).trim().toLowerCase();
+        const isSafari = result.includes('safari') || result === '';
+        return isSafari ? `wss://localhost:${portNumber}` : `ws://localhost:${portNumber}`;
     }
 }
