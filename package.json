@@ -117,7 +117,7 @@
         "format": "wireit",
         "format:check": "wireit",
         "lint": "wireit",
-        "postinstall": "yarn husky install",
+        "prepare": "husky install",
         "postpack": "shx rm -f oclif.manifest.json oclif.lock",
         "prepack": "yarn clean-all && npm run sf-prepack",
         "sf-prepack": "sf-prepack",
