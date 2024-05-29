@@ -59,6 +59,8 @@ describe('Android utils', () => {
     };
 
     beforeEach(() => {
+        stubMethod($$.SANDBOX, CommonUtils, 'delay').returns(Promise.resolve());
+
         stubMethod($$.SANDBOX, AndroidUtils, 'getAndroidSdkRoot').returns({
             rootLocation: mockAndroidHome,
             rootSource: AndroidSDKRootSource.androidHome
