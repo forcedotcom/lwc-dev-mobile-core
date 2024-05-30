@@ -3,6 +3,7 @@ module.exports = {
     // Allow describe and it
     env: { mocha: true },
     rules: {
+        'class-methods-use-this': 'off',
         'no-unused-expressions': 'off', // Allow assert style expressions. i.e. expect(true).to.be.true
         '@typescript-eslint/explicit-function-return-type': 'off', // Return types are defined by the source code. Allows for quick overwrites.
         '@typescript-eslint/no-empty-function': 'off', // Mocked out the methods that shouldn't do anything in the tests.
