@@ -363,16 +363,15 @@ describe('CommonUtils', () => {
     }
 
     async function verifyDownloadFails(url: string, mockResponse: any) {
+        const fake = (options: any, callback: (res: http.IncomingMessage) => void) => {
+            setTimeout(() => callback(mockResponse), 100);
+            return { on: () => {}, end: () => {} };
+        };
+
         if (url.startsWith('https:')) {
-            httpsGetStub.callsFake((_, callback) => {
-                setTimeout(() => callback(mockResponse), 100);
-                return { on: () => {}, end: () => {} };
-            });
+            httpsGetStub.callsFake(fake);
         } else {
-            httpGetStub.callsFake((_, callback) => {
-                setTimeout(() => callback(mockResponse), 100);
-                return { on: () => {}, end: () => {} };
-            });
+            httpGetStub.callsFake(fake);
         }
 
         try {
