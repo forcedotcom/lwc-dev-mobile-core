@@ -33,8 +33,7 @@ class MemoryWriteStream extends stream.Writable {
         callback();
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    public close(callback?: ((err?: NodeJS.ErrnoException | null | undefined) => void) | undefined): void {
+    public close(): void {
         // no-op
     }
 }
@@ -207,7 +206,7 @@ describe('CommonUtils', () => {
             );
             return { on: () => {}, end: () => {} };
         });
-        await CommonUtils.downloadFile('https://www.google.com', downloadDestinationFile);
+        await CommonUtils.downloadFile('https://www.salesforce.com', downloadDestinationFile);
         expect(unlinkStub.called).to.be.false;
         expect(writeStreamMock.getData()).to.equal('Test Content');
     });
