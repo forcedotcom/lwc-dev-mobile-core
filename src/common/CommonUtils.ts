@@ -270,10 +270,7 @@ export class CommonUtils {
 
             CommonUtils.logger.debug(`Executing command: '${fullCommand}'`);
 
-            const prc = childProcess.spawn(command, args, {
-                shell: true,
-                stdio: stdioOptions
-            });
+            const prc = CommonUtils.spawnWrapper(command, args, stdioOptions);
 
             prc.stdout?.on('data', (data) => {
                 capturedStdout.push(data.toString());
@@ -302,6 +299,25 @@ export class CommonUtils {
                     });
                 }
             });
+        });
+    }
+
+    /**
+     * Used as a wrapper to child_process spawn function solely for unit testing purposes
+     *
+     * @param command the command to be forwarded to child_process spawn function
+     * @param args the arguments to be forwarded to child_process spawn function
+     * @param stdioOptions  the options to be forwarded to child_process spawn function
+     * @returns the process that is returned as the result of a call to child_process spawn function
+     */
+    public static spawnWrapper(
+        command: string,
+        args: string[] = [],
+        stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
+    ): childProcess.ChildProcess {
+        return childProcess.spawn(command, args, {
+            shell: true,
+            stdio: stdioOptions
         });
     }
 

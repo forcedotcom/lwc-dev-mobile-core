@@ -10,7 +10,8 @@ import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import stream from 'node:stream';
-import { Messages } from '@salesforce/core';
+import * as childProcess from 'node:child_process';
+import { Logger, Messages } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
@@ -281,37 +282,50 @@ describe('CommonUtils', () => {
         ]);
     });
 
-    // Disabling this test for now. It runs & passes locally but it fails
-    // in CI b/c the child process errors out with `read ENOTCONN` error.
-    /* it('spawnCommandAsync', async () => {
-        const fakeProcess = new ChildProcess();
-        fakeProcess.stdout = process.stdout;
-        fakeProcess.stderr = process.stderr;
-
-        const mockSpawn = jest.fn((): ChildProcess => fakeProcess);
-        jest.spyOn(cp, 'spawn').mockImplementation(mockSpawn);
+    it('spawnCommandAsync handles when child process completes successfully', async () => {
+        const fakeProcess = new childProcess.ChildProcess();
+        const spawnStub = stubMethod($$.SANDBOX, CommonUtils, 'spawnWrapper').returns(fakeProcess);
+        const errorLoggerMock = stubMethod($$.SANDBOX, Logger.prototype, 'error');
 
         setTimeout(() => {
-            fakeProcess.stdout?.push('Test STDOUT');
-            fakeProcess.stderr?.push('Test STDERR');
             fakeProcess.emit('close', 0);
-            fakeProcess.kill(0);
-        }, 2000);
+        }, 100);
 
-        const results = await CommonUtils.spawnCommandAsync(
-            'cmd',
+        await CommonUtils.spawnCommandAsync('somecommand', ['arg1', 'arg2'], ['ignore', 'inherit', 'pipe']);
+
+        expect(spawnStub.calledOnce);
+        expect(spawnStub.getCall(0).args).to.deep.equal([
+            'somecommand',
             ['arg1', 'arg2'],
             ['ignore', 'inherit', 'pipe']
-        );
+        ]);
+        expect(errorLoggerMock.called).to.be.false;
+    });
 
-        expect(mockSpawn).toHaveBeenCalledWith('cmd', ['arg1', 'arg2'], {
-            shell: true,
-            stdio: ['ignore', 'inherit', 'pipe']
-        });
+    it('spawnCommandAsync handles when child process completes with error', async () => {
+        const fakeProcess = new childProcess.ChildProcess();
+        const spawnStub = stubMethod($$.SANDBOX, CommonUtils, 'spawnWrapper').returns(fakeProcess);
+        const errorLoggerMock = stubMethod($$.SANDBOX, Logger.prototype, 'error');
 
-        expect(results.stdout).toBe('Test STDOUT');
-        expect(results.stderr).toBe('Test STDERR');
-    });*/
+        setTimeout(() => {
+            fakeProcess.emit('close', 123);
+        }, 100);
+
+        try {
+            await CommonUtils.spawnCommandAsync('somecommand', ['arg1', 'arg2'], ['ignore', 'inherit', 'pipe']);
+        } catch (error) {
+            expect(error).to.be.an('error');
+        }
+
+        expect(spawnStub.calledOnce);
+        expect(spawnStub.getCall(0).args).to.deep.equal([
+            'somecommand',
+            ['arg1', 'arg2'],
+            ['ignore', 'inherit', 'pipe']
+        ]);
+        expect(errorLoggerMock.called).to.be.true;
+        expect(errorLoggerMock.getCall(0).args[0]).to.contain('somecommand arg1 arg2');
+    });
 
     function createStats(isFile: boolean): fs.Stats {
         return {
