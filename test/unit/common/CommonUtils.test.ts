@@ -6,18 +6,69 @@
  */
 import os from 'node:os';
 import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import path from 'node:path';
-import { Messages } from '@salesforce/core';
+import stream from 'node:stream';
+import * as childProcess from 'node:child_process';
+import { Logger, Messages } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
+import sinon from 'sinon';
 import { CommonUtils } from '../../../src/common/CommonUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
+// Custom Writable stream that writes to memory, for testing downloadFile
+const data: Buffer[] = [];
+class MemoryWriteStream extends stream.Writable {
+    public getData(): string {
+        return Buffer.concat(data).toString();
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public _write(chunk: Buffer, encoding: string, callback: (error?: Error | null) => void): void {
+        data.push(chunk);
+        callback();
+    }
+
+    public close(): void {
+        // no-op
+    }
+}
+
 describe('CommonUtils', () => {
+    const downloadDestinationFile = path.join(os.tmpdir(), 'ca.crt');
     const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
     const $$ = new TestContext();
+
+    let unlinkStub: sinon.SinonStub<any[], any>;
+    let httpGetStub: sinon.SinonStub<any[], any>;
+    let httpsGetStub: sinon.SinonStub<any[], any>;
+    let mockBadResponse: http.IncomingMessage;
+    let mockGoodResponse: http.IncomingMessage;
+    let writeStreamMock: MemoryWriteStream;
+
+    beforeEach(() => {
+        stubMethod($$.SANDBOX, fs, 'createWriteStream').returns(writeStreamMock);
+        unlinkStub = stubMethod($$.SANDBOX, fs, 'unlink').callsFake((_, callback) => {
+            callback();
+        });
+        httpGetStub = stubMethod($$.SANDBOX, http, 'get');
+        httpsGetStub = stubMethod($$.SANDBOX, https, 'get');
+
+        mockBadResponse = new stream.PassThrough() as unknown as http.IncomingMessage;
+        mockBadResponse.statusCode = 404;
+        mockBadResponse.statusMessage = 'Not Found';
+
+        mockGoodResponse = new stream.PassThrough() as unknown as http.IncomingMessage;
+        mockGoodResponse.statusCode = 200;
+        mockGoodResponse.statusMessage = 'Done';
+        (mockGoodResponse as unknown as stream.PassThrough).write('This is a test');
+
+        writeStreamMock = new MemoryWriteStream();
+    });
 
     afterEach(() => {
         $$.restore();
@@ -119,49 +170,46 @@ describe('CommonUtils', () => {
         }
     });
 
-    it('downloadFile function', async () => {
-        const dest = path.join(os.tmpdir(), 'ca.crt');
+    it('downloadFile fails with bad relative url', async () => {
+        await verifyDownloadFails('badurl1', mockBadResponse);
+    });
 
-        // should fail and not create a destination file
-        try {
-            await CommonUtils.downloadFile('badurl', dest);
-        } catch (error) {
-            expect(error).to.be.an('error');
-            expect(fs.existsSync(dest)).to.be.false;
-        }
+    it('downloadFile fails with bad http absolute url', async () => {
+        await verifyDownloadFails('http://badurl2', mockBadResponse);
+    });
 
-        // should fail and not create a destination file
-        try {
-            await CommonUtils.downloadFile('http://badurl', dest);
-        } catch (error) {
-            expect(error).to.be.an('error');
-            expect(fs.existsSync(dest)).to.be.false;
-        }
+    it('downloadFile fails with bad https absolute url', async () => {
+        await verifyDownloadFails('https://badurl3', mockBadResponse);
+    });
 
-        // should fail and not create a destination file
-        try {
-            await CommonUtils.downloadFile('https://badurl', dest);
-        } catch (error) {
-            expect(error).to.be.an('error');
-            expect(fs.existsSync(dest)).to.be.false;
-        }
+    it('downloadFile fails when fetching url goes through but saving to file fails', async () => {
+        await verifyDownloadFails('https://www.salesforce.com', {
+            statusCode: 200,
+            pipe: (writeStream: fs.WriteStream) => {
+                writeStream.emit('error', new Error('failed to write to file'));
+            }
+        });
+    });
 
-        // should fail and not create a destination file
-        try {
-            await CommonUtils.downloadFile('https://www.google.com/badurl', dest);
-        } catch (error) {
-            expect(error).to.be.an('error');
-            expect(fs.existsSync(dest)).to.be.false;
-        }
-
-        // For now don't run this part on Windows b/c our CI
-        // environment does not give file write permission.
-        if (process.platform !== 'win32') {
-            // should pass and create a destination file
-            await CommonUtils.downloadFile('https://www.google.com', dest);
-            expect(fs.existsSync(dest)).to.be.true;
-        }
-    }).timeout(20000); // increase timeout for this test
+    it('downloadFile passes and save the content', async () => {
+        httpsGetStub.callsFake((_, callback) => {
+            setTimeout(
+                () =>
+                    callback({
+                        statusCode: 200,
+                        pipe: (writeStream: fs.WriteStream) => {
+                            writeStream.write('Test Content');
+                            writeStream.emit('finish');
+                        }
+                    }),
+                100
+            );
+            return { on: () => {}, end: () => {} };
+        });
+        await CommonUtils.downloadFile('https://www.salesforce.com', downloadDestinationFile);
+        expect(unlinkStub.called).to.be.false;
+        expect(writeStreamMock.getData()).to.equal('Test Content');
+    });
 
     it('read/write text file functions', async () => {
         const dest = path.join(os.tmpdir(), 'test_file.txt');
@@ -232,37 +280,50 @@ describe('CommonUtils', () => {
         ]);
     });
 
-    // Disabling this test for now. It runs & passes locally but it fails
-    // in CI b/c the child process errors out with `read ENOTCONN` error.
-    /* it('spawnCommandAsync', async () => {
-        const fakeProcess = new ChildProcess();
-        fakeProcess.stdout = process.stdout;
-        fakeProcess.stderr = process.stderr;
-
-        const mockSpawn = jest.fn((): ChildProcess => fakeProcess);
-        jest.spyOn(cp, 'spawn').mockImplementation(mockSpawn);
+    it('spawnCommandAsync handles when child process completes successfully', async () => {
+        const fakeProcess = new childProcess.ChildProcess();
+        const spawnStub = stubMethod($$.SANDBOX, CommonUtils, 'spawnWrapper').returns(fakeProcess);
+        const errorLoggerMock = stubMethod($$.SANDBOX, Logger.prototype, 'error');
 
         setTimeout(() => {
-            fakeProcess.stdout?.push('Test STDOUT');
-            fakeProcess.stderr?.push('Test STDERR');
             fakeProcess.emit('close', 0);
-            fakeProcess.kill(0);
-        }, 2000);
+        }, 100);
 
-        const results = await CommonUtils.spawnCommandAsync(
-            'cmd',
+        await CommonUtils.spawnCommandAsync('somecommand', ['arg1', 'arg2'], ['ignore', 'inherit', 'pipe']);
+
+        expect(spawnStub.calledOnce);
+        expect(spawnStub.getCall(0).args).to.deep.equal([
+            'somecommand',
             ['arg1', 'arg2'],
             ['ignore', 'inherit', 'pipe']
-        );
+        ]);
+        expect(errorLoggerMock.called).to.be.false;
+    });
 
-        expect(mockSpawn).toHaveBeenCalledWith('cmd', ['arg1', 'arg2'], {
-            shell: true,
-            stdio: ['ignore', 'inherit', 'pipe']
-        });
+    it('spawnCommandAsync handles when child process completes with error', async () => {
+        const fakeProcess = new childProcess.ChildProcess();
+        const spawnStub = stubMethod($$.SANDBOX, CommonUtils, 'spawnWrapper').returns(fakeProcess);
+        const errorLoggerMock = stubMethod($$.SANDBOX, Logger.prototype, 'error');
 
-        expect(results.stdout).toBe('Test STDOUT');
-        expect(results.stderr).toBe('Test STDERR');
-    });*/
+        setTimeout(() => {
+            fakeProcess.emit('close', 123);
+        }, 100);
+
+        try {
+            await CommonUtils.spawnCommandAsync('somecommand', ['arg1', 'arg2'], ['ignore', 'inherit', 'pipe']);
+        } catch (error) {
+            expect(error).to.be.an('error');
+        }
+
+        expect(spawnStub.calledOnce);
+        expect(spawnStub.getCall(0).args).to.deep.equal([
+            'somecommand',
+            ['arg1', 'arg2'],
+            ['ignore', 'inherit', 'pipe']
+        ]);
+        expect(errorLoggerMock.called).to.be.true;
+        expect(errorLoggerMock.getCall(0).args[0]).to.contain('somecommand arg1 arg2');
+    });
 
     function createStats(isFile: boolean): fs.Stats {
         return {
@@ -299,5 +360,26 @@ describe('CommonUtils', () => {
             path: fname,
             parentPath: fname
         };
+    }
+
+    async function verifyDownloadFails(url: string, mockResponse: any) {
+        const fake = (options: any, callback: (res: http.IncomingMessage) => void) => {
+            setTimeout(() => callback(mockResponse), 100);
+            return { on: () => {}, end: () => {} };
+        };
+
+        if (url.startsWith('https:')) {
+            httpsGetStub.callsFake(fake);
+        } else {
+            httpGetStub.callsFake(fake);
+        }
+
+        try {
+            await CommonUtils.downloadFile(url, downloadDestinationFile);
+        } catch (error) {
+            expect(error).to.be.an('error');
+            expect(unlinkStub.calledOnce).to.be.true;
+            expect(unlinkStub.getCall(0).args[0]).to.be.equal(downloadDestinationFile);
+        }
     }
 });
