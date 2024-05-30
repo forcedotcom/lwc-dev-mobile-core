@@ -72,7 +72,6 @@ describe('CommonUtils', () => {
     });
 
     afterEach(() => {
-        httpGetStub.reset();
         $$.restore();
     });
 
