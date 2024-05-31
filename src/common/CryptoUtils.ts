@@ -12,8 +12,10 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'crypto-utils');
 
 export type PEMCertificate = {
-    certificate: string;
-    key: string;
+    derCertificate: string;
+    pemCertificate: string;
+    pemPrivateKey: string;
+    pemPublicKey: string;
 };
 
 export class CryptoUtils {
@@ -66,30 +68,12 @@ export class CryptoUtils {
         cert.validity.notAfter = endDate;
 
         const attrs = [
-            {
-                name: 'commonName',
-                value: hostname
-            },
-            {
-                name: 'countryName',
-                value: 'US'
-            },
-            {
-                shortName: 'ST',
-                value: 'California'
-            },
-            {
-                name: 'localityName',
-                value: 'San Francisco'
-            },
-            {
-                name: 'organizationName',
-                value: 'Example Inc.'
-            },
-            {
-                shortName: 'OU',
-                value: 'Test'
-            }
+            { name: 'commonName', value: hostname },
+            { name: 'countryName', value: 'US' },
+            { shortName: 'ST', value: 'California' },
+            { name: 'localityName', value: 'San Francisco' },
+            { name: 'organizationName', value: 'Salesforce Inc.' },
+            { shortName: 'OU', value: 'LocalDevPreview' }
         ];
 
         cert.setSubject(attrs);
@@ -118,6 +102,16 @@ export class CryptoUtils {
                 timeStamping: true
             },
             {
+                name: 'nsCertType',
+                client: true,
+                server: true,
+                email: true,
+                objsign: true,
+                sslCA: true,
+                emailCA: true,
+                objCA: true
+            },
+            {
                 name: 'subjectAltName',
                 altNames: [
                     {
@@ -137,14 +131,25 @@ export class CryptoUtils {
                         value: '::1'
                     }
                 ]
+            },
+            {
+                name: 'subjectKeyIdentifier'
             }
         ]);
 
         cert.sign(keys.privateKey, forge.md.sha256.create());
 
         const pemCert = forge.pki.certificateToPem(cert);
-        const pemKey = forge.pki.privateKeyToPem(keys.privateKey);
+        const privateKey = forge.pki.privateKeyToPem(keys.privateKey);
+        const publicKey = forge.pki.publicKeyToPem(keys.publicKey);
 
-        return { certificate: pemCert, key: pemKey };
+        const derCert = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+
+        return {
+            derCertificate: derCert,
+            pemCertificate: pemCert,
+            pemPrivateKey: privateKey,
+            pemPublicKey: publicKey
+        };
     }
 }

@@ -67,7 +67,9 @@ describe('CryptoUtils tests', () => {
 
     it('generateSelfSignedCert succeeds to generate a certificate and key for localhost', async () => {
         const cert = CryptoUtils.generateSelfSignedCert();
-        expect(cert.certificate.startsWith('-----BEGIN CERTIFICATE-----')).to.be.true;
-        expect(cert.key.startsWith('-----BEGIN RSA PRIVATE KEY-----')).to.be.true;
+        expect(cert.derCertificate).not.to.be.null;
+        expect(cert.pemCertificate.startsWith('-----BEGIN CERTIFICATE-----')).to.be.true;
+        expect(cert.pemPublicKey.startsWith('-----BEGIN PUBLIC KEY-----')).to.be.true;
+        expect(cert.pemPrivateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----')).to.be.true;
     }).timeout(10000); // increase timeout for this test
 });
