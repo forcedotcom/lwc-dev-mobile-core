@@ -11,7 +11,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'crypto-utils');
 
-export type PEMCertificate = {
+export type SSLCertificateData = {
     derCertificate: string;
     pemCertificate: string;
     pemPrivateKey: string;
@@ -36,7 +36,7 @@ export class CryptoUtils {
         hostname: string = 'localhost',
         keySize: number = 4096,
         validity: number | Date = 365
-    ): PEMCertificate {
+    ): SSLCertificateData {
         if (keySize < 2048 || keySize > 16_384) {
             throw new Error(messages.getMessage('error:invalidKeySize'));
         }
@@ -70,10 +70,7 @@ export class CryptoUtils {
         const attrs = [
             { name: 'commonName', value: hostname },
             { name: 'countryName', value: 'US' },
-            { shortName: 'ST', value: 'California' },
-            { name: 'localityName', value: 'San Francisco' },
-            { name: 'organizationName', value: 'Salesforce Inc.' },
-            { shortName: 'OU', value: 'LocalDevPreview' }
+            { name: 'organizationName', value: 'Salesforce Inc.' }
         ];
 
         cert.setSubject(attrs);
@@ -87,29 +84,12 @@ export class CryptoUtils {
             },
             {
                 name: 'keyUsage',
-                keyCertSign: true,
                 digitalSignature: true,
-                nonRepudiation: true,
-                keyEncipherment: true,
-                dataEncipherment: true
+                keyEncipherment: true
             },
             {
-                name: 'extKeyUsage',
-                serverAuth: true,
-                clientAuth: true,
-                codeSigning: true,
-                emailProtection: true,
-                timeStamping: true
-            },
-            {
-                name: 'nsCertType',
-                client: true,
-                server: true,
-                email: true,
-                objsign: true,
-                sslCA: true,
-                emailCA: true,
-                objCA: true
+                name: 'extKeyUsage', // Needed by iOS (see https://support.apple.com/en-gb/103769)
+                serverAuth: true
             },
             {
                 name: 'subjectAltName',
@@ -131,9 +111,6 @@ export class CryptoUtils {
                         value: '::1'
                     }
                 ]
-            },
-            {
-                name: 'subjectKeyIdentifier'
             }
         ]);
 
