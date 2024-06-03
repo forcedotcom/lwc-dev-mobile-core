@@ -64,10 +64,10 @@ export enum Platform {
 }
 
 export enum FlagsConfigType {
-    PlatformType,
-    ApiLevel,
-    LogLevel,
-    Json
+    PlatformFlag,
+    ApiLevelFlag,
+    LogLevelFlag,
+    JsonFlag
 }
 
 export class CommandLineUtils {
@@ -120,7 +120,7 @@ export class CommandLineUtils {
 
     public static createFlag(type: FlagsConfigType, isRequired: boolean, supportsDesktop = false): any {
         switch (type) {
-            case FlagsConfigType.ApiLevel:
+            case FlagsConfigType.ApiLevelFlag:
                 return {
                     apilevel: Flags.string({
                         char: 'l',
@@ -129,7 +129,7 @@ export class CommandLineUtils {
                         validate: CommandLineUtils.validateApiLevelFlag
                     })
                 };
-            case FlagsConfigType.PlatformType:
+            case FlagsConfigType.PlatformFlag:
                 return {
                     platform: Flags.option({
                         char: 'p',
@@ -140,7 +140,7 @@ export class CommandLineUtils {
                             : ([Platform.ios, Platform.android] as const)
                     })({ required: isRequired })
                 };
-            case FlagsConfigType.LogLevel:
+            case FlagsConfigType.LogLevelFlag:
                 return {
                     loglevel: Flags.string({
                         description: messages.getMessage('logLevelFlagDescription'),
@@ -149,7 +149,7 @@ export class CommandLineUtils {
                         validate: (level: string) => level && (LoggerLevel as any)[level.trim().toUpperCase()]
                     })
                 };
-            case FlagsConfigType.Json:
+            case FlagsConfigType.JsonFlag:
                 return {
                     json: Flags.boolean({
                         description: messages.getMessage('jsonFlagDescription'),

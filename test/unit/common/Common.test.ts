@@ -128,7 +128,7 @@ describe('Commons utils tests', () => {
     });
 
     it('Platform flag config property returns expected flag', async () => {
-        let platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.PlatformType, true);
+        let platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.PlatformFlag, true);
         expect(platformFlagConfig.platform?.description).to.be.equal(messages.getMessage('platformFlagDescription'));
         let requiredKeyValuePair = Object.entries(platformFlagConfig.platform).find(
             (keyValuePair) => keyValuePair[0] === 'required'
@@ -136,7 +136,7 @@ describe('Commons utils tests', () => {
 
         expect(requiredKeyValuePair?.[1]).to.be.true;
 
-        platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.PlatformType, false);
+        platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.PlatformFlag, false);
 
         requiredKeyValuePair = Object.entries(platformFlagConfig.platform).find(
             (keyValuePair) => keyValuePair[0] === 'required'
@@ -146,7 +146,7 @@ describe('Commons utils tests', () => {
     });
 
     it('API level flag config property returns expected flag', async () => {
-        let apiLevelFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.ApiLevel, true);
+        let apiLevelFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.ApiLevelFlag, true);
         expect(apiLevelFlagConfig.apilevel?.description).to.be.equal(messages.getMessage('apiLevelFlagDescription'));
 
         let requiredKeyValuePair = Object.entries(apiLevelFlagConfig.apilevel).find(
@@ -155,7 +155,7 @@ describe('Commons utils tests', () => {
 
         expect(requiredKeyValuePair?.[1]).to.be.true;
 
-        apiLevelFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.ApiLevel, false);
+        apiLevelFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.ApiLevelFlag, false);
 
         requiredKeyValuePair = Object.entries(apiLevelFlagConfig.apilevel).find(
             (keyValuePair) => keyValuePair[0] === 'required'
