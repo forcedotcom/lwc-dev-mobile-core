@@ -23,10 +23,10 @@ export class Setup extends BaseCommand {
     public static readonly examples = messages.getMessages('examples');
 
     public static readonly flags = {
-        ...CommandLineUtils.createFlag(FlagsConfigType.Json, false),
-        ...CommandLineUtils.createFlag(FlagsConfigType.LogLevel, false),
-        ...CommandLineUtils.createFlag(FlagsConfigType.ApiLevel, false),
-        ...CommandLineUtils.createFlag(FlagsConfigType.Platform, true)
+        ...CommandLineUtils.createFlag(FlagsConfigType.JsonFlag, false),
+        ...CommandLineUtils.createFlag(FlagsConfigType.LogLevelFlag, false),
+        ...CommandLineUtils.createFlag(FlagsConfigType.ApiLevelFlag, false),
+        ...CommandLineUtils.createFlag(FlagsConfigType.PlatformFlag, true)
     };
 
     protected _commandName = 'force:lightning:local:setup';

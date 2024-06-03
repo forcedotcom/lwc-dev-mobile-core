@@ -57,26 +57,28 @@ export class SetUtils {
     }
 }
 
+export enum Platform {
+    desktop = 'desktop',
+    ios = 'ios',
+    android = 'android'
+}
+
 export enum FlagsConfigType {
-    Platform,
-    ApiLevel,
-    LogLevel,
-    Json
+    PlatformFlag,
+    ApiLevelFlag,
+    LogLevelFlag,
+    JsonFlag
 }
 
 export class CommandLineUtils {
-    public static IOS_FLAG = 'ios';
-    public static ANDROID_FLAG = 'android';
-    public static DESKTOP_FLAG = 'desktop';
-
     /**
      * Checks to see if a flag is targeting iOS.
      *
      * @param input The input flag.
      * @returns True if flag is targeting iOS.
      */
-    public static platformFlagIsIOS(input: string): boolean {
-        return (input ?? '').trim().toLowerCase() === CommandLineUtils.IOS_FLAG;
+    public static platformFlagIsIOS(input: Platform | string): boolean {
+        return (input ?? '').trim().toLowerCase() === (Platform.ios as string);
     }
 
     /**
@@ -86,7 +88,7 @@ export class CommandLineUtils {
      * @returns True if flag is targeting Android.
      */
     public static platformFlagIsAndroid(input: string): boolean {
-        return (input ?? '').trim().toLowerCase() === CommandLineUtils.ANDROID_FLAG;
+        return (input ?? '').trim().toLowerCase() === (Platform.android as string);
     }
 
     /**
@@ -96,7 +98,7 @@ export class CommandLineUtils {
      * @returns True if flag is targeting Desktop.
      */
     public static platformFlagIsDesktop(input: string): boolean {
-        return (input ?? '').trim().toLowerCase() === CommandLineUtils.DESKTOP_FLAG;
+        return (input ?? '').trim().toLowerCase() === (Platform.desktop as string);
     }
 
     /**
@@ -116,24 +118,9 @@ export class CommandLineUtils {
         }
     }
 
-    /**
-     * Checks to see if a platform flag has a valid value.
-     *
-     * @param platformFlag The platform flag.
-     * @param includeDesktop Indicates whether Desktop is allowed as a target platform. Defaults to false.
-     * @returns True if flag is valid.
-     */
-    public static platformFlagIsValid(platformFlag: string, includeDesktop = false): boolean {
-        return (
-            CommandLineUtils.platformFlagIsIOS(platformFlag) ||
-            CommandLineUtils.platformFlagIsAndroid(platformFlag) ||
-            (includeDesktop && CommandLineUtils.platformFlagIsDesktop(platformFlag))
-        );
-    }
-
     public static createFlag(type: FlagsConfigType, isRequired: boolean, supportsDesktop = false): any {
         switch (type) {
-            case FlagsConfigType.ApiLevel:
+            case FlagsConfigType.ApiLevelFlag:
                 return {
                     apilevel: Flags.string({
                         char: 'l',
@@ -142,20 +129,18 @@ export class CommandLineUtils {
                         validate: CommandLineUtils.validateApiLevelFlag
                     })
                 };
-            case FlagsConfigType.Platform:
+            case FlagsConfigType.PlatformFlag:
                 return {
-                    platform: Flags.string({
+                    platform: Flags.option({
                         char: 'p',
-                        description: supportsDesktop
-                            ? messages.getMessage('platformFlagIncludingDesktopDescription')
-                            : messages.getMessage('platformFlagMobileOnlyDescription'),
-                        required: isRequired,
-                        validate: supportsDesktop
-                            ? CommandLineUtils.validatePlatformFlagIncludingDesktop
-                            : CommandLineUtils.validatePlatformFlagMobileOnly
-                    })
+                        description: messages.getMessage('platformFlagDescription'),
+                        required: true,
+                        options: supportsDesktop
+                            ? ([Platform.desktop, Platform.ios, Platform.android] as const)
+                            : ([Platform.ios, Platform.android] as const)
+                    })({ required: isRequired })
                 };
-            case FlagsConfigType.LogLevel:
+            case FlagsConfigType.LogLevelFlag:
                 return {
                     loglevel: Flags.string({
                         description: messages.getMessage('logLevelFlagDescription'),
@@ -164,7 +149,7 @@ export class CommandLineUtils {
                         validate: (level: string) => level && (LoggerLevel as any)[level.trim().toUpperCase()]
                     })
                 };
-            case FlagsConfigType.Json:
+            case FlagsConfigType.JsonFlag:
                 return {
                     json: Flags.boolean({
                         description: messages.getMessage('jsonFlagDescription'),
@@ -205,14 +190,6 @@ export class CommandLineUtils {
 
     private static validateApiLevelFlag(flag: string): boolean {
         return flag.trim().length > 0; // if it doesn't follow semver then we'll automatically consider it as a code name
-    }
-
-    private static validatePlatformFlagMobileOnly(flag: string): boolean {
-        return CommandLineUtils.platformFlagIsValid(flag, false);
-    }
-
-    private static validatePlatformFlagIncludingDesktop(flag: string): boolean {
-        return CommandLineUtils.platformFlagIsValid(flag, true);
     }
 }
 

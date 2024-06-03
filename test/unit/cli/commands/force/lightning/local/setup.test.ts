@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Logger, Messages, SfError } from '@salesforce/core';
+import { Logger, Messages } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
@@ -15,8 +15,6 @@ import { RequirementProcessor } from '../../../../../../../src/common/Requiremen
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
 describe('Setup Tests', () => {
-    const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
-
     const $$ = new TestContext();
     let executeSetupMock: sinon.SinonStub<any[], any>;
 
@@ -43,10 +41,7 @@ describe('Setup Tests', () => {
         try {
             await Setup.run(['-p', 'someplatform']);
         } catch (error) {
-            expect(error instanceof SfError).to.be.true;
-            expect((error as SfError).message).to.contain(
-                messages.getMessage('error:invalidFlagValue', ['someplatform'])
-            );
+            expect(error).to.be.an('error').with.property('message').that.includes('--platform=someplatform');
         }
     });
 
