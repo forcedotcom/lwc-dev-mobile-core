@@ -26,7 +26,7 @@ export class Setup extends BaseCommand {
         ...CommandLineUtils.createFlag(FlagsConfigType.Json, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.LogLevel, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.ApiLevel, false),
-        ...CommandLineUtils.createFlag(FlagsConfigType.Platform, true)
+        ...CommandLineUtils.createFlag(FlagsConfigType.PlatformType, true)
     };
 
     protected _commandName = 'force:lightning:local:setup';

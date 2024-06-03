@@ -128,17 +128,15 @@ describe('Commons utils tests', () => {
     });
 
     it('Platform flag config property returns expected flag', async () => {
-        let platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.Platform, true);
-        expect(platformFlagConfig.platform?.description).to.be.equal(
-            messages.getMessage('platformFlagMobileOnlyDescription')
-        );
+        let platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.PlatformType, true);
+        expect(platformFlagConfig.platform?.description).to.be.equal(messages.getMessage('platformFlagDescription'));
         let requiredKeyValuePair = Object.entries(platformFlagConfig.platform).find(
             (keyValuePair) => keyValuePair[0] === 'required'
         );
 
         expect(requiredKeyValuePair?.[1]).to.be.true;
 
-        platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.Platform, false);
+        platformFlagConfig = common.CommandLineUtils.createFlag(common.FlagsConfigType.PlatformType, false);
 
         requiredKeyValuePair = Object.entries(platformFlagConfig.platform).find(
             (keyValuePair) => keyValuePair[0] === 'required'
