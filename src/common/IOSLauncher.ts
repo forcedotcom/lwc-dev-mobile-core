@@ -84,15 +84,23 @@ export class IOSLauncher {
                 } else {
                     CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
                     const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
+
+                    targetAppArguments.push({ name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName });
+                    targetAppArguments.push({ name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir });
+
+                    if (address) {
+                        targetAppArguments.push({ name: PreviewUtils.SERVER_ADDRESS_PREFIX, value: address });
+                    }
+
+                    if (port) {
+                        targetAppArguments.push({ name: PreviewUtils.SERVER_PORT_PREFIX, value: port });
+                    }
+
                     return IOSUtils.launchAppInBootedSimulator(
                         deviceUDID,
-                        compName,
-                        projectDir,
                         appBundlePath,
                         targetApp,
-                        targetAppArguments,
-                        address,
-                        port
+                        targetAppArguments
                     );
                 }
             })

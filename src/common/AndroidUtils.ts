@@ -18,7 +18,6 @@ import { Version } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { LaunchArgument } from './PreviewConfigFile.js';
-import { PreviewUtils } from './PreviewUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -45,16 +44,6 @@ export class AndroidUtils {
      */
     public static initializeLogger(level?: LoggerLevelValue): void {
         AndroidUtils.logger.setLevel(level);
-    }
-
-    /**
-     * Converts a path to UNIX style path.
-     *
-     * @param dirPath Input path.
-     * @returns UNIX style path.
-     */
-    public static convertToUnixPath(dirPath: string): string {
-        return dirPath.replace(/[\\]+/g, '/');
     }
 
     /**
@@ -809,26 +798,18 @@ export class AndroidUtils {
     /**
      * Attempts to launch a native app in an emulator to preview LWC components. If the app is not installed then this method will attempt to install it first.
      *
-     * @param compName Name of the LWC component.
-     * @param projectDir Path to the LWC project root directory.
      * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
      * @param targetApp The bundle ID of the app to be launched.
      * @param targetAppArguments Extra arguments to be passed to the app upon launch.
      * @param launchActivity Activity name to be used for launching the app.
-     * @param portNumber The ADB port of an Android virtual device.
-     * @param serverAddress Optional address for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
-     * @param serverPort Optional port for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
+     * @param emulatorPort The ADB port of an Android virtual device.
      */
-    public static async launchNativeApp(
-        compName: string,
-        projectDir: string,
+    public static async launchAppInBootedEmulator(
         appBundlePath: string | undefined,
         targetApp: string,
         targetAppArguments: LaunchArgument[],
         launchActivity: string,
-        portNumber: number,
-        serverAddress: string | undefined,
-        serverPort: string | undefined
+        emulatorPort: number
     ): Promise<void> {
         let thePromise: Promise<string>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
@@ -837,27 +818,16 @@ export class AndroidUtils {
             CommonUtils.startCliAction(messages.getMessage('launchAppAction'), installMsg);
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
             const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
-            thePromise = AndroidUtils.executeAdbCommand(installCommand, portNumber);
+            thePromise = AndroidUtils.executeAdbCommand(installCommand, emulatorPort);
         } else {
             thePromise = Promise.resolve('');
         }
 
         return thePromise
             .then(() => {
-                let launchArgs =
-                    `--es "${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}" "${compName}"` +
-                    ` --es "${PreviewUtils.PROJECT_DIR_ARG_PREFIX}" "${projectDir}"`;
-
-                if (serverAddress) {
-                    launchArgs += ` --es "${PreviewUtils.SERVER_ADDRESS_PREFIX}" "${serverAddress}"`;
-                }
-
-                if (serverPort) {
-                    launchArgs += ` --es "${PreviewUtils.SERVER_PORT_PREFIX}" "${serverPort}"`;
-                }
-
+                let launchArgs = '';
                 targetAppArguments.forEach((arg) => {
-                    launchArgs += ` --es "${arg.name}" "${arg.value}"`;
+                    launchArgs += `--es "${arg.name}" "${arg.value}" `;
                 });
 
                 const launchCommand =
@@ -870,9 +840,12 @@ export class AndroidUtils {
                 AndroidUtils.logger.info(launchMsg);
                 CommonUtils.updateCliAction(launchMsg);
 
-                return AndroidUtils.executeAdbCommand(launchCommand, portNumber);
+                return AndroidUtils.executeAdbCommand(launchCommand, emulatorPort);
             })
-            .then(() => Promise.resolve());
+            .then(() => {
+                CommonUtils.stopCliAction();
+                return Promise.resolve();
+            });
     }
 
     // This method is public for testing purposes.

@@ -52,7 +52,7 @@ describe('IOS utils tests', () => {
         });
         const udid = 'MOCKUDID';
         await IOSUtils.bootDevice(udid);
-        expect(stub.calledWith(`/usr/bin/xcrun simctl boot ${udid}`));
+        expect(stub.calledWith(`/usr/bin/xcrun simctl boot ${udid}`)).to.be.true;
     });
 
     it('Should attempt to invoke the xcrun but fail booting a device', async () => {
@@ -73,7 +73,7 @@ describe('IOS utils tests', () => {
             stub.calledWith(
                 `/usr/bin/xcrun simctl create '${simName}' ${DEVICE_TYPE_PREFIX}.${deviceType} ${RUNTIME_TYPE_PREFIX}.${runtimeType}`
             )
-        );
+        ).to.be.true;
     });
 
     it('Should attempt to invoke xcrun to boot device but resolve if device is already booted', async () => {
@@ -114,7 +114,7 @@ describe('IOS utils tests', () => {
             stdout: 'Done'
         });
         await IOSUtils.launchSimulatorApp();
-        expect(stub.calledWith('open -a Simulator'));
+        expect(stub.calledWith('open -a Simulator')).to.be.true;
     });
 
     it('Should reject if launch of simulator app fails', async () => {
@@ -136,7 +136,7 @@ describe('IOS utils tests', () => {
         const url = 'mock.url';
         const udid = 'MOCK-UDID';
         await IOSUtils.launchURLInBootedSimulator(url, udid);
-        expect(stub.calledWith(`/usr/bin/xcrun simctl openurl "${url}" ${udid}`));
+        expect(stub.calledWith(`/usr/bin/xcrun simctl openurl "${url}" ${udid}`)).to.be.true;
     });
 
     it('Should attempt to launch url in a booted simulator and reject if error is encountered.', async () => {
@@ -163,38 +163,31 @@ describe('IOS utils tests', () => {
         const projectDir = '/mock/path';
         const targetApp = 'com.mock.app';
         const targetAppArgs = [
+            { name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName },
+            { name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir },
             { name: 'arg1', value: 'val1' },
             { name: 'arg2', value: 'val2' }
         ];
-        const launchArgs =
+        const expectedLaunchArgs =
             `${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}=${compName}` +
             ` ${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}` +
-            ' arg1=val1 arg2=val2';
+            ' arg1=val1 arg2=val2 ';
 
-        await IOSUtils.launchAppInBootedSimulator(
-            udid,
-            compName,
-            projectDir,
-            undefined,
-            targetApp,
-            targetAppArgs,
-            undefined,
-            undefined
-        );
+        await IOSUtils.launchAppInBootedSimulator(udid, undefined, targetApp, targetAppArgs);
 
         expect(stub.calledTwice).to.be.true;
 
         expect(stub.firstCall.args[0]).to.equal(`/usr/bin/xcrun simctl terminate "${udid}" ${targetApp}`);
 
-        expect(stub.secondCall.args[0]).to.equal(`/usr/bin/xcrun simctl launch "${udid}" ${targetApp} ${launchArgs}`);
+        expect(stub.secondCall.args[0]).to.equal(
+            `/usr/bin/xcrun simctl launch "${udid}" ${targetApp} ${expectedLaunchArgs}`
+        );
     });
 
     it('Should attempt to launch native app in a booted simulator and reject if error is encountered.', async () => {
         stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').rejects(new Error('Mock Error'));
 
         const udid = 'MOCK-UDID';
-        const compName = 'mock.compName';
-        const projectDir = '/mock/path';
         const targetApp = 'com.mock.app';
         const targetAppArgs = [
             { name: 'arg1', value: 'val1' },
@@ -202,16 +195,7 @@ describe('IOS utils tests', () => {
         ];
 
         try {
-            await IOSUtils.launchAppInBootedSimulator(
-                udid,
-                compName,
-                projectDir,
-                undefined,
-                targetApp,
-                targetAppArgs,
-                undefined,
-                undefined
-            );
+            await IOSUtils.launchAppInBootedSimulator(udid, undefined, targetApp, targetAppArgs);
         } catch (error) {
             return;
         }
@@ -219,7 +203,7 @@ describe('IOS utils tests', () => {
         throw new Error('Should have thrown');
     });
 
-    it('SShould attempt to install native app then launch it.', async () => {
+    it('Should attempt to install native app then launch it.', async () => {
         const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
             stderr: 'mockError',
             stdout: 'Done'
@@ -231,24 +215,17 @@ describe('IOS utils tests', () => {
         const appBundlePath = '/mock/path/MyTestApp.app';
         const targetApp = 'com.mock.app';
         const targetAppArgs = [
+            { name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName },
+            { name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir },
             { name: 'arg1', value: 'val1' },
             { name: 'arg2', value: 'val2' }
         ];
-        const launchArgs =
+        const expectedLaunchArgs =
             `${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}=${compName}` +
             ` ${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}` +
-            ' arg1=val1 arg2=val2';
+            ' arg1=val1 arg2=val2 ';
 
-        await IOSUtils.launchAppInBootedSimulator(
-            udid,
-            compName,
-            projectDir,
-            appBundlePath,
-            targetApp,
-            targetAppArgs,
-            undefined,
-            undefined
-        );
+        await IOSUtils.launchAppInBootedSimulator(udid, appBundlePath, targetApp, targetAppArgs);
 
         expect(stub.calledThrice).to.be.true;
 
@@ -256,7 +233,9 @@ describe('IOS utils tests', () => {
 
         expect(stub.secondCall.args[0]).to.equal(`/usr/bin/xcrun simctl terminate "${udid}" ${targetApp}`);
 
-        expect(stub.thirdCall.args[0]).to.equal(`/usr/bin/xcrun simctl launch "${udid}" ${targetApp} ${launchArgs}`);
+        expect(stub.thirdCall.args[0]).to.equal(
+            `/usr/bin/xcrun simctl launch "${udid}" ${targetApp} ${expectedLaunchArgs}`
+        );
     });
 
     it('Should attempt to invoke the xcrun for fetching sim runtimes and return an array of values', async () => {

@@ -38,6 +38,16 @@ export class CommonUtils {
     }
 
     /**
+     * Converts a path to UNIX style path.
+     *
+     * @param dirPath Input path.
+     * @returns UNIX style path.
+     */
+    public static convertToUnixPath(dirPath: string): string {
+        return dirPath.replace(/[\\]+/g, '/');
+    }
+
+    /**
      * Returns a Promise that supports timeout
      *
      * @param timeout Timeout value in milliseconds.

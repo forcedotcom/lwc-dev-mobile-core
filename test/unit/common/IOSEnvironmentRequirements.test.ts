@@ -34,7 +34,7 @@ describe('IOS Environment Requirement tests', () => {
         });
         const requirement = new SupportedEnvironmentRequirement(logger);
         await requirement.checkFunction();
-        expect(execCmdAsyncMock.calledWith('/usr/bin/uname'));
+        expect(execCmdAsyncMock.calledWith('/usr/bin/uname')).to.be.true;
     });
 
     it('Should throw an error for an unsupported OS environment', async () => {
@@ -66,7 +66,7 @@ describe('IOS Environment Requirement tests', () => {
         });
         const requirement = new XcodeInstalledRequirement(logger);
         await requirement.checkFunction();
-        expect(execCmdAsyncMock.calledWith('xcodebuild -version'));
+        expect(execCmdAsyncMock.calledWith('xcodebuild -version')).to.be.true;
     });
 
     it('Should throw an error for unsupported Xcode Env', async () => {

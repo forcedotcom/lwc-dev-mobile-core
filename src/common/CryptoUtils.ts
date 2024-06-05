@@ -70,7 +70,7 @@ export class CryptoUtils {
         const attrs = [
             { name: 'commonName', value: hostname },
             { name: 'countryName', value: 'US' },
-            { name: 'organizationName', value: 'Salesforce Local Development Server — Self-Signed Cert' }
+            { name: 'organizationName', value: 'Salesforce Local Development Server Self Signed Cert' }
         ];
 
         cert.setSubject(attrs);

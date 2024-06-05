@@ -17,7 +17,6 @@ import { CommonUtils } from './CommonUtils.js';
 import { IOSSimulatorDevice } from './IOSTypes.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { LaunchArgument } from './PreviewConfigFile.js';
-import { PreviewUtils } from './PreviewUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -266,23 +265,15 @@ export class IOSUtils {
      * Attempts to launch a native app in a simulator to preview LWC components. If the app is not installed then this method will attempt to install it first.
      *
      * @param udid The UDID of the simulator.
-     * @param compName Name of the LWC component.
-     * @param projectDir Path to the LWC project root directory.
      * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
      * @param targetApp The bundle ID of the app to be launched.
      * @param targetAppArguments Extra arguments to be passed to the app upon launch.
-     * @param serverAddress Optional address for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
-     * @param serverPort Optional port for the server that is serving the LWC component. This will be passed to the app as an extra argument upon launch.
      */
     public static async launchAppInBootedSimulator(
         udid: string,
-        compName: string,
-        projectDir: string,
         appBundlePath: string | undefined,
         targetApp: string,
-        targetAppArguments: LaunchArgument[],
-        serverAddress: string | undefined,
-        serverPort: string | undefined
+        targetAppArguments: LaunchArgument[]
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
@@ -297,20 +288,9 @@ export class IOSUtils {
 
         return thePromise
             .then(async () => {
-                let launchArgs =
-                    `${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}=${compName}` +
-                    ` ${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}`;
-
-                if (serverAddress) {
-                    launchArgs += ` ${PreviewUtils.SERVER_ADDRESS_PREFIX}=${serverAddress}`;
-                }
-
-                if (serverPort) {
-                    launchArgs += ` ${PreviewUtils.SERVER_PORT_PREFIX}=${serverPort}`;
-                }
-
+                let launchArgs = '';
                 targetAppArguments.forEach((arg) => {
-                    launchArgs += ` ${arg.name}=${arg.value}`;
+                    launchArgs += `${arg.name}=${arg.value} `;
                 });
 
                 const terminateCommand = `${XCRUN_CMD} simctl terminate "${udid}" ${targetApp}`;
@@ -332,7 +312,10 @@ export class IOSUtils {
                 CommonUtils.updateCliAction(launchMsg);
                 return CommonUtils.executeCommandAsync(launchCommand);
             })
-            .then(() => Promise.resolve());
+            .then(() => {
+                CommonUtils.stopCliAction();
+                return Promise.resolve();
+            });
     }
 
     private static logger: Logger = new Logger(LOGGER_NAME);

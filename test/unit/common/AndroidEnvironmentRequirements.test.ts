@@ -35,7 +35,7 @@ describe('Android environment requirement tests', () => {
 
     const $$ = new TestContext();
     const logger = new Logger('test');
-    const mockCmdLineToolsBin = AndroidUtils.convertToUnixPath(
+    const mockCmdLineToolsBin = CommonUtils.convertToUnixPath(
         path.join(MOCK_ANDROID_HOME, 'cmdline-tools', 'latest', 'bin')
     );
 
