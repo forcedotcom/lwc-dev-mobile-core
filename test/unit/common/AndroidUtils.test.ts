@@ -82,7 +82,7 @@ describe('Android utils', () => {
         });
 
         await AndroidUtils.androidSDKPrerequisitesCheck();
-        expect(stub.calledWith(`${sdkCommand} --version`));
+        expect(stub.calledWith(`${sdkCommand} --version`)).to.be.true;
     });
 
     it('Should attempt to look for and find android sdk tools (sdkmanager)', async () => {
@@ -91,7 +91,7 @@ describe('Android utils', () => {
             stderr: ''
         });
         await AndroidUtils.fetchAndroidCmdLineToolsLocation();
-        expect(stub.calledWith(`${sdkCommand} --version`));
+        expect(stub.calledWith(`${sdkCommand} --version`)).to.be.true;
     });
 
     it('Should attempt to look for and not find android sdk tools (sdkmanager)', async () => {
@@ -111,7 +111,7 @@ describe('Android utils', () => {
             stderr: ''
         });
         await AndroidUtils.fetchAndroidSDKPlatformToolsLocation();
-        expect(stub.calledWith(`${adbCommand} --version`));
+        expect(stub.calledWith(`${adbCommand} --version`)).to.be.true;
     });
 
     it('Should attempt to look for and not find android sdk platform tools', async () => {
@@ -128,7 +128,7 @@ describe('Android utils', () => {
     it('Should attempt to invoke the sdkmanager for installed packages', async () => {
         const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
         await AndroidUtils.fetchInstalledPackages();
-        expect(stub.calledWith(`${sdkCommand} --list`));
+        expect(stub.calledWith(`${sdkCommand} --list`)).to.be.true;
     });
 
     it('Should attempt to invoke the sdkmanager and get installed packages', async () => {
@@ -249,7 +249,7 @@ describe('Android utils', () => {
                 expectedConfig,
                 'utf8'
             )
-        );
+        ).to.be.true;
     });
 
     it('Should update Pixel 3 config with skin', async () => {
@@ -276,7 +276,7 @@ describe('Android utils', () => {
                 expectedConfig,
                 'utf8'
             )
-        );
+        ).to.be.true;
     });
 
     it('Should update unknown device config without skin', async () => {
@@ -296,7 +296,7 @@ describe('Android utils', () => {
                 expectedConfig,
                 'utf8'
             )
-        );
+        ).to.be.true;
     });
 
     it('Should not write config if size is 0', async () => {
@@ -328,7 +328,7 @@ describe('Android utils', () => {
         const port = 1234;
         const expectedCommand = `${adbCommand} -s emulator-${port} shell am start -a android.intent.action.VIEW -d ${url}`;
         await AndroidUtils.launchURLIntent(url, port);
-        expect(stub.calledWith(expectedCommand));
+        expect(stub.calledWith(expectedCommand)).to.be.true;
     });
 
     it('Should attempt to launch url and reject if error is encountered', async () => {
@@ -348,11 +348,13 @@ describe('Android utils', () => {
         const targetApp = 'com.mock.app';
         const targetActivity = '.MainActivity';
         const targetAppArgs = [
+            { name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName },
+            { name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir },
             { name: 'arg1', value: 'val1' },
             { name: 'arg2', value: 'val2' }
         ];
         const port = 1234;
-        const launchArgs =
+        const expectedLaunchArgs =
             `--es "${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}" "${compName}"` +
             ` --es "${PreviewUtils.PROJECT_DIR_ARG_PREFIX}" "${projectDir}"` +
             ' --es "arg1" "val1" --es "arg2" "val2"';
@@ -362,17 +364,7 @@ describe('Android utils', () => {
             stdout: `${targetApp}/.MainActivity`
         });
 
-        await AndroidUtils.launchNativeApp(
-            compName,
-            projectDir,
-            undefined,
-            targetApp,
-            targetAppArgs,
-            targetActivity,
-            port,
-            undefined,
-            undefined
-        );
+        await AndroidUtils.launchAppInBootedEmulator(undefined, targetApp, targetAppArgs, targetActivity, port);
 
         expect(stub.calledOnce);
         expect(
@@ -381,16 +373,14 @@ describe('Android utils', () => {
                     ` shell am start -S -n "${targetApp}/${targetActivity}"` +
                     ' -a android.intent.action.MAIN' +
                     ' -c android.intent.category.LAUNCHER' +
-                    ` ${launchArgs}`
+                    ` ${expectedLaunchArgs} `
             )
-        );
+        ).to.be.true;
     });
 
     it('Should attempt to launch native app and reject if error is encountered.', async () => {
         stubMethod($$.SANDBOX, CommonUtils, 'executeCommandSync').throws(new Error('Mock Error'));
 
-        const compName = 'mock.compName';
-        const projectDir = '/mock/path';
         const targetApp = 'com.mock.app';
         const targetActivity = '.MainActivity';
         const targetAppArgs = [
@@ -400,54 +390,38 @@ describe('Android utils', () => {
         const port = 1234;
 
         try {
-            await AndroidUtils.launchNativeApp(
-                compName,
-                projectDir,
-                undefined,
-                targetApp,
-                targetAppArgs,
-                targetActivity,
-                port,
-                undefined,
-                undefined
-            );
+            await AndroidUtils.launchAppInBootedEmulator(undefined, targetApp, targetAppArgs, targetActivity, port);
         } catch (error) {
             return;
         }
+
+        throw new Error('Should have thrown');
     });
 
-    it('Should attempt to install native app then launch it.', async () => {
+    it('Should attempt to install native app then launch it', async () => {
         const compName = 'mock.compName';
         const projectDir = '/mock/path';
         const appBundlePath = '/mock/path/MyTestApp.apk';
         const targetApp = 'com.mock.app';
         const targetActivity = '.MainActivity';
         const targetAppArgs = [
+            { name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName },
+            { name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir },
             { name: 'arg1', value: 'val1' },
             { name: 'arg2', value: 'val2' }
         ];
         const port = 1234;
-        const launchArgs =
+        const expectedLaunchArgs =
             `--es "${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}" "${compName}"` +
             ` --es "${PreviewUtils.PROJECT_DIR_ARG_PREFIX}" "${projectDir}"` +
-            ' --es "arg1" "val1" --es "arg2" "val2"';
+            ' --es "arg1" "val1" --es "arg2" "val2" ';
 
         const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
             stderr: '',
             stdout: `${targetApp}/.MainActivity`
         });
 
-        await AndroidUtils.launchNativeApp(
-            compName,
-            projectDir,
-            appBundlePath,
-            targetApp,
-            targetAppArgs,
-            targetActivity,
-            port,
-            undefined,
-            undefined
-        );
+        await AndroidUtils.launchAppInBootedEmulator(appBundlePath, targetApp, targetAppArgs, targetActivity, port);
 
         const pathQuote = process.platform === 'win32' ? '"' : "'";
 
@@ -460,7 +434,7 @@ describe('Android utils', () => {
                 ` shell am start -S -n "${targetApp}/${targetActivity}"` +
                 ' -a android.intent.action.MAIN' +
                 ' -c android.intent.category.LAUNCHER' +
-                ` ${launchArgs}`
+                ` ${expectedLaunchArgs}`
         );
     });
 

@@ -9,6 +9,7 @@ import { Logger, Messages, SfError } from '@salesforce/core';
 import { AndroidUtils } from './AndroidUtils.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { Requirement, RequirementList } from './Requirements.js';
+import { CommonUtils } from './CommonUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'requirement-android');
@@ -49,8 +50,8 @@ export class AndroidSDKRootSetRequirement implements Requirement {
         if (root) {
             return Promise.resolve(
                 messages.getMessage(this.fulfilledMessage, [
-                    AndroidUtils.convertToUnixPath(root.rootSource),
-                    AndroidUtils.convertToUnixPath(root.rootLocation)
+                    CommonUtils.convertToUnixPath(root.rootSource),
+                    CommonUtils.convertToUnixPath(root.rootLocation)
                 ])
             );
         } else {
@@ -103,7 +104,7 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
     public async checkFunction(): Promise<string> {
         return AndroidUtils.fetchAndroidCmdLineToolsLocation()
             .then((result) =>
-                Promise.resolve(messages.getMessage(this.fulfilledMessage, [AndroidUtils.convertToUnixPath(result)]))
+                Promise.resolve(messages.getMessage(this.fulfilledMessage, [CommonUtils.convertToUnixPath(result)]))
             )
             .catch(() => Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage))));
     }
@@ -130,7 +131,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement implements Requirement 
     public async checkFunction(): Promise<string> {
         return AndroidUtils.fetchAndroidSDKPlatformToolsLocation()
             .then((result) =>
-                Promise.resolve(messages.getMessage(this.fulfilledMessage, [AndroidUtils.convertToUnixPath(result)]))
+                Promise.resolve(messages.getMessage(this.fulfilledMessage, [CommonUtils.convertToUnixPath(result)]))
             )
             .catch((error) => {
                 if (error.status === 127) {

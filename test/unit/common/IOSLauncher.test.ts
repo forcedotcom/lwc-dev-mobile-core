@@ -10,6 +10,7 @@ import { expect } from 'chai';
 import { CommonUtils } from '../../../src/common/CommonUtils.js';
 import { IOSLauncher } from '../../../src/common/IOSLauncher.js';
 import { IOSUtils } from '../../../src/common/IOSUtils.js';
+import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
 import { IOSMockData } from './IOSMockData.js';
 
 describe('IOS Launcher tests', () => {
@@ -53,7 +54,7 @@ describe('IOS Launcher tests', () => {
                 'F2B4097F-F33E-4D8A-8FFF-CE49F8D6C178',
                 'http://localhost:3333/lwc/preview/c/helloWorld'
             )
-        );
+        ).to.be.true;
     });
 
     it('Should attempt to invoke preview in native app', async () => {
@@ -67,16 +68,16 @@ describe('IOS Launcher tests', () => {
         await launcher.launchPreview('helloWorld', '~', undefined, 'com.salesforce.test', undefined, '3333');
 
         expect(
-            launchAppMock.calledWith(
-                'F2B4097F-F33E-4D8A-8FFF-CE49F8D6C178',
-                'helloWorld',
-                '~',
-                undefined,
-                'com.salesforce.test',
-                [],
-                undefined,
-                undefined
-            )
-        );
+            launchAppMock.calledWith('F2B4097F-F33E-4D8A-8FFF-CE49F8D6C178', undefined, 'com.salesforce.test', [
+                {
+                    name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX,
+                    value: 'helloWorld'
+                },
+                {
+                    name: PreviewUtils.PROJECT_DIR_ARG_PREFIX,
+                    value: '~'
+                }
+            ])
+        ).to.be.true;
     });
 });

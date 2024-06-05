@@ -88,16 +88,24 @@ export class AndroidLauncher {
                     const launchActivity = appConfig?.activity ?? '';
 
                     const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
-                    return AndroidUtils.launchNativeApp(
-                        compName,
-                        projectDir,
+
+                    targetAppArguments.push({ name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName });
+                    targetAppArguments.push({ name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir });
+
+                    if (address) {
+                        targetAppArguments.push({ name: PreviewUtils.SERVER_ADDRESS_PREFIX, value: address });
+                    }
+
+                    if (port) {
+                        targetAppArguments.push({ name: PreviewUtils.SERVER_PORT_PREFIX, value: port });
+                    }
+
+                    return AndroidUtils.launchAppInBootedEmulator(
                         appBundlePath,
                         targetApp,
                         targetAppArguments,
                         launchActivity,
-                        emulatorPort,
-                        address,
-                        port
+                        emulatorPort
                     );
                 }
             })
