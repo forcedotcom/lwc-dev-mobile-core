@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+import { randomBytes } from 'node:crypto';
 import forge from 'node-forge';
 import { Messages } from '@salesforce/core';
 
@@ -128,5 +129,15 @@ export class CryptoUtils {
             pemPrivateKey: privateKey,
             pemPublicKey: publicKey
         };
+    }
+
+    /**
+     * Generates a cryptographically secure pseudorandom number generator(CSPRNG) token.
+     *
+     * @param {number} byteSize the size of the token to be generated. Default is 32(256-bit).
+     * @returns the generated CSPRNG token expressed in base64.
+     */
+    public static generateIdentityToken(byteSize: number = 32): string {
+        return randomBytes(byteSize).toString('base64');
     }
 }

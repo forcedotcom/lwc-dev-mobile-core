@@ -72,4 +72,16 @@ describe('CryptoUtils tests', () => {
         expect(cert.pemPublicKey.startsWith('-----BEGIN PUBLIC KEY-----')).to.be.true;
         expect(cert.pemPrivateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----')).to.be.true;
     }).timeout(10000); // increase timeout for this test
+
+    it('generateIdentityToken succeeds to generate tokens with correct size', async () => {
+        let token = CryptoUtils.generateIdentityToken();
+        let b64string = Buffer.from(token, 'base64');
+        let byteSize = b64string.byteLength;
+        expect(byteSize).to.equal(32);
+
+        token = CryptoUtils.generateIdentityToken(64);
+        b64string = Buffer.from(token, 'base64');
+        byteSize = b64string.byteLength;
+        expect(byteSize).to.equal(64);
+    });
 });
