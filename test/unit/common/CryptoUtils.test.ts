@@ -73,7 +73,7 @@ describe('CryptoUtils tests', () => {
         expect(cert.pemPrivateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----')).to.be.true;
     }).timeout(10000); // increase timeout for this test
 
-    it('generateIdentityToken succeeds to generate tokenss with correct size', async () => {
+    it('generateIdentityToken succeeds to generate tokens with correct size', async () => {
         let token = CryptoUtils.generateIdentityToken();
         let b64string = Buffer.from(token, 'base64');
         let byteSize = b64string.byteLength;
