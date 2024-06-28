@@ -13,7 +13,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'crypto-utils');
 
 export type SSLCertificateData = {
-    derCertificate: string;
+    derCertificate: Buffer;
     pemCertificate: string;
     pemPrivateKey: string;
     pemPublicKey: string;
@@ -121,10 +121,11 @@ export class CryptoUtils {
         const privateKey = forge.pki.privateKeyToPem(keys.privateKey);
         const publicKey = forge.pki.publicKeyToPem(keys.publicKey);
 
-        const derCert = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+        const derCertString = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+        const derCertBuffer = Buffer.from(derCertString, 'binary');
 
         return {
-            derCertificate: derCert,
+            derCertificate: derCertBuffer,
             pemCertificate: pemCert,
             pemPrivateKey: privateKey,
             pemPublicKey: publicKey
