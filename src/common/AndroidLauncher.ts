@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Messages } from '@salesforce/core';
+import { Logger, Messages } from '@salesforce/core';
 import { AndroidUtils } from './AndroidUtils.js';
 import { AndroidAppPreviewConfig, LaunchArgument } from './PreviewConfigFile.js';
 import { CommonUtils } from './CommonUtils.js';
@@ -41,9 +41,10 @@ export class AndroidLauncher {
         targetApp: string,
         appConfig: AndroidAppPreviewConfig | undefined,
         serverPort: string,
-        targetingLwrServer: boolean = false
+        targetingLwrServer: boolean = false,
+        logger?: Logger
     ): Promise<void> {
-        const preferredPack = await AndroidUtils.fetchSupportedEmulatorImagePackage();
+        const preferredPack = await AndroidUtils.fetchSupportedEmulatorImagePackage(undefined, logger);
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
@@ -53,18 +54,18 @@ export class AndroidLauncher {
             messages.getMessage('startPreviewAction'),
             messages.getMessage('searchForDeviceStatus', [emuName])
         );
-        return AndroidUtils.hasEmulator(emuName)
+        return AndroidUtils.hasEmulator(emuName, logger)
             .then((result) => {
                 if (!result) {
                     CommonUtils.updateCliAction(messages.getMessage('createDeviceStatus', [emuName]));
-                    return AndroidUtils.createNewVirtualDevice(emuName, emuImage, androidApi, device, abi);
+                    return AndroidUtils.createNewVirtualDevice(emuName, emuImage, androidApi, device, abi, logger);
                 }
                 CommonUtils.updateCliAction(messages.getMessage('foundDeviceStatus', [emuName]));
                 return Promise.resolve();
             })
             .then(() => {
                 CommonUtils.updateCliAction(messages.getMessage('startDeviceStatus', [emuName]));
-                return AndroidUtils.startEmulator(emuName);
+                return AndroidUtils.startEmulator(emuName, false, true, logger);
             })
             .then((emulatorPort) => {
                 const useServer = PreviewUtils.useLwcServerForPreviewing(targetApp, appConfig);
@@ -81,7 +82,7 @@ export class AndroidLauncher {
                     }
 
                     CommonUtils.updateCliAction(messages.getMessage('launchBrowserStatus', [url]));
-                    return AndroidUtils.launchURLIntent(url, emulatorPort);
+                    return AndroidUtils.launchURLIntent(url, emulatorPort, logger);
                 } else {
                     CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
 
@@ -105,7 +106,8 @@ export class AndroidLauncher {
                         targetApp,
                         targetAppArguments,
                         launchActivity,
-                        emulatorPort
+                        emulatorPort,
+                        logger
                     );
                 }
             })

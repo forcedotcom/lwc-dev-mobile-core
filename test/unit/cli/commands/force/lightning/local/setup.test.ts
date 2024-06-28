@@ -8,7 +8,6 @@ import { Logger, Messages } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
-import { LoggerSetup } from '../../../../../../../src/common/LoggerSetup.js';
 import { Setup } from '../../../../../../../src/cli/commands/force/lightning/local/setup.js';
 import { RequirementProcessor } from '../../../../../../../src/common/Requirements.js';
 
@@ -56,13 +55,8 @@ describe('Setup Tests', () => {
     });
 
     it('Logger must be initialized and invoked', async () => {
-        const initPluginLoggersMock = stubMethod($$.SANDBOX, LoggerSetup, 'initializePluginLoggers').resolves(
-            Promise.resolve()
-        );
         const loggerMock = stubMethod($$.SANDBOX, Logger.prototype, 'info');
-
         await Setup.run(['-p', 'ios']);
-        expect(initPluginLoggersMock.calledOnce).to.be.true;
         expect(loggerMock.calledOnce).to.be.true;
     });
 

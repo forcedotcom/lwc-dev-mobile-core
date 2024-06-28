@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Messages } from '@salesforce/core';
+import { Logger, Messages } from '@salesforce/core';
 import { IOSUtils } from './IOSUtils.js';
 import { IOSAppPreviewConfig, LaunchArgument } from './PreviewConfigFile.js';
 import { CommonUtils } from './CommonUtils.js';
@@ -41,11 +41,12 @@ export class IOSLauncher {
         targetApp: string,
         appConfig: IOSAppPreviewConfig | undefined,
         serverPort: string,
-        targetingLwrServer: boolean = false
+        targetingLwrServer: boolean = false,
+        logger?: Logger
     ): Promise<void> {
-        const availableDevices: string[] = await IOSUtils.getSupportedDevices();
-        const supportedRuntimes: string[] = await IOSUtils.getSupportedRuntimes();
-        const currentSimulator = await IOSUtils.getSimulator(this.simulatorName);
+        const availableDevices: string[] = await IOSUtils.getSupportedDevices(logger);
+        const supportedRuntimes: string[] = await IOSUtils.getSupportedRuntimes(logger);
+        const currentSimulator = await IOSUtils.getSimulator(this.simulatorName, logger);
         const currentSimulatorUDID = currentSimulator?.udid;
         let deviceUDID = '';
         CommonUtils.startCliAction(
@@ -54,7 +55,12 @@ export class IOSLauncher {
         );
         if (!currentSimulatorUDID || currentSimulatorUDID.length === 0) {
             CommonUtils.updateCliAction(messages.getMessage('createDeviceStatus', [this.simulatorName]));
-            deviceUDID = await IOSUtils.createNewDevice(this.simulatorName, availableDevices[0], supportedRuntimes[0]);
+            deviceUDID = await IOSUtils.createNewDevice(
+                this.simulatorName,
+                availableDevices[0],
+                supportedRuntimes[0],
+                logger
+            );
         } else {
             CommonUtils.updateCliAction(messages.getMessage('foundDeviceStatus', [this.simulatorName]));
             deviceUDID = currentSimulatorUDID;
@@ -63,8 +69,8 @@ export class IOSLauncher {
         CommonUtils.updateCliAction(
             messages.getMessage('startDeviceStatus', [`${this.simulatorName} (${deviceUDID})`])
         );
-        return IOSUtils.bootDevice(deviceUDID)
-            .then(() => IOSUtils.launchSimulatorApp())
+        return IOSUtils.bootDevice(deviceUDID, true, logger)
+            .then(() => IOSUtils.launchSimulatorApp(logger))
             .then(() => {
                 const useServer = PreviewUtils.useLwcServerForPreviewing(targetApp, appConfig);
                 const address = useServer ? 'http://localhost' : undefined; // TODO: dynamically determine server address
@@ -80,7 +86,7 @@ export class IOSLauncher {
                     }
 
                     CommonUtils.updateCliAction(messages.getMessage('launchBrowserStatus', [url]));
-                    return IOSUtils.launchURLInBootedSimulator(deviceUDID, url);
+                    return IOSUtils.launchURLInBootedSimulator(deviceUDID, url, logger);
                 } else {
                     CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
                     const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
@@ -100,7 +106,8 @@ export class IOSLauncher {
                         deviceUDID,
                         appBundlePath,
                         targetApp,
-                        targetAppArguments
+                        targetAppArguments,
+                        logger
                     );
                 }
             })

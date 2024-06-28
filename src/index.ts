@@ -19,7 +19,6 @@ export * from './common/IOSEnvironmentRequirements.js';
 export * from './common/IOSLauncher.js';
 export * from './common/IOSTypes.js';
 export * from './common/IOSUtils.js';
-export * from './common/LoggerSetup.js';
 export * from './common/MacNetworkUtils.js';
 export * from './common/PerformanceMarkers.js';
 export * from './common/PlatformConfig.js';

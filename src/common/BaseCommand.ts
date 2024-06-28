@@ -15,7 +15,6 @@
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Logger, LoggerLevel } from '@salesforce/core';
 import { CommandLineUtils } from './Common.js';
-import { LoggerSetup } from './LoggerSetup.js';
 import { HasRequirements, CommandRequirements } from './Requirements.js';
 
 export abstract class BaseCommand extends SfCommand<any> implements HasRequirements {
@@ -65,7 +64,6 @@ export abstract class BaseCommand extends SfCommand<any> implements HasRequireme
                 const logLevel = this.getLogLevel(this._flagValues.loglevel);
                 logger.setLevel(logLevel);
                 this._logger = logger;
-                LoggerSetup.initializePluginLoggers(logLevel);
                 return this.populateCommandRequirements();
             });
     }

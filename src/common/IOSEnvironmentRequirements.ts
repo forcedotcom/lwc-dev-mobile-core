@@ -48,7 +48,7 @@ export class SupportedEnvironmentRequirement implements Requirement {
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for supported environment');
         const unameCommand = '/usr/bin/uname';
-        return CommonUtils.executeCommandAsync(unameCommand)
+        return CommonUtils.executeCommandAsync(unameCommand, this.logger)
             .then((result) => {
                 const output = result.stdout.trim();
                 if (output === 'Darwin') {
@@ -90,7 +90,7 @@ export class XcodeInstalledRequirement implements Requirement {
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for Xcode environment');
         const xcodeBuildCommand = 'xcodebuild -version';
-        return CommonUtils.executeCommandAsync(xcodeBuildCommand)
+        return CommonUtils.executeCommandAsync(xcodeBuildCommand, this.logger)
             .then((result) => {
                 if (result.stdout && result.stdout.length > 0) {
                     const xcodeDetails = result.stdout.trim().replace(/\n/gi, ' ');
@@ -129,7 +129,7 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
      */
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for iOS runtimes');
-        return IOSUtils.getSupportedRuntimes()
+        return IOSUtils.getSupportedRuntimes(this.logger)
             .then((supportedRuntimes) => {
                 if (supportedRuntimes.length > 0) {
                     return Promise.resolve(messages.getMessage(this.fulfilledMessage, supportedRuntimes));

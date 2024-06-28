@@ -17,25 +17,16 @@ import https from 'node:https';
 import util from 'node:util';
 import path from 'node:path';
 import os from 'node:os';
-import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import { ux } from '@oclif/core';
 
 type StdioOptions = childProcess.StdioOptions;
-
-const LOGGER_NAME = 'force:lightning:local:commonutils';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export class CommonUtils {
     public static DEFAULT_LWC_SERVER_PORT = '3333';
-
-    /**
-     * Initializes the logger used by CommonUtils for logging activities.
-     */
-    public static initializeLogger(level?: LoggerLevelValue): void {
-        CommonUtils.logger.setLevel(level);
-    }
 
     /**
      * Converts a path to UNIX style path.
@@ -185,7 +176,7 @@ export class CommonUtils {
     /**
      * Creates a unique temp directory that is prefixed with 'lwc-mobile-'
      *
-     * @returns Path to the newaly created temp directory.
+     * @returns Path to the newly created temp directory.
      */
     public static async createTempDirectory(): Promise<string> {
         const mkdtemp = util.promisify(fs.mkdtemp);
@@ -212,9 +203,10 @@ export class CommonUtils {
      */
     public static executeCommandSync(
         command: string,
-        stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
+        stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore'],
+        logger?: Logger
     ): string {
-        CommonUtils.logger.debug(`Executing command: '${command}'`);
+        logger?.debug(`Executing command: '${command}'`);
         try {
             return childProcess
                 .execSync(command, {
@@ -222,8 +214,8 @@ export class CommonUtils {
                 })
                 .toString();
         } catch (error) {
-            CommonUtils.logger.error(`Error executing command '${command}':`);
-            CommonUtils.logger.error(`${error}`);
+            logger?.error(`Error executing command '${command}':`);
+            logger?.error(`${error}`);
             throw error;
         }
     }
@@ -234,12 +226,15 @@ export class CommonUtils {
      * @param command The command to be executed.
      * @returns A promise containing the results of stdout and stderr
      */
-    public static async executeCommandAsync(command: string): Promise<{ stdout: string; stderr: string }> {
+    public static async executeCommandAsync(
+        command: string,
+        logger?: Logger
+    ): Promise<{ stdout: string; stderr: string }> {
         return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-            CommonUtils.logger.debug(`Executing command: '${command}'`);
+            logger?.debug(`Executing command: '${command}'`);
             childProcess.exec(command, (error, stdout, stderr) => {
                 if (error) {
-                    CommonUtils.logger.error(`Error executing command '${command}':`);
+                    logger?.error(`Error executing command '${command}':`);
 
                     // also include stderr & stdout for more detailed error
                     let msg = error.message;
@@ -250,7 +245,7 @@ export class CommonUtils {
                         msg = `${msg}\nstdout:\n${stdout}`;
                     }
 
-                    CommonUtils.logger.error(msg);
+                    logger?.error(msg);
                     reject(error);
                 } else {
                     resolve({ stdout, stderr });
@@ -270,7 +265,8 @@ export class CommonUtils {
     public static async spawnCommandAsync(
         command: string,
         args: string[] = [],
-        stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
+        stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore'],
+        logger?: Logger
     ): Promise<{ stdout: string; stderr: string }> {
         return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
             const capturedStdout: string[] = [];
@@ -278,7 +274,7 @@ export class CommonUtils {
 
             const fullCommand = args.length > 0 ? `${command} ${args.join(' ')}` : command;
 
-            CommonUtils.logger.debug(`Executing command: '${fullCommand}'`);
+            logger?.debug(`Executing command: '${fullCommand}'`);
 
             const prc = CommonUtils.spawnWrapper(command, args, stdioOptions);
 
@@ -292,7 +288,7 @@ export class CommonUtils {
 
             prc.on('close', (code) => {
                 if (code !== 0) {
-                    CommonUtils.logger.error(`Error executing command '${fullCommand}':`);
+                    logger?.error(`Error executing command '${fullCommand}':`);
 
                     // also include stderr & stdout for more detailed error
                     let msg = `stderr:\n${capturedStderr.join()}`;
@@ -300,7 +296,7 @@ export class CommonUtils {
                         msg = `${msg}\nstdout:\n${capturedStdout}`;
                     }
 
-                    CommonUtils.logger.error(msg);
+                    logger?.error(msg);
                     reject(new Error(capturedStderr.join()));
                 } else {
                     resolve({
@@ -336,14 +332,14 @@ export class CommonUtils {
      *
      * @returns A Promise that launches the desktop browser and navigates to the provided URL.
      */
-    public static async launchUrlInDesktopBrowser(url: string): Promise<void> {
+    public static async launchUrlInDesktopBrowser(url: string, logger?: Logger): Promise<void> {
         const openCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
 
         CommonUtils.startCliAction(
             messages.getMessage('launchBrowserAction'),
             messages.getMessage('openBrowserWithUrlStatus', [url])
         );
-        return CommonUtils.executeCommandAsync(`${openCmd} ${url}`).then(() => {
+        return CommonUtils.executeCommandAsync(`${openCmd} ${url}`, logger).then(() => {
             CommonUtils.stopCliAction();
             return Promise.resolve();
         });
@@ -355,9 +351,9 @@ export class CommonUtils {
      *
      * @returns A Promise that checks whether the local dev server plugin is installed or not.
      */
-    public static async isLwcServerPluginInstalled(): Promise<void> {
+    public static async isLwcServerPluginInstalled(logger?: Logger): Promise<void> {
         const command = 'sfdx force:lightning:lwc:start --help';
-        return CommonUtils.executeCommandAsync(command).then(() => Promise.resolve());
+        return CommonUtils.executeCommandAsync(command, logger).then(() => Promise.resolve());
     }
 
     /**
@@ -365,13 +361,13 @@ export class CommonUtils {
      *
      * @returns The port that local dev server is running on, or undefined if the server is not running.
      */
-    public static async getLwcServerPort(): Promise<string | undefined> {
+    public static async getLwcServerPort(logger?: Logger): Promise<string | undefined> {
         const getProcessCommand =
             process.platform === 'win32'
                 ? 'wmic process where "CommandLine Like \'%force:lightning:lwc:start%\'" get CommandLine  | findstr -v "wmic"'
                 : 'ps -ax | grep force:lightning:lwc:start | grep -v grep';
 
-        return CommonUtils.executeCommandAsync(getProcessCommand)
+        return CommonUtils.executeCommandAsync(getProcessCommand, logger)
             .then((result) => {
                 const output = result.stdout.trim();
                 const portPattern = 'force:lightning:lwc:start -p';
@@ -388,7 +384,7 @@ export class CommonUtils {
                 return Promise.resolve(port.trim());
             })
             .catch((error) => {
-                CommonUtils.logger.warn(`Unable to determine server port: ${error}`);
+                logger?.warn(`Unable to determine server port: ${error}`);
                 return Promise.resolve(undefined);
             });
     }
@@ -396,7 +392,7 @@ export class CommonUtils {
     /**
      * Downloads a resource from a given url into a destination file.
      */
-    public static async downloadFile(url: string, dest: string): Promise<void> {
+    public static async downloadFile(url: string, dest: string, logger?: Logger): Promise<void> {
         const finalUrl = url.toLowerCase().startsWith('http') ? url : `http://${url}`;
 
         const protocol = finalUrl.toLowerCase().startsWith('https') ? https : http;
@@ -407,7 +403,7 @@ export class CommonUtils {
             const request = protocol.get(finalUrl, (response) => {
                 if (response.statusCode !== 200) {
                     const msg = `Error downloading ${finalUrl}: ${response.statusMessage}`;
-                    this.logger.error(msg);
+                    logger?.error(msg);
                     fs.unlink(dest, () => reject(new Error(msg)));
                     return;
                 }
@@ -421,13 +417,13 @@ export class CommonUtils {
 
             destFile.on('error', (err) => {
                 const msg = `Error saving ${finalUrl} to file ${dest} - ${err}`;
-                this.logger.error(msg);
+                logger?.error(msg);
                 fs.unlink(dest, () => reject(new Error(msg)));
             });
 
             request.on('error', (err) => {
                 const msg = `Error downloading ${finalUrl} - ${err}`;
-                this.logger.error(msg);
+                logger?.error(msg);
                 fs.unlink(dest, () => reject(new Error(msg)));
             });
 
@@ -438,12 +434,12 @@ export class CommonUtils {
     /**
      * Creates a text file at a destination location with the given content
      */
-    public static async createTextFile(dest: string, content: string): Promise<void> {
+    public static async createTextFile(dest: string, content: string, logger?: Logger): Promise<void> {
         return new Promise((resolve, reject) => {
             fs.writeFile(dest, content, (err) => {
                 if (err) {
                     const msg = `Error creating file ${dest} - ${err.message}`;
-                    CommonUtils.logger.error(msg);
+                    logger?.error(msg);
                     reject(err);
                 }
                 resolve();
@@ -454,12 +450,12 @@ export class CommonUtils {
     /**
      * Creates a text file at a destination location with the given content
      */
-    public static async readTextFile(filePath: string): Promise<string> {
+    public static async readTextFile(filePath: string, logger?: Logger): Promise<string> {
         return new Promise((resolve, reject) => {
             fs.readFile(filePath, (err, data) => {
                 if (err) {
                     const msg = `Error reading file ${filePath} - ${err.message}`;
-                    CommonUtils.logger.error(msg);
+                    logger?.error(msg);
                     reject(err);
                 }
                 resolve((data ?? '').toString());
@@ -511,6 +507,4 @@ export class CommonUtils {
 
         return files;
     }
-
-    private static logger: Logger = new Logger(LOGGER_NAME);
 }

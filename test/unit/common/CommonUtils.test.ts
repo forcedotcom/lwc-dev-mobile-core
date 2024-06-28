@@ -289,7 +289,12 @@ describe('CommonUtils', () => {
             fakeProcess.emit('close', 0);
         }, 100);
 
-        await CommonUtils.spawnCommandAsync('somecommand', ['arg1', 'arg2'], ['ignore', 'inherit', 'pipe']);
+        await CommonUtils.spawnCommandAsync(
+            'somecommand',
+            ['arg1', 'arg2'],
+            ['ignore', 'inherit', 'pipe'],
+            new Logger('test-logger')
+        );
 
         expect(spawnStub.calledOnce);
         expect(spawnStub.getCall(0).args).to.deep.equal([
@@ -310,7 +315,12 @@ describe('CommonUtils', () => {
         }, 100);
 
         try {
-            await CommonUtils.spawnCommandAsync('somecommand', ['arg1', 'arg2'], ['ignore', 'inherit', 'pipe']);
+            await CommonUtils.spawnCommandAsync(
+                'somecommand',
+                ['arg1', 'arg2'],
+                ['ignore', 'inherit', 'pipe'],
+                new Logger('test-logger')
+            );
         } catch (error) {
             expect(error).to.be.an('error');
         }
