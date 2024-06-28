@@ -77,7 +77,7 @@ export class Java8AvailableRequirement implements Requirement {
      * Verifies that prerequisites for Android SDK are met and that Java 8 is installed.
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.androidSDKPrerequisitesCheck()
+        return AndroidUtils.androidSDKPrerequisitesCheck(this.logger)
             .then(() => Promise.resolve(messages.getMessage(this.fulfilledMessage)))
             .catch((error) =>
                 Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage, [error.message])))
@@ -102,7 +102,7 @@ export class AndroidSDKToolsInstalledRequirement implements Requirement {
      * Verifies that user has Android command line tools installed.
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.fetchAndroidCmdLineToolsLocation()
+        return AndroidUtils.fetchAndroidCmdLineToolsLocation(this.logger)
             .then((result) =>
                 Promise.resolve(messages.getMessage(this.fulfilledMessage, [CommonUtils.convertToUnixPath(result)]))
             )
@@ -129,7 +129,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement implements Requirement 
      * Verifies that user has Android platform tools installed.
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.fetchAndroidSDKPlatformToolsLocation()
+        return AndroidUtils.fetchAndroidSDKPlatformToolsLocation(this.logger)
             .then((result) =>
                 Promise.resolve(messages.getMessage(this.fulfilledMessage, [CommonUtils.convertToUnixPath(result)]))
             )
@@ -170,7 +170,7 @@ export class PlatformAPIPackageRequirement implements Requirement {
      * Verifies that user has a supported Android API package that also has matching supported emulator images installed.
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel)
+        return AndroidUtils.fetchSupportedAndroidAPIPackage(this.apiLevel, this.logger)
             .then((result) => Promise.resolve(messages.getMessage(this.fulfilledMessage, [result.platformAPI])))
             .catch(() =>
                 Promise.reject(
@@ -203,7 +203,7 @@ export class EmulatorImagesRequirement implements Requirement {
      * Verifies that user has at least one Android package with any of the supported emulator image targets (e.g. Google APIs, default, Google Play).
      */
     public async checkFunction(): Promise<string> {
-        return AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel)
+        return AndroidUtils.fetchSupportedEmulatorImagePackage(this.apiLevel, this.logger)
             .then((result) => Promise.resolve(messages.getMessage(this.fulfilledMessage, [result.path])))
             .catch(() =>
                 Promise.reject(

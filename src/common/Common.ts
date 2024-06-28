@@ -11,13 +11,12 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
-import { Logger, LoggerLevel, Messages, SfError } from '@salesforce/core';
-import { CustomOptions, FlagParserContext, OptionFlag } from '@oclif/core/lib/interfaces/parser.js';
+import { LoggerLevel, Messages, SfError } from '@salesforce/core';
+import { Command } from '@oclif/core';
+import { CustomOptions, OptionFlag } from '@oclif/core/interfaces';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
-
-const LOGGER_NAME = 'force:lightning:local:common';
 
 export class MapUtils {
     /**
@@ -162,7 +161,7 @@ export class CommandLineUtils {
 
     public static async flagParser(
         input: string | boolean,
-        context: FlagParserContext,
+        context: Command,
         opts: CustomOptions & OptionFlag<string, CustomOptions>
     ): Promise<any> {
         const validateFunction = opts.validate as (flag: any) => boolean;
@@ -216,7 +215,6 @@ export class Version {
         const trimmedInput = input.trim();
         const versionMatch = versionRegex.exec(trimmedInput);
         if (versionMatch === null) {
-            this.logger.warn(`'${trimmedInput}' is not valid version format.`);
             return null;
         }
 
@@ -316,6 +314,4 @@ export class Version {
     public toString(): string {
         return `${this.major}.${this.minor}.${this.patch}`;
     }
-
-    private static logger: Logger = new Logger(LOGGER_NAME);
 }

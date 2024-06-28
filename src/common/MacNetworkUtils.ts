@@ -6,10 +6,8 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import net from 'node:net';
-import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import { CommonUtils } from './CommonUtils.js';
-
-const LOGGER_NAME = 'force:lightning:local:macnetworkutils';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -27,18 +25,11 @@ export type HardwarePort = {
 
 export class MacNetworkUtils {
     /**
-     * Initialized the logger used by MacNetworkUtils
-     */
-    public static initializeLogger(level?: LoggerLevelValue): void {
-        MacNetworkUtils.logger.setLevel(level);
-    }
-
-    /**
      * Obtains a list of all available network ports on the host machine.
      *
      * @returns An array of HardwarePort objects containing a list of all available network ports on the host machine.
      */
-    public static async getNetworkHardwarePorts(): Promise<HardwarePort[]> {
+    public static async getNetworkHardwarePorts(logger?: Logger): Promise<HardwarePort[]> {
         // Hardware ports listing comes in this form
         //
         // '''
@@ -62,7 +53,7 @@ export class MacNetworkUtils {
         const cmd = 'networksetup -listallhardwareports';
         const hardwarePortPrefix = 'Hardware Port: ';
         const devicePrefix = 'Device: ';
-        return CommonUtils.executeCommandAsync(cmd)
+        return CommonUtils.executeCommandAsync(cmd, logger)
             .then((result) => {
                 const parsedLines = result.stdout
                     .split('\n')
@@ -86,7 +77,7 @@ export class MacNetworkUtils {
 
                     const ifconfigCmd = `ifconfig ${parsedLines[i + 1]} | awk '$1 == "inet" {print $2}'`;
 
-                    let ipAddress = CommonUtils.executeCommandSync(ifconfigCmd);
+                    let ipAddress = CommonUtils.executeCommandSync(ifconfigCmd, undefined, logger);
                     if (ipAddress) {
                         ipAddress = ipAddress.trim();
                         if (net.isIP(ipAddress)) {
@@ -96,7 +87,7 @@ export class MacNetworkUtils {
                                 address: ipAddress
                             });
                         } else {
-                            MacNetworkUtils.logger.warn(`Invalid IP address ${ipAddress}`);
+                            logger?.warn(`Invalid IP address ${ipAddress}`);
                         }
                     }
                 }
@@ -110,7 +101,7 @@ export class MacNetworkUtils {
      *
      * @returns A ProxySetting object containing the proxy settings of the host machine.
      */
-    public static async getProxySetting(): Promise<ProxySetting> {
+    public static async getProxySetting(logger?: Logger): Promise<ProxySetting> {
         // Proxy setting comes in this form
         //
         // '''
@@ -123,7 +114,7 @@ export class MacNetworkUtils {
         const cmd = 'scutil --proxy';
         const proxyAutoConfigEnabled = 'ProxyAutoConfigEnable';
         const proxyAutoConfigUrlString = 'ProxyAutoConfigURLString';
-        return CommonUtils.executeCommandAsync(cmd).then((result) => {
+        return CommonUtils.executeCommandAsync(cmd, logger).then((result) => {
             const proxySettings = result.stdout
                 .split('\n')
                 .filter((line) => line.includes(proxyAutoConfigEnabled) || line.includes(proxyAutoConfigUrlString))
@@ -153,6 +144,4 @@ export class MacNetworkUtils {
             return proxySettings;
         });
     }
-
-    private static logger: Logger = new Logger(LOGGER_NAME);
 }

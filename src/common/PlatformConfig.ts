@@ -20,7 +20,7 @@
  *
  * This only happens if the field in these config classes are defined as Static, or an instance
  * of these classes are cached. So for now as a workaround, we have the PlatformConfig class where
- * it instantiates a new instance of the config classes everytime they need to be accessed and this
+ * it instantiates a new instance of the config classes every time they need to be accessed and this
  * ensures that both module A and B will always get the correct/non-garbled values. This is not an
  * ideal solution and is temporary until we can root cause the issue and find a better solution.
  *
@@ -51,8 +51,7 @@ export class AndroidConfig {
     public readonly supportedArchitectures: string[];
     public readonly defaultEmulatorName: string = 'SFDXEmulator';
     public readonly defaultAdbPort: number = 5572;
-    // eslint-disable-next-line unicorn/numeric-separators-style
-    public readonly deviceReadinessWaitTime: number = 120000;
+    public readonly deviceReadinessWaitTime: number = 120_000;
     public readonly AdbNumRetryAttempts: number = 6;
     public readonly AdbRetryAttemptDelay: number = 500;
 

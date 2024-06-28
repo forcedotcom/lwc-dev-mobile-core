@@ -12,6 +12,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
+import { Logger } from '@salesforce/core';
 import { CommandLineUtils } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { AndroidAppPreviewConfig, IOSAppPreviewConfig, PreviewConfigFile } from './PreviewConfigFile.js';
@@ -139,7 +140,7 @@ export class PreviewUtils {
      * @param port the port number that the local dev server is configured to use.
      * @returns A string representing a web socket url to be used by the local dev server.
      */
-    public static generateWebSocketUrlForLocalDevServer(platform: string, port: string): string {
+    public static generateWebSocketUrlForLocalDevServer(platform: string, port: string, logger?: Logger): string {
         /*
           - For desktop browsers other than Safari, local development use cases will target ws://localhost:<port> connections to the local dev server
           - For the Safari desktop browser, target wss://localhost:<port>
@@ -166,7 +167,7 @@ export class PreviewUtils {
         // From https://apple.stackexchange.com/questions/313454/applescript-find-the-users-set-default-browser
         const cmd =
             "defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR)-1]}{window[NR]=$2}'";
-        const result = CommonUtils.executeCommandSync(cmd).trim().toLowerCase();
+        const result = CommonUtils.executeCommandSync(cmd, undefined, logger).trim().toLowerCase();
         const isSafari = result.includes('safari') || result === '';
         return isSafari ? `wss://localhost:${port}` : `ws://localhost:${port}`;
     }

@@ -12,7 +12,7 @@
 import * as childProcess from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { Logger, LoggerLevelValue, Messages, SfError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import { AndroidPackage, AndroidPackages, AndroidVirtualDevice } from './AndroidTypes.js';
 import { Version } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
@@ -22,7 +22,6 @@ import { LaunchArgument } from './PreviewConfigFile.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
-const LOGGER_NAME = 'force:lightning:local:androidutils';
 const WINDOWS_OS = 'win32';
 const ANDROID_SDK_MANAGER_NAME = 'sdkmanager';
 const ANDROID_AVD_MANAGER_NAME = 'avdmanager';
@@ -39,13 +38,6 @@ export type AndroidSDKRoot = {
 };
 
 export class AndroidUtils {
-    /**
-     * Initialized the logger used by AndroidUtils
-     */
-    public static initializeLogger(level?: LoggerLevelValue): void {
-        AndroidUtils.logger.setLevel(level);
-    }
-
     /**
      * Indicates whether Android packages are cached or not.
      *
@@ -84,8 +76,8 @@ export class AndroidUtils {
      *
      * @returns If prerequisites are met, then returns the location of Android command line tools.
      */
-    public static async androidSDKPrerequisitesCheck(): Promise<string> {
-        return AndroidUtils.fetchAndroidCmdLineToolsLocation()
+    public static async androidSDKPrerequisitesCheck(logger?: Logger): Promise<string> {
+        return AndroidUtils.fetchAndroidCmdLineToolsLocation(logger)
             .then((result) => Promise.resolve(result))
             .catch((error) => {
                 const e: Error = error;
@@ -111,12 +103,12 @@ export class AndroidUtils {
      *
      * @returns The location of Android command line tools.
      */
-    public static async fetchAndroidCmdLineToolsLocation(): Promise<string> {
+    public static async fetchAndroidCmdLineToolsLocation(logger?: Logger): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
             return Promise.reject(new SfError('Android SDK root is not set.'));
         }
 
-        return CommonUtils.executeCommandAsync(`${AndroidUtils.getSdkManagerCommand()} --version`).then(() =>
+        return CommonUtils.executeCommandAsync(`${AndroidUtils.getSdkManagerCommand()} --version`, logger).then(() =>
             Promise.resolve(AndroidUtils.getAndroidCmdLineToolsBin())
         );
     }
@@ -126,13 +118,14 @@ export class AndroidUtils {
      *
      * @returns The location of Android platform tools.
      */
-    public static async fetchAndroidSDKPlatformToolsLocation(): Promise<string> {
+    public static async fetchAndroidSDKPlatformToolsLocation(logger?: Logger): Promise<string> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
             return Promise.reject(new SfError('Android SDK root is not set.'));
         }
 
         return CommonUtils.executeCommandAsync(
-            `${AndroidUtils.getAdbShellCommand()} --version`
+            `${AndroidUtils.getAdbShellCommand()} --version`,
+            logger
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ).then((result) => Promise.resolve(AndroidUtils.getAndroidPlatformTools()));
     }
@@ -142,25 +135,27 @@ export class AndroidUtils {
      *
      * @returns The installed packages.
      */
-    public static async fetchInstalledPackages(): Promise<AndroidPackages> {
+    public static async fetchInstalledPackages(logger?: Logger): Promise<AndroidPackages> {
         if (!AndroidUtils.getAndroidSdkRoot()) {
             return Promise.reject(new SfError('Android SDK root is not set.'));
         }
 
         if (AndroidUtils.isCached()) {
-            this.logger.debug('fetchInstalledPackages(): returning cached packages.');
+            logger?.debug('fetchInstalledPackages(): returning cached packages.');
             return Promise.resolve(AndroidUtils.packageCache);
         }
 
-        this.logger.debug('fetchInstalledPackages(): Packages not cached. Retrieving.');
-        return CommonUtils.executeCommandAsync(`${AndroidUtils.getSdkManagerCommand()} --list`).then((result) => {
-            if (result.stdout && result.stdout.length > 0) {
-                const packages = AndroidPackages.parseRawPackagesString(result.stdout);
-                AndroidUtils.packageCache = packages;
+        logger?.debug('fetchInstalledPackages(): Packages not cached. Retrieving.');
+        return CommonUtils.executeCommandAsync(`${AndroidUtils.getSdkManagerCommand()} --list`, logger).then(
+            (result) => {
+                if (result.stdout && result.stdout.length > 0) {
+                    const packages = AndroidPackages.parseRawPackagesString(result.stdout, logger);
+                    AndroidUtils.packageCache = packages;
+                }
+                logger?.debug(`fetchInstalledPackages(): Retrieved packages:\n${AndroidUtils.packageCache.toString()}`);
+                return Promise.resolve(AndroidUtils.packageCache);
             }
-            this.logger.debug(`fetchInstalledPackages(): Retrieved packages:\n${AndroidUtils.packageCache.toString()}`);
-            return Promise.resolve(AndroidUtils.packageCache);
-        });
+        );
     }
 
     /**
@@ -177,17 +172,17 @@ export class AndroidUtils {
      *
      * @returns An array of all available Android virtual devices.
      */
-    public static async fetchEmulators(): Promise<AndroidVirtualDevice[]> {
+    public static async fetchEmulators(logger?: Logger): Promise<AndroidVirtualDevice[]> {
         let devices: AndroidVirtualDevice[] = [];
-        return CommonUtils.executeCommandAsync(AndroidUtils.getAvdManagerCommand() + ' list avd')
+        return CommonUtils.executeCommandAsync(AndroidUtils.getAvdManagerCommand() + ' list avd', logger)
             .then((result) => {
                 if (result.stdout && result.stdout.length > 0) {
-                    devices = AndroidVirtualDevice.parseRawString(result.stdout);
+                    devices = AndroidVirtualDevice.parseRawString(result.stdout, logger);
                 }
                 return Promise.resolve(devices);
             })
             .catch((error) => {
-                AndroidUtils.logger.warn(error);
+                logger?.warn(error);
                 return Promise.resolve(devices);
             });
     }
@@ -197,13 +192,16 @@ export class AndroidUtils {
      *
      * @returns An AndroidVirtualDevice object for the specified virtual device, or undefined if device not found.
      */
-    public static async fetchEmulator(emulatorName: string): Promise<AndroidVirtualDevice | undefined> {
-        return AndroidUtils.resolveEmulatorImage(emulatorName).then(async (resolvedEmulator) => {
+    public static async fetchEmulator(
+        emulatorName: string,
+        logger?: Logger
+    ): Promise<AndroidVirtualDevice | undefined> {
+        return AndroidUtils.resolveEmulatorImage(emulatorName, logger).then(async (resolvedEmulator) => {
             if (!resolvedEmulator) {
                 return Promise.resolve(undefined);
             }
 
-            const emulators = await AndroidUtils.fetchEmulators();
+            const emulators = await AndroidUtils.fetchEmulators(logger);
             for (const emulator of emulators) {
                 if (emulator.name === resolvedEmulator) {
                     return Promise.resolve(emulator);
@@ -222,16 +220,17 @@ export class AndroidUtils {
      * @returns An array of Android API packages meeting the conditions.
      */
     public static async fetchAllAvailableApiPackages(
-        mustHaveSupportedEmulatorImages: boolean
+        mustHaveSupportedEmulatorImages: boolean,
+        logger?: Logger
     ): Promise<AndroidPackage[]> {
         const configuredMinSupportedRuntime = PlatformConfig.androidConfig().minSupportedRuntime;
         const minSupportedRuntime = Version.from(configuredMinSupportedRuntime);
         if (minSupportedRuntime === null) {
             return Promise.reject(new SfError(`${configuredMinSupportedRuntime} is not a supported version format.`));
         }
-        this.logger.debug(`fetchAllAvailableApiPackages(): minSupportedRuntime: ${minSupportedRuntime.toString()}`);
+        logger?.debug(`fetchAllAvailableApiPackages(): minSupportedRuntime: ${minSupportedRuntime.toString()}`);
 
-        return AndroidUtils.fetchInstalledPackages()
+        return AndroidUtils.fetchInstalledPackages(logger)
             .then((allPackages) => {
                 if (allPackages.isEmpty()) {
                     return Promise.reject(
@@ -244,7 +243,7 @@ export class AndroidUtils {
                 const matchingPlatforms = allPackages.platforms.filter((pkg) =>
                     Version.sameOrNewer(pkg.version, minSupportedRuntime)
                 );
-                this.logger.debug(
+                logger?.debug(
                     `fetchAllAvailableApiPackages(): Installed platforms with versions >= ${minSupportedRuntime.toString()}:\n${AndroidPackages.packageArrayAsString(
                         matchingPlatforms
                     )}`
@@ -263,25 +262,25 @@ export class AndroidUtils {
             .then(async (matchingPlatforms) => {
                 let results: AndroidPackage[] = [];
 
-                this.logger.debug(
+                logger?.debug(
                     `fetchAllAvailableApiPackages(): mustHaveSupportedEmulatorImages: ${mustHaveSupportedEmulatorImages}`
                 );
                 if (mustHaveSupportedEmulatorImages) {
                     for (const pkg of matchingPlatforms) {
                         try {
-                            const emulatorImage = await AndroidUtils.packageWithRequiredEmulatorImages(pkg);
+                            const emulatorImage = await AndroidUtils.packageWithRequiredEmulatorImages(pkg, logger);
 
                             // if it has a supported emulator image then include it
                             if (emulatorImage) {
-                                this.logger.debug(`Found supported emulator for platform: ${pkg.toString()}`);
+                                logger?.debug(`Found supported emulator for platform: ${pkg.toString()}`);
                                 results.push(pkg);
                             } else {
-                                this.logger.debug(
+                                logger?.debug(
                                     `fetchAllAvailableApiPackages(): Package does not have an associated emulator image: ${pkg.toString()}`
                                 );
                             }
                         } catch (error) {
-                            this.logger.warn(
+                            logger?.warn(
                                 `Could not find emulator image for Android API package ${pkg.path}: ${(
                                     error as Error
                                 ).toString()}`
@@ -306,12 +305,12 @@ export class AndroidUtils {
      * on user's machine is fetched. Defaults to undefined.
      * @returns A supported Android API package.
      */
-    public static async fetchSupportedAndroidAPIPackage(apiLevel?: string): Promise<AndroidPackage> {
+    public static async fetchSupportedAndroidAPIPackage(apiLevel?: string, logger?: Logger): Promise<AndroidPackage> {
         let targetRuntime: Version | string | undefined;
-        if (apiLevel !== undefined) {
+        if (apiLevel) {
             const parsedVersion = Version.from(apiLevel);
             if (parsedVersion === null) {
-                this.logger.warn(
+                logger?.warn(
                     `fetchSupportedAndroidAPIPackage(): '${apiLevel}' does not follow semantic versioning format... will consider it as a codename.`
                 );
                 targetRuntime = apiLevel;
@@ -320,7 +319,7 @@ export class AndroidUtils {
             }
         }
 
-        return AndroidUtils.fetchAllAvailableApiPackages(true).then((packages) => {
+        return AndroidUtils.fetchAllAvailableApiPackages(true, logger).then((packages) => {
             let matchingPlatforms = packages;
             if (targetRuntime) {
                 matchingPlatforms = packages.filter((pkg) => Version.same(pkg.version, targetRuntime));
@@ -354,13 +353,16 @@ export class AndroidUtils {
      * When not defined, the latest supported API level that is installed on user's machine is used. Defaults to undefined.
      * @returns Android package of a supported emulator.
      */
-    public static async fetchSupportedEmulatorImagePackage(apiLevel?: string): Promise<AndroidPackage> {
+    public static async fetchSupportedEmulatorImagePackage(
+        apiLevel?: string,
+        logger?: Logger
+    ): Promise<AndroidPackage> {
         let installedAndroidPackage: AndroidPackage;
 
-        return AndroidUtils.fetchSupportedAndroidAPIPackage(apiLevel)
+        return AndroidUtils.fetchSupportedAndroidAPIPackage(apiLevel, logger)
             .then((pkg) => {
                 installedAndroidPackage = pkg;
-                return AndroidUtils.packageWithRequiredEmulatorImages(installedAndroidPackage);
+                return AndroidUtils.packageWithRequiredEmulatorImages(installedAndroidPackage, logger);
             })
             .then((emulatorImage) => {
                 if (emulatorImage) {
@@ -376,7 +378,7 @@ export class AndroidUtils {
                 }
             })
             .catch((error) => {
-                this.logger.error(`Could not find android emulator packages.\n${error}`);
+                logger?.error(`Could not find android emulator packages.\n${error}`);
                 return Promise.reject(new SfError('Could not find android emulator packages.'));
             });
     }
@@ -387,8 +389,8 @@ export class AndroidUtils {
      * @param emulatorName Name of an emulator (e.g Pixel XL, Nexus_6_API_30).
      * @returns True if an emulator with a given name is available, False otherwise.
      */
-    public static async hasEmulator(emulatorName: string): Promise<boolean> {
-        return AndroidUtils.resolveEmulatorImage(emulatorName).then((resolvedEmulator) =>
+    public static async hasEmulator(emulatorName: string, logger?: Logger): Promise<boolean> {
+        return AndroidUtils.resolveEmulatorImage(emulatorName, logger).then((resolvedEmulator) =>
             Promise.resolve(resolvedEmulator !== undefined)
         );
     }
@@ -407,7 +409,8 @@ export class AndroidUtils {
         emulatorImage: string,
         platformAPI: string,
         device: string,
-        abi: string
+        abi: string,
+        logger?: Logger
     ): Promise<void> {
         // Just like Android Studio AVD Manager GUI interface, replace blank spaces with _ so that the ID of this AVD
         // doesn't have blanks (since that's not allowed). AVD Manager will automatically replace _ back with blank
@@ -455,7 +458,7 @@ export class AndroidUtils {
                 reject(new SfError(`Could not create emulator. ${(error as Error).toString()}`));
             }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        }).then((resolve) => AndroidUtils.updateEmulatorConfig(resolvedName));
+        }).then((resolve) => AndroidUtils.updateEmulatorConfig(resolvedName, logger));
     }
 
     /**
@@ -466,9 +469,14 @@ export class AndroidUtils {
      * @param waitForBoot Optional boolean indicating whether it should wait for the device to finish booting up. Defaults to true.
      * @returns The ADB port that the emulator was launched on.
      */
-    public static async startEmulator(emulatorName: string, writable = false, waitForBoot = true): Promise<number> {
+    public static async startEmulator(
+        emulatorName: string,
+        writable = false,
+        waitForBoot = true,
+        logger?: Logger
+    ): Promise<number> {
         let resolvedEmulatorName = emulatorName;
-        return AndroidUtils.resolveEmulatorImage(emulatorName)
+        return AndroidUtils.resolveEmulatorImage(emulatorName, logger)
             .then((resolvedEmulator) => {
                 // This shouldn't happen b/c we make sure an emulator exists
                 // before calling this method, but keeping it just in case
@@ -476,14 +484,14 @@ export class AndroidUtils {
                     return Promise.reject(new SfError(`Invalid emulator: ${emulatorName}`));
                 }
                 resolvedEmulatorName = resolvedEmulator;
-                return AndroidUtils.emulatorHasPort(resolvedEmulator);
+                return AndroidUtils.emulatorHasPort(resolvedEmulator, logger);
             })
             .then(async (port) => {
-                const resolvedPortNumber = port ? port : await AndroidUtils.getNextAvailableAdbPort();
+                const resolvedPortNumber = port ? port : await AndroidUtils.getNextAvailableAdbPort(logger);
 
                 if (resolvedPortNumber === port) {
                     // already is running on a port
-                    const isWritable = await AndroidUtils.isEmulatorSystemWritable(resolvedPortNumber);
+                    const isWritable = await AndroidUtils.isEmulatorSystemWritable(resolvedPortNumber, logger);
 
                     if (writable === false || isWritable === true) {
                         // If we're not asked for a writable, or if it already
@@ -493,7 +501,7 @@ export class AndroidUtils {
 
                     // mismatch... shut it down and relaunch it in the right mode
                     CommonUtils.updateCliAction(messages.getMessage('notWritableSystemShutDownStatus'));
-                    await AndroidUtils.stopEmulator(resolvedPortNumber);
+                    await AndroidUtils.stopEmulator(resolvedPortNumber, true, logger);
                 }
 
                 let msgKey = '';
@@ -519,7 +527,7 @@ export class AndroidUtils {
 
                 if (waitForBoot) {
                     CommonUtils.updateCliAction(messages.getMessage('waitForBootStatus', [resolvedEmulatorName]));
-                    await AndroidUtils.waitUntilDeviceIsReady(resolvedPortNumber);
+                    await AndroidUtils.waitUntilDeviceIsReady(resolvedPortNumber, logger);
                 }
 
                 return Promise.resolve(resolvedPortNumber);
@@ -532,10 +540,10 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the emulator.
      * @param waitForPowerOff Optional boolean indicating whether it should wait for the device to shut down. Defaults to true.
      */
-    public static async stopEmulator(portNumber: number, waitForPowerOff = true): Promise<void> {
-        return AndroidUtils.executeAdbCommand('shell reboot -p', portNumber).then(() => {
+    public static async stopEmulator(portNumber: number, waitForPowerOff: boolean, logger?: Logger): Promise<void> {
+        return AndroidUtils.executeAdbCommand('shell reboot -p', portNumber, logger).then(() => {
             if (waitForPowerOff) {
-                return AndroidUtils.waitUntilDeviceIsPoweredOff(portNumber);
+                return AndroidUtils.waitUntilDeviceIsPoweredOff(portNumber, logger);
             } else {
                 return Promise.resolve();
             }
@@ -548,10 +556,10 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the emulator.
      * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
      */
-    public static async rebootEmulator(portNumber: number, waitForBoot = true): Promise<void> {
-        return AndroidUtils.executeAdbCommand('shell reboot', portNumber).then(() => {
+    public static async rebootEmulator(portNumber: number, waitForBoot: boolean, logger?: Logger): Promise<void> {
+        return AndroidUtils.executeAdbCommand('shell reboot', portNumber, logger).then(() => {
             if (waitForBoot) {
-                return AndroidUtils.waitUntilDeviceIsReady(portNumber);
+                return AndroidUtils.waitUntilDeviceIsReady(portNumber, logger);
             } else {
                 return Promise.resolve();
             }
@@ -564,16 +572,18 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the Android virtual device.
      * @returns A boolean indicating whether the emulator on the given port was launched with -writable-system parameter
      */
-    public static async isEmulatorSystemWritable(portNumber: number): Promise<boolean> {
+    public static async isEmulatorSystemWritable(portNumber: number, logger?: Logger): Promise<boolean> {
         try {
-            const emuPath = (await AndroidUtils.executeAdbCommand('emu avd path', portNumber)).split('\n')[0].trim();
+            const emuPath = (await AndroidUtils.executeAdbCommand('emu avd path', portNumber, logger))
+                .split('\n')[0]
+                .trim();
 
             const paramFile = path.join(emuPath, 'emu-launch-params.txt');
 
             const launchParams = fs.readFileSync(paramFile, 'utf8');
             return launchParams.includes('-writable-system');
         } catch (error) {
-            this.logger.warn(`Unable to determine if emulator is system writable: ${(error as Error).toString()}`);
+            logger?.warn(`Unable to determine if emulator is system writable: ${(error as Error).toString()}`);
         }
 
         return false;
@@ -585,8 +595,8 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the Android virtual device.
      * @returns The name of the AVD that is running on that specified port.
      */
-    public static async fetchEmulatorNameFromPort(portNumber: number): Promise<string> {
-        return AndroidUtils.executeAdbCommand('emu avd name', portNumber).then((result) =>
+    public static async fetchEmulatorNameFromPort(portNumber: number, logger?: Logger): Promise<string> {
+        return AndroidUtils.executeAdbCommand('emu avd name', portNumber, logger).then((result) =>
             result.split('\n')[0].trim()
         );
     }
@@ -598,21 +608,21 @@ export class AndroidUtils {
      * @param emulatorName Name of the emulator to be launched (e.g Pixel XL, Nexus_6_API_30).
      * @returns The ADB port that the emulator was launched on with writable access.
      */
-    public static async mountAsRootWritableSystem(emulatorName: string): Promise<number> {
+    public static async mountAsRootWritableSystem(emulatorName: string, logger?: Logger): Promise<number> {
         let portNumber = 0;
 
         // First attempt to start the emulator with writable system. Since it is already running, startEmulator() will check
         // to see if it is also running with writable system already or not. If so then nothing will happen and startEmulator()
         // will just return. Otherwise startEmulator() will power off the emulator first, then relaunch it with writable system,
         // and finally wait for it to finish booting.
-        return AndroidUtils.startEmulator(emulatorName, true, true)
+        return AndroidUtils.startEmulator(emulatorName, true, true, logger)
             .then((port) => {
                 portNumber = port;
                 // Now that emulator is launched with writable system, run root command
-                return AndroidUtils.executeAdbCommandWithRetry('root', portNumber);
+                return AndroidUtils.executeAdbCommandWithRetry('root', portNumber, undefined, undefined, logger);
             })
             .then(async () => {
-                const emulator = await AndroidUtils.fetchEmulator(emulatorName);
+                const emulator = await AndroidUtils.fetchEmulator(emulatorName, logger);
                 if (!emulator) {
                     return Promise.reject(
                         new SfError(`Unable to determine device info: Port = ${portNumber} , Name = ${emulatorName}`)
@@ -622,11 +632,23 @@ export class AndroidUtils {
                 // For API 29 or higher there are a few more steps to be done before we can remount after rooting
                 if (Version.sameOrNewer(emulator.apiLevel, Version.from('29')!)) {
                     const verificationIsAlreadyDisabled = (
-                        await AndroidUtils.executeAdbCommandWithRetry('shell avbctl get-verification', portNumber)
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'shell avbctl get-verification',
+                            portNumber,
+                            undefined,
+                            undefined,
+                            logger
+                        )
                     ).includes('disabled');
 
                     const verityIsAlreadyDisabled = (
-                        await AndroidUtils.executeAdbCommandWithRetry('shell avbctl get-verity', portNumber)
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'shell avbctl get-verity',
+                            portNumber,
+                            undefined,
+                            undefined,
+                            logger
+                        )
                     ).includes('disabled');
 
                     if (!verificationIsAlreadyDisabled || !verityIsAlreadyDisabled) {
@@ -635,12 +657,24 @@ export class AndroidUtils {
 
                     if (!verificationIsAlreadyDisabled) {
                         // Disable Android Verified Boot
-                        await AndroidUtils.executeAdbCommandWithRetry('shell avbctl disable-verification', portNumber);
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'shell avbctl disable-verification',
+                            portNumber,
+                            undefined,
+                            undefined,
+                            logger
+                        );
                     }
 
                     if (!verityIsAlreadyDisabled) {
                         // Disable Verity
-                        await AndroidUtils.executeAdbCommandWithRetry('disable-verity', portNumber);
+                        await AndroidUtils.executeAdbCommandWithRetry(
+                            'disable-verity',
+                            portNumber,
+                            undefined,
+                            undefined,
+                            logger
+                        );
                     }
 
                     // If AVB and Verify were not disabled already and we had to run
@@ -649,10 +683,10 @@ export class AndroidUtils {
                         CommonUtils.updateCliAction(messages.getMessage('rebootChangesStatus'));
 
                         // Reboot for changes to take effect
-                        await AndroidUtils.rebootEmulator(portNumber, true);
+                        await AndroidUtils.rebootEmulator(portNumber, true, logger);
 
                         // Root again
-                        await AndroidUtils.executeAdbCommandWithRetry('root', portNumber);
+                        await AndroidUtils.executeAdbCommandWithRetry('root', portNumber, undefined, undefined, logger);
                     }
                 }
 
@@ -661,7 +695,7 @@ export class AndroidUtils {
             .then(() => {
                 CommonUtils.updateCliAction(messages.getMessage('remountSystemWritableStatus'));
                 // Now we're ready to remount and truly have root & writable access to system
-                return AndroidUtils.executeAdbCommandWithRetry('remount', portNumber);
+                return AndroidUtils.executeAdbCommandWithRetry('remount', portNumber, undefined, undefined, logger);
             })
             .then(() => Promise.resolve(portNumber));
     }
@@ -671,14 +705,14 @@ export class AndroidUtils {
      *
      * @param portNumber The ADB port of the Android virtual device.
      */
-    public static async waitUntilDeviceIsReady(portNumber: number): Promise<void> {
+    public static async waitUntilDeviceIsReady(portNumber: number, logger?: Logger): Promise<void> {
         const quote = process.platform === WINDOWS_OS ? '"' : "'";
         const command = `wait-for-device shell ${quote}while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;${quote}`;
         const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
 
         const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
             timeout,
-            AndroidUtils.executeAdbCommand(command, portNumber),
+            AndroidUtils.executeAdbCommand(command, portNumber, logger),
             messages.getMessage('bootTimeOut', [`emulator-${portNumber}`])
         );
 
@@ -691,7 +725,7 @@ export class AndroidUtils {
      *
      * @param portNumber The ADB port of the Android virtual device.
      */
-    public static async waitUntilDeviceIsPoweredOff(portNumber: number): Promise<void> {
+    public static async waitUntilDeviceIsPoweredOff(portNumber: number, logger?: Logger): Promise<void> {
         const command =
             process.platform === WINDOWS_OS
                 ? `powershell -Command "while($(adb devices | findstr emulator-${portNumber})){ Start-Sleep -s 1 }"`
@@ -700,7 +734,7 @@ export class AndroidUtils {
 
         const waitUntilReadyPromise = CommonUtils.promiseWithTimeout(
             timeout,
-            CommonUtils.executeCommandAsync(command),
+            CommonUtils.executeCommandAsync(command, logger),
             messages.getMessage('powerOffTimeOut', [`emulator-${portNumber}`])
         );
 
@@ -717,8 +751,8 @@ export class AndroidUtils {
      * @param command The command to be executed. This should not include 'adb' command itself.
      * @param portNumber The ADB port of the Android virtual device.
      */
-    public static async executeAdbCommand(command: string, portNumber: number): Promise<string> {
-        return AndroidUtils.executeAdbCommandWithRetry(command, portNumber, 0);
+    public static async executeAdbCommand(command: string, portNumber: number, logger?: Logger): Promise<string> {
+        return AndroidUtils.executeAdbCommandWithRetry(command, portNumber, 0, undefined, logger);
     }
 
     /**
@@ -733,7 +767,8 @@ export class AndroidUtils {
         command: string,
         portNumber: number,
         numRetries: number = PlatformConfig.androidConfig().AdbNumRetryAttempts,
-        retryDelay: number = PlatformConfig.androidConfig().AdbRetryAttemptDelay
+        retryDelay: number = PlatformConfig.androidConfig().AdbRetryAttemptDelay,
+        logger?: Logger
     ): Promise<string> {
         const adbCmd = `${AndroidUtils.getAdbShellCommand()} -s emulator-${portNumber} ${command}`;
 
@@ -747,7 +782,7 @@ export class AndroidUtils {
             let err: Error | undefined;
 
             try {
-                result = await CommonUtils.executeCommandAsync(adbCmd);
+                result = await CommonUtils.executeCommandAsync(adbCmd, logger);
             } catch (error) {
                 err = error as Error;
             }
@@ -762,7 +797,7 @@ export class AndroidUtils {
             // message 'Done\n' to stderr. And sometimes ADB prints error messages to stdout instead of stderr. So we first gether
             // all outputs into one and then explicitly check to see if an error has occurred or not.
             if (allOutput && allOutput.toLowerCase().includes('error:')) {
-                this.logger.warn(
+                logger?.warn(
                     `ADB command '${adbCmd}' failed. Retrying ${numRetries - i} more times.\n${result.stderr}\n${
                         result.stdout
                     }`
@@ -786,13 +821,13 @@ export class AndroidUtils {
      * @param url The URL to be launched.
      * @param portNumber The ADB port of an Android virtual device.
      */
-    public static async launchURLIntent(url: string, portNumber: number): Promise<void> {
+    public static async launchURLIntent(url: string, portNumber: number, logger?: Logger): Promise<void> {
         const openUrlCommand = `shell am start -a android.intent.action.VIEW -d ${url}`;
         CommonUtils.startCliAction(
             messages.getMessage('launchBrowserAction'),
             messages.getMessage('openBrowserWithUrlStatus', [url])
         );
-        return AndroidUtils.executeAdbCommand(openUrlCommand, portNumber).then(() => Promise.resolve());
+        return AndroidUtils.executeAdbCommand(openUrlCommand, portNumber, logger).then(() => Promise.resolve());
     }
 
     /**
@@ -809,16 +844,17 @@ export class AndroidUtils {
         targetApp: string,
         targetAppArguments: LaunchArgument[],
         launchActivity: string,
-        emulatorPort: number
+        emulatorPort: number,
+        logger?: Logger
     ): Promise<void> {
         let thePromise: Promise<string>;
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = messages.getMessage('installAppStatus', [appBundlePath.trim()]);
-            AndroidUtils.logger.info(installMsg);
+            logger?.info(installMsg);
             CommonUtils.startCliAction(messages.getMessage('launchAppAction'), installMsg);
             const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
             const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
-            thePromise = AndroidUtils.executeAdbCommand(installCommand, emulatorPort);
+            thePromise = AndroidUtils.executeAdbCommand(installCommand, emulatorPort, logger);
         } else {
             thePromise = Promise.resolve('');
         }
@@ -837,10 +873,10 @@ export class AndroidUtils {
                     ` ${launchArgs}`;
 
                 const launchMsg = messages.getMessage('launchAppStatus', [targetApp]);
-                AndroidUtils.logger.info(launchMsg);
+                logger?.info(launchMsg);
                 CommonUtils.updateCliAction(launchMsg);
 
-                return AndroidUtils.executeAdbCommand(launchCommand, emulatorPort);
+                return AndroidUtils.executeAdbCommand(launchCommand, emulatorPort, logger);
             })
             .then(() => {
                 CommonUtils.stopCliAction();
@@ -849,8 +885,8 @@ export class AndroidUtils {
     }
 
     // This method is public for testing purposes.
-    public static async updateEmulatorConfig(emulatorName: string): Promise<void> {
-        return AndroidUtils.readEmulatorConfig(emulatorName).then((config) => {
+    public static async updateEmulatorConfig(emulatorName: string, logger?: Logger): Promise<void> {
+        return AndroidUtils.readEmulatorConfig(emulatorName, logger).then((config) => {
             if (config.size === 0) {
                 // If we cannot edit the AVD config, fail silently.
                 // This will be a degraded experience but should still work.
@@ -891,7 +927,7 @@ export class AndroidUtils {
                 config.set('showDeviceFrame', 'yes');
             }
 
-            AndroidUtils.writeEmulatorConfig(emulatorName, config);
+            AndroidUtils.writeEmulatorConfig(emulatorName, config, logger);
             return Promise.resolve();
         });
     }
@@ -1040,8 +1076,8 @@ export class AndroidUtils {
      * Given an emulator name, this method checks to see if it is targeting Google Play or not.
      * If not then the method resolves otherwise it will reject.
      */
-    public static async ensureDeviceIsNotGooglePlay(emulatorName: string): Promise<void> {
-        return AndroidUtils.fetchEmulator(emulatorName).then((device) => {
+    public static async ensureDeviceIsNotGooglePlay(emulatorName: string, logger?: Logger): Promise<void> {
+        return AndroidUtils.fetchEmulator(emulatorName, logger).then((device) => {
             if (!device) {
                 return Promise.reject(new SfError(`Device ${emulatorName} not found.`));
             } else if (device.target.toLowerCase().includes('play')) {
@@ -1056,7 +1092,6 @@ export class AndroidUtils {
         });
     }
 
-    private static logger: Logger = new Logger(LOGGER_NAME);
     private static packageCache: AndroidPackages = new AndroidPackages();
     private static emulatorCommand: string | undefined;
     private static androidCmdLineToolsBin: string | undefined;
@@ -1066,24 +1101,24 @@ export class AndroidUtils {
     private static sdkManagerCommand: string | undefined;
     private static sdkRoot: AndroidSDKRoot | undefined;
 
-    private static async emulatorHasPort(emulatorName: string): Promise<number | null> {
+    private static async emulatorHasPort(emulatorName: string, logger?: Logger): Promise<number | null> {
         try {
-            const ports = await AndroidUtils.getAllCurrentlyUsedAdbPorts();
+            const ports = await AndroidUtils.getAllCurrentlyUsedAdbPorts(logger);
             for (const port of ports) {
-                const name = await AndroidUtils.fetchEmulatorNameFromPort(port);
+                const name = await AndroidUtils.fetchEmulatorNameFromPort(port, logger);
                 if (name === emulatorName) {
                     return port;
                 }
             }
         } catch (error) {
-            this.logger.warn(`Unable to determine if emulator is already running: ${(error as Error).toString()}`);
+            logger?.warn(`Unable to determine if emulator is already running: ${(error as Error).toString()}`);
         }
 
         return null;
     }
 
-    private static async getNextAvailableAdbPort(): Promise<number> {
-        return AndroidUtils.getAllCurrentlyUsedAdbPorts().then((ports) => {
+    private static async getNextAvailableAdbPort(logger?: Logger): Promise<number> {
+        return AndroidUtils.getAllCurrentlyUsedAdbPorts(logger).then((ports) => {
             const adbPort =
                 ports.length > 0
                     ? ports.sort().reverse()[0] + 2 // need to incr by 2, one for console port and next for adb
@@ -1093,10 +1128,10 @@ export class AndroidUtils {
         });
     }
 
-    private static async getAllCurrentlyUsedAdbPorts(): Promise<number[]> {
+    private static async getAllCurrentlyUsedAdbPorts(logger?: Logger): Promise<number[]> {
         let ports: number[] = [];
         const command = `${AndroidUtils.getAdbShellCommand()} devices`;
-        return CommonUtils.executeCommandAsync(command).then((result) => {
+        return CommonUtils.executeCommandAsync(command, logger).then((result) => {
             if (result.stdout) {
                 ports = result.stdout
                     .split('\n')
@@ -1112,9 +1147,10 @@ export class AndroidUtils {
     }
 
     private static async packageWithRequiredEmulatorImages(
-        androidPackage: AndroidPackage
+        androidPackage: AndroidPackage,
+        logger?: Logger
     ): Promise<AndroidPackage | undefined> {
-        const installedSystemImages = await AndroidUtils.fetchInstalledSystemImages();
+        const installedSystemImages = await AndroidUtils.fetchInstalledSystemImages(logger);
         const platformAPI = androidPackage.platformAPI;
         const supportedImages = PlatformConfig.androidConfig().supportedImages.join('|');
         const supportedArchitectures = PlatformConfig.androidConfig().supportedArchitectures.join('|');
@@ -1137,8 +1173,8 @@ export class AndroidUtils {
         return `'${pathName}'`;
     }
 
-    private static async fetchInstalledSystemImages(): Promise<AndroidPackage[]> {
-        return AndroidUtils.fetchInstalledPackages().then((packages) => packages.systemImages);
+    private static async fetchInstalledSystemImages(logger?: Logger): Promise<AndroidPackage[]> {
+        return AndroidUtils.fetchInstalledPackages(logger).then((packages) => packages.systemImages);
     }
 
     // NOTE: detaching a process in windows seems to detach the streams. Prevent spawn from detaching when
@@ -1160,10 +1196,10 @@ export class AndroidUtils {
     // The user can provide us with emulator name as an ID (Pixel_XL) or as display name (Pixel XL).
     // This method can be used to resolve a display name back to an id since emulator commands
     // work with IDs not display names.
-    private static async resolveEmulatorImage(emulatorName: string): Promise<string | undefined> {
+    private static async resolveEmulatorImage(emulatorName: string, logger?: Logger): Promise<string | undefined> {
         const emulatorDisplayName = emulatorName.replace(/[_-]/gi, ' ').trim(); // eg. Pixel_XL --> Pixel XL, tv-emulator --> tv emulator
 
-        return CommonUtils.executeCommandAsync(`${AndroidUtils.getEmulatorCommand()} -list-avds`)
+        return CommonUtils.executeCommandAsync(`${AndroidUtils.getEmulatorCommand()} -list-avds`, logger)
             .then((result) => {
                 const listOfAVDs = result.stdout.split('\n');
                 for (const avd of listOfAVDs) {
@@ -1176,12 +1212,12 @@ export class AndroidUtils {
                 return Promise.resolve(undefined);
             })
             .catch((error) => {
-                AndroidUtils.logger.error(error);
+                logger?.error(error);
                 return Promise.resolve(undefined);
             });
     }
 
-    private static readEmulatorConfig(emulatorName: string): Promise<Map<string, string>> {
+    private static readEmulatorConfig(emulatorName: string, logger?: Logger): Promise<Map<string, string>> {
         const filePath = CommonUtils.resolveUserHomePath(
             path.join('~', '.android', 'avd', `${emulatorName}.avd`, 'config.ini')
         );
@@ -1197,12 +1233,12 @@ export class AndroidUtils {
 
             return Promise.resolve(configMap);
         } catch (error) {
-            AndroidUtils.logger.warn(`Unable to read emulator config ${filePath}: ${(error as Error).toString()}`);
+            logger?.warn(`Unable to read emulator config ${filePath}: ${(error as Error).toString()}`);
             return Promise.resolve(new Map<string, string>());
         }
     }
 
-    private static writeEmulatorConfig(emulatorName: string, config: Map<string, string>): void {
+    private static writeEmulatorConfig(emulatorName: string, config: Map<string, string>, logger?: Logger): void {
         let configString = '';
         // This looks wrong, but the callback signature of forEach is function(value,key,map).
         config.forEach((value, key) => {
@@ -1216,7 +1252,7 @@ export class AndroidUtils {
         } catch (error) {
             // If we cannot edit the AVD config, fail silently.
             // This will be a degraded experience but should still work.
-            AndroidUtils.logger.warn(`Unable to write emulator config to ${filePath}: ${(error as Error).toString()}`);
+            logger?.warn(`Unable to write emulator config to ${filePath}: ${(error as Error).toString()}`);
         }
     }
 }

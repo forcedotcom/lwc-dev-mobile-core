@@ -7,27 +7,17 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import fs from 'node:fs';
-import { Logger, LoggerLevelValue } from '@salesforce/core';
+import { Logger } from '@salesforce/core';
 import { Version } from './Common.js';
 
-const ANDROID_PACKAGES_LOGGER_NAME = 'force:lightning:local:androidtypes:androidpackages';
-const ANDROID_VIRTUAL_DEVICE_LOGGER_NAME = 'force:lightning:local:androidtypes:androidvirtualdevice';
-
 export class AndroidPackages {
-    /**
-     * Initialize the logger used by AndroidPackages.
-     */
-    public static initializeLogger(level?: LoggerLevelValue): void {
-        AndroidPackages.logger.setLevel(level);
-    }
-
     /**
      * Attempts to parse the output of `sdkmanager --list` command.
      *
      * @param rawStringInput The string blob that is the output of `sdkmanager --list` command.
      * @returns An AndroidPackages object containing an array of platforms and system images.
      */
-    public static parseRawPackagesString(rawStringInput: string): AndroidPackages {
+    public static parseRawPackagesString(rawStringInput: string, logger?: Logger): AndroidPackages {
         const startIndx = rawStringInput.toLowerCase().indexOf('installed packages:', 0);
         const endIndx = rawStringInput.toLowerCase().indexOf('available packages:', startIndx);
         const rawString = rawStringInput.substring(startIndx, endIndx);
@@ -56,7 +46,7 @@ export class AndroidPackages {
                         }
                         let version: Version | string | null = Version.from(versionString);
                         if (version === null) {
-                            this.logger.warn(
+                            logger?.warn(
                                 `parseRawPackagesString(): '${versionString}' does not follow semantic versioning format... will consider it as a codename.`
                             );
                             version = versionString;
@@ -118,7 +108,6 @@ export class AndroidPackages {
 
     public platforms: AndroidPackage[] = [];
     public systemImages: AndroidPackage[] = [];
-    private static logger: Logger = new Logger(ANDROID_PACKAGES_LOGGER_NAME);
 }
 
 export class AndroidPackage {
@@ -163,19 +152,12 @@ export class AndroidPackage {
 
 export class AndroidVirtualDevice {
     /**
-     * Initialize the logger used by AndroidVirtualDevice.
-     */
-    public static initializeLogger(level?: LoggerLevelValue): void {
-        AndroidVirtualDevice.logger.setLevel(level);
-    }
-
-    /**
      * Attempts to parse the output of `avdmanager list avd` command.
      *
      * @param rawStringInput The string blob that is the output of `avdmanager list avd` command.
      * @returns An array of AndroidVirtualDevice objects containing information about each AVD.
      */
-    public static parseRawString(rawString: string): AndroidVirtualDevice[] {
+    public static parseRawString(rawString: string, logger?: Logger): AndroidVirtualDevice[] {
         const avds = AndroidVirtualDevice.getAvdDefinitions(rawString);
         const devices: AndroidVirtualDevice[] = [];
 
@@ -198,7 +180,7 @@ export class AndroidVirtualDevice {
                         .map((entry) => entry.replace('android-', ''));
                     apiLevel = Version.from(targetAPI[0]);
                     if (apiLevel === null) {
-                        this.logger.warn(
+                        logger?.warn(
                             `parseRawString(): '${targetAPI[0]}' does not follow semantic versioning format... will consider it as a codename.`
                         );
                         apiLevel = targetAPI[0];
@@ -215,7 +197,7 @@ export class AndroidVirtualDevice {
     }
 
     /*
-        When we run 'avdmanager list avd' it returns the results (along with any erros)
+        When we run 'avdmanager list avd' it returns the results (along with any errors)
         as raw string in the following format:
 
         Available Android Virtual Devices:
@@ -311,6 +293,4 @@ export class AndroidVirtualDevice {
     public toString(): string {
         return `${this.displayName}, ${this.deviceName}, ${this.api}`;
     }
-
-    private static logger: Logger = new Logger(ANDROID_VIRTUAL_DEVICE_LOGGER_NAME);
 }

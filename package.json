@@ -1,7 +1,7 @@
 {
     "name": "@salesforce/lwc-dev-mobile-core",
     "description": "Core module supporting Salesforce CLI mobile extension plug-ins",
-    "version": "4.0.0-alpha.4",
+    "version": "4.0.0-alpha.5",
     "author": {
         "name": "Meisam Seyed Aliroteh",
         "email": "maliroteh@salesforce.com",
@@ -36,27 +36,27 @@
     ],
     "bugs": "https://github.com/forcedotcom/lwc-dev-mobile-core/issues",
     "dependencies": {
-        "@oclif/core": "^3.26.6",
-        "@salesforce/core": "^7.3.6",
-        "@salesforce/sf-plugins-core": "^9.0.10",
-        "ajv": "^8.13.0",
+        "@oclif/core": "^4.0.7",
+        "@salesforce/core": "^8.1.0",
+        "@salesforce/sf-plugins-core": "^11.1.2",
+        "ajv": "^8.16.0",
         "chalk": "^5.3.0",
-        "listr2": "^8.2.1",
+        "listr2": "^8.2.3",
         "node-forge": "^1.3.1"
     },
     "devDependencies": {
-        "@oclif/plugin-command-snapshot": "^5.1.9",
-        "@salesforce/cli-plugins-testkit": "^5.3.4",
-        "@salesforce/dev-scripts": "^9.1.1",
-        "@salesforce/ts-sinon": "1.4.19",
-        "@types/node": "^20.12.11",
+        "@oclif/plugin-command-snapshot": "^5.2.3",
+        "@salesforce/cli-plugins-testkit": "^5.3.16",
+        "@salesforce/dev-scripts": "^10.2.2",
+        "@salesforce/ts-sinon": "1.4.22",
+        "@types/node": "^20.14.9",
         "@types/node-forge": "^1.3.11",
         "eslint": "^8.57.0",
-        "eslint-plugin-sf-plugin": "^1.18.3",
-        "oclif": "^4.10.9",
+        "eslint-plugin-sf-plugin": "^1.18.9",
+        "oclif": "^4.13.10",
         "shx": "0.3.4",
         "ts-node": "^10.9.2",
-        "typescript": "^5.4.5"
+        "typescript": "^5.5.2"
     },
     "engines": {
         "node": ">=18.0.0"
