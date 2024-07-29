@@ -137,7 +137,7 @@ export class PreviewUtils {
      * This method generates an appropriate web socket url to be used by the local dev server.
      *
      * @param platform a platform flag (desktop , ios, android).
-     * @param port the port number that the local dev server is configured to use.
+     * @param ports the http and https port numbers that the local dev server is configured to use.
      * @returns A string representing a web socket url to be used by the local dev server.
      */
     public static generateWebSocketUrlForLocalDevServer(
