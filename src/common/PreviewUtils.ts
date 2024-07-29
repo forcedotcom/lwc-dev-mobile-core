@@ -140,7 +140,11 @@ export class PreviewUtils {
      * @param port the port number that the local dev server is configured to use.
      * @returns A string representing a web socket url to be used by the local dev server.
      */
-    public static generateWebSocketUrlForLocalDevServer(platform: string, port: string, logger?: Logger): string {
+    public static generateWebSocketUrlForLocalDevServer(
+        platform: string,
+        ports: { httpPort: number; httpsPort: number },
+        logger?: Logger
+    ): string {
         /*
           - For desktop browsers other than Safari, local development use cases will target ws://localhost:<port> connections to the local dev server
           - For the Safari desktop browser, target wss://localhost:<port>
@@ -151,15 +155,15 @@ export class PreviewUtils {
         */
 
         if (CommandLineUtils.platformFlagIsIOS(platform)) {
-            return `wss://localhost:${port}`;
+            return `wss://localhost:${ports.httpsPort}`;
         }
 
         if (CommandLineUtils.platformFlagIsAndroid(platform)) {
-            return `wss://10.0.2.2:${port}`;
+            return `wss://10.0.2.2:${ports.httpsPort}`;
         }
 
         if (process.platform !== 'darwin') {
-            return `ws://localhost:${port}`; // cannot be Safari since it is only available on Mac
+            return `ws://localhost:${ports.httpPort}`; // cannot be Safari since it is only available on Mac
         }
 
         // If we've made it this far then it means that platform=desktop and we're on a Mac
@@ -169,6 +173,6 @@ export class PreviewUtils {
             "defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR)-1]}{window[NR]=$2}'";
         const result = CommonUtils.executeCommandSync(cmd, undefined, logger).trim().toLowerCase();
         const isSafari = result.includes('safari') || result === '';
-        return isSafari ? `wss://localhost:${port}` : `ws://localhost:${port}`;
+        return isSafari ? `wss://localhost:${ports.httpsPort}` : `ws://localhost:${ports.httpPort}`;
     }
 }
