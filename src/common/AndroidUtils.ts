@@ -326,6 +326,7 @@ export class AndroidUtils {
                 if (matchingPlatforms.length < 1) {
                     return Promise.reject(
                         new SfError(
+                            // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                             `Could not locate Android API package (with matching emulator images) for API level ${apiLevel}.`
                         )
                     );

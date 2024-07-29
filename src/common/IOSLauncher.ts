@@ -79,9 +79,11 @@ export class IOSLauncher {
                 if (PreviewUtils.isTargetingBrowser(targetApp)) {
                     let url = '';
                     if (targetingLwrServer) {
+                        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                         url = `${address}:${port}`;
                     } else {
                         const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
+                        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                         url = `${address}:${port}/lwc/preview/${compPath}`;
                     }
 
