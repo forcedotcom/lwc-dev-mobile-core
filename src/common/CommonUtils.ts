@@ -201,16 +201,12 @@ export class CommonUtils {
      * @param stdioOptions Options to be used for [stderr, stdin, stdout]. Defaults to ['ignore', 'pipe', 'ignore']
      * @returns Result of the command execution.
      */
-    public static executeCommandSync(
-        command: string,
-        stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore'],
-        logger?: Logger
-    ): string {
+    public static executeCommandSync(command: string, stdioOptions?: StdioOptions, logger?: Logger): string {
         logger?.debug(`Executing command: '${command}'`);
         try {
             return childProcess
                 .execSync(command, {
-                    stdio: stdioOptions
+                    stdio: stdioOptions ?? ['ignore', 'pipe', 'ignore']
                 })
                 .toString();
         } catch (error) {

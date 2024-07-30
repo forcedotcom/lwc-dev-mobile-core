@@ -101,15 +101,15 @@ export class CryptoUtils {
                     },
                     {
                         type: 7, // IP
-                        value: '127.0.0.1'
+                        ip: '127.0.0.1'
                     },
                     {
                         type: 7, // IP
-                        value: '10.0.2.2'
+                        ip: '10.0.2.2'
                     },
                     {
                         type: 7, // IP (IPv6 loopback)
-                        value: '::1'
+                        ip: '::1'
                     }
                 ]
             }
