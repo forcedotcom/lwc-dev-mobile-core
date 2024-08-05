@@ -1249,30 +1249,7 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@oclif/core@^4":
-  version "4.0.7"
-  resolved "https://registry.yarnpkg.com/@oclif/core/-/core-4.0.7.tgz#e624fa6e91ddcd84ebd0aa9e6efbe17b94f2dd1f"
-  integrity sha512-sU4Dx+RXCWAkrMw8tQFYAL6VfcHYKLPxVC9iKfgTXr4aDhcCssDwrbgpx0Di1dnNxvQlDGUhuCEInZuIY/nNfw==
-  dependencies:
-    ansi-escapes "^4.3.2"
-    ansis "^3.1.1"
-    clean-stack "^3.0.1"
-    cli-spinners "^2.9.2"
-    debug "^4.3.5"
-    ejs "^3.1.10"
-    get-package-type "^0.1.0"
-    globby "^11.1.0"
-    indent-string "^4.0.0"
-    is-wsl "^2.2.0"
-    lilconfig "^3.1.2"
-    minimatch "^9.0.4"
-    string-width "^4.2.3"
-    supports-color "^8"
-    widest-line "^3.1.0"
-    wordwrap "^1.0.0"
-    wrap-ansi "^7.0.0"
-
-"@oclif/core@^4.0.15", "@oclif/core@^4.0.17":
+"@oclif/core@^4", "@oclif/core@^4.0.15", "@oclif/core@^4.0.17":
   version "4.0.17"
   resolved "https://registry.yarnpkg.com/@oclif/core/-/core-4.0.17.tgz#2c934dd2b3789fe5e6cc9e2558a08007ba18cb03"
   integrity sha512-zfdSRip9DVMOklMojWCLZEB4iOzy7LDTABCDzCXqmpZGS+o1e1xts4jGhnte3mi0WV0YthNfYqF16tqk6CWITA==
@@ -1295,13 +1272,13 @@
     wordwrap "^1.0.0"
     wrap-ansi "^7.0.0"
 
-"@oclif/plugin-command-snapshot@^5.2.10":
-  version "5.2.10"
-  resolved "https://registry.yarnpkg.com/@oclif/plugin-command-snapshot/-/plugin-command-snapshot-5.2.10.tgz#48f46f341daa21fc28bd67b58420d5d9910cd237"
-  integrity sha512-Nc7xMdkvQxYfbqfA+UDSFV6SsVzbITVsJXQYPaM9QrlsbgUhzcdMHDX8kvqZV01OcK6Zr7lJ5XksY62lKbtS/A==
+"@oclif/plugin-command-snapshot@^5.2.11":
+  version "5.2.11"
+  resolved "https://registry.yarnpkg.com/@oclif/plugin-command-snapshot/-/plugin-command-snapshot-5.2.11.tgz#b4914c0465af849510d3cff5aa7c9fedea009ff9"
+  integrity sha512-klL8lGY5Ef+EJZ7ftGChvMCPspXXYCyAsyEJILZRd4gf1bIYzS9ooKZuClGa1RbGTleJjZQxvCEiItrRrH72oQ==
   dependencies:
     "@oclif/core" "^4"
-    ansis "^3.3.1"
+    ansis "^3.3.2"
     globby "^14.0.2"
     just-diff "^5.2.0"
     lodash.difference "^4.5.0"
@@ -2483,12 +2460,7 @@ ansi-styles@^6.0.0, ansi-styles@^6.1.0, ansi-styles@^6.2.1:
   resolved "https://registry.yarnpkg.com/ansi-styles/-/ansi-styles-6.2.1.tgz#0e62320cf99c21afff3b3012192546aacbfb05c5"
   integrity sha512-bN798gFfQX+viw3R7yrGWRqnrN2oRkEkUjjl4JNn4E8GxxbjtG3FbrEIIY3l8/hrwUwIeCZvi4QuOTP4MErVug==
 
-ansis@^3.1.1, ansis@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/ansis/-/ansis-3.2.0.tgz#0e050c5be94784f32ffdac4b84fccba064aeae4b"
-  integrity sha512-Yk3BkHH9U7oPyCN3gL5Tc7CpahG/+UFv/6UG03C311Vy9lzRmA5uoxDTpU9CO3rGHL6KzJz/pdDeXZCZ5Mu/Sg==
-
-ansis@^3.3.1, ansis@^3.3.2:
+ansis@^3.2.0, ansis@^3.3.1, ansis@^3.3.2:
   version "3.3.2"
   resolved "https://registry.yarnpkg.com/ansis/-/ansis-3.3.2.tgz#15adc36fea112da95c74d309706e593618accac3"
   integrity sha512-cFthbBlt+Oi0i9Pv/j6YdVWJh54CtjGACaMPCIrEV4Ha7HWsIjXDwseYV79TIL0B4+KfSwD5S70PeQDkPUd1rA==
