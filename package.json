@@ -36,7 +36,7 @@
     ],
     "bugs": "https://github.com/forcedotcom/lwc-dev-mobile-core/issues",
     "dependencies": {
-        "@oclif/core": "^4.0.17",
+        "@oclif/core": "^4.0.19",
         "@salesforce/core": "^8.3.0",
         "@salesforce/sf-plugins-core": "^11.3.2",
         "ajv": "^8.17.1",
