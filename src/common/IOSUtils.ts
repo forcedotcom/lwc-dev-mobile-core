@@ -1,22 +1,13 @@
-/* eslint-disable @typescript-eslint/member-ordering */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
+
 import { Logger, Messages, SfError } from '@salesforce/core';
-import { Version } from '../common/Common.js';
 import { CommonUtils } from './CommonUtils.js';
-import { IOSSimulatorDevice } from './IOSTypes.js';
-import { PlatformConfig } from './PlatformConfig.js';
-import { LaunchArgument } from './PreviewConfigFile.js';
+import { LaunchArgument } from './device/BaseDevice.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -43,12 +34,26 @@ export class IOSUtils {
                 }
             })
             .catch((error) => {
-                if (!IOSUtils.isDeviceAlreadyBootedError(error)) {
+                if (!IOSUtils.isDeviceAlreadyBootedError(error as Error)) {
                     return Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`));
                 } else {
                     return Promise.resolve();
                 }
             });
+    }
+
+    /**
+     * Attempts to shutdown a simulator.
+     *
+     * @param udid The UDID of the simulator to shut down.
+     */
+    public static async shutdownDevice(udid: string, logger?: Logger): Promise<void> {
+        const command = `${XCRUN_CMD} simctl shutdown ${udid}`;
+        try {
+            await CommonUtils.executeCommandAsync(command, logger);
+        } catch (error) {
+            logger?.warn(error);
+        }
     }
 
     /**
@@ -68,157 +73,6 @@ export class IOSUtils {
         return CommonUtils.executeCommandAsync(command, logger)
             .then((result) => Promise.resolve(result.stdout.trim()))
             .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
-    }
-
-    /**
-     * Attempts to get the info about a simulator.
-     *
-     * @param simulatorIdentifier The udid or the name for the simulator.
-     * @returns An IOSSimulatorDevice object containing the info of a simulator, or NULL if not found.
-     */
-    public static async getSimulator(simulatorIdentifier: string, logger?: Logger): Promise<IOSSimulatorDevice | null> {
-        return IOSUtils.getSupportedSimulators(logger)
-            .then((devices) => {
-                for (const device of devices) {
-                    if (simulatorIdentifier === device.udid) {
-                        return Promise.resolve(device);
-                    } else if (simulatorIdentifier === device.name) {
-                        return Promise.resolve(device);
-                    }
-                }
-
-                logger?.info(`Unable to find simulator: ${simulatorIdentifier}`);
-                return Promise.resolve(null);
-            })
-            .catch((error) => {
-                logger?.warn(error);
-                return Promise.resolve(null);
-            });
-    }
-
-    /**
-     * Attempts to get a list of simulators that are supported.
-     *
-     * @returns An array of IOSSimulatorDevice objects containing the info about the supported simulators.
-     */
-    public static async getSupportedSimulators(logger?: Logger): Promise<IOSSimulatorDevice[]> {
-        let supportedRuntimes: string[] = [];
-
-        return IOSUtils.getSupportedRuntimes(logger)
-            .then((runtimes) => {
-                supportedRuntimes = runtimes;
-                return CommonUtils.executeCommandAsync(`${XCRUN_CMD} simctl list --json devices available`, logger);
-            })
-            .then((result) => {
-                const devices = IOSSimulatorDevice.parseJSONString(result.stdout, supportedRuntimes);
-
-                return Promise.resolve(devices);
-            })
-            .catch((error) => {
-                logger?.warn(error);
-                return Promise.resolve([]);
-            });
-    }
-
-    /**
-     * Attempts to get a list of device types that are supported.
-     *
-     * @returns An array of strings containing the supported device types.
-     */
-    public static async getSupportedDevices(logger?: Logger): Promise<string[]> {
-        const cmd = `${XCRUN_CMD} simctl list --json devicetypes`;
-        return CommonUtils.executeCommandAsync(cmd, logger)
-            .then((result) => {
-                const identifier = 'identifier';
-                const deviceTypesKey = 'devicetypes';
-                const deviceMatchRegex = /SimDeviceType.iPhone-[8,1,X]/;
-                const devicesObj = JSON.parse(result.stdout);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const devices: any[] = devicesObj[deviceTypesKey] || [];
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const matchedDevices: any[] = devices.filter((entry) => entry[identifier]?.match(deviceMatchRegex));
-
-                if (matchedDevices) {
-                    return Promise.resolve(matchedDevices.map((entry) => entry.identifier.split('.')[4]));
-                } else {
-                    return Promise.reject(
-                        new SfError(`Could not find any available devices. Command '${cmd}' returned an empty list.`)
-                    );
-                }
-            })
-            .catch((error) => Promise.reject(new SfError(`Could not find any available devices. ${error}`)));
-    }
-
-    /**
-     * Attempts to get a list of runtimes that are supported.
-     *
-     * @returns An array of strings containing the supported runtimes.
-     */
-    public static async getSupportedRuntimes(logger?: Logger): Promise<string[]> {
-        return IOSUtils.getSimulatorRuntimes(logger).then((configuredRuntimes) => {
-            const minSupportedRuntimeIOS = Version.from(PlatformConfig.iOSConfig().minSupportedRuntime);
-            if (minSupportedRuntimeIOS === null) {
-                return Promise.reject(
-                    new SfError(`${PlatformConfig.iOSConfig().minSupportedRuntime} is not a supported version format.`)
-                );
-            }
-
-            const rtIntersection = configuredRuntimes.filter((configuredRuntime) => {
-                const configuredRuntimeVersion = Version.from(configuredRuntime.toLowerCase().replace('ios-', ''));
-                if (configuredRuntimeVersion === null) {
-                    // We haven't hit a use case where Apple does unconventional version
-                    // specifications like Google will do with their codename "versions".
-                    // So for now, this is a 'miss' on the iOS side. Prove me wrong, Apple!
-                    logger?.warn(
-                        `getSupportedRuntimes(): getSimulatorRuntimes() returned '${configuredRuntime}', which is not a supported version format.`
-                    );
-                    return false;
-                }
-
-                return Version.sameOrNewer(configuredRuntimeVersion, minSupportedRuntimeIOS);
-            });
-
-            if (rtIntersection.length > 0) {
-                return Promise.resolve(rtIntersection);
-            } else {
-                return Promise.reject();
-            }
-        });
-    }
-
-    /**
-     * Attempts to get a list of all runtimes that are available.
-     *
-     * @returns An array of strings containing all of the available runtimes.
-     */
-    public static async getSimulatorRuntimes(logger?: Logger): Promise<string[]> {
-        const runtimesCmd = `${XCRUN_CMD} simctl list --json runtimes available`;
-        return CommonUtils.executeCommandAsync(runtimesCmd, logger)
-            .then((result) => {
-                // eslint-disable-next-line no-useless-escape
-                const runtimeMatchRegex = /.*SimRuntime\.((iOS)-[\d\-]+)$/;
-                const RUNTIMES_KEY = 'runtimes';
-                const ID_KEY = 'identifier';
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const runtimesObj: any = JSON.parse(result.stdout);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const runtimes: any[] = runtimesObj[RUNTIMES_KEY] || [];
-                let filteredRuntimes = runtimes.filter((entry) => entry[ID_KEY]?.match(runtimeMatchRegex));
-                filteredRuntimes = filteredRuntimes.sort().reverse();
-                filteredRuntimes = filteredRuntimes.map((entry) =>
-                    (entry[ID_KEY] as string).replace(runtimeMatchRegex, '$1')
-                );
-                if (filteredRuntimes && filteredRuntimes.length > 0) {
-                    return Promise.resolve(filteredRuntimes);
-                } else {
-                    return Promise.reject(
-                        new SfError(`The command '${runtimesCmd}' could not find any available runtimes`)
-                    );
-                }
-            })
-            .catch((error) =>
-                Promise.reject(new SfError(`The command '${runtimesCmd}' failed: ${error}, error code: ${error.code}`))
-            );
     }
 
     /**
@@ -268,9 +122,9 @@ export class IOSUtils {
      */
     public static async launchAppInBootedSimulator(
         udid: string,
-        appBundlePath: string | undefined,
         targetApp: string,
-        targetAppArguments: LaunchArgument[],
+        appBundlePath?: string,
+        targetAppArguments?: LaunchArgument[],
         logger?: Logger
     ): Promise<void> {
         let thePromise: Promise<{ stdout: string; stderr: string }>;
@@ -287,7 +141,7 @@ export class IOSUtils {
         return thePromise
             .then(async () => {
                 let launchArgs = '';
-                targetAppArguments.forEach((arg) => {
+                targetAppArguments?.forEach((arg) => {
                     launchArgs += `${arg.name}=${arg.value} `;
                 });
 

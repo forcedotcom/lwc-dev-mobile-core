@@ -10,39 +10,14 @@ import { expect } from 'chai';
 import { CommonUtils } from '../../../src/common/CommonUtils.js';
 import { IOSUtils } from '../../../src/common/IOSUtils.js';
 import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
-import { IOSMockData } from './IOSMockData.js';
 
 describe('IOS utils tests', () => {
     const $$ = new TestContext();
     const DEVICE_TYPE_PREFIX = 'com.apple.CoreSimulator.SimDeviceType';
     const RUNTIME_TYPE_PREFIX = 'com.apple.CoreSimulator.SimRuntime';
 
-    const myCommandRouterBlock = (command: string): Promise<{ stdout: string; stderr: string }> => {
-        let output = '';
-        if (command.endsWith('simctl list --json devicetypes')) {
-            output = JSON.stringify(IOSMockData.mockRuntimeDeviceTypes);
-        } else if (command.endsWith('simctl list --json devices available')) {
-            output = JSON.stringify(IOSMockData.mockRuntimeDevices);
-        } else {
-            output = JSON.stringify(IOSMockData.mockRuntimes);
-        }
-
-        return new Promise((resolve) => {
-            resolve({
-                stderr: 'mockError',
-                stdout: output
-            });
-        });
-    };
-
     afterEach(() => {
         $$.restore();
-    });
-
-    it('Should attempt to invoke the xcrun for fetching sim runtimes', async () => {
-        const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
-        await IOSUtils.getSimulatorRuntimes();
-        expect(stub.calledOnce).to.be.true;
     });
 
     it('Should attempt to invoke the xcrun for booting a device', async () => {
@@ -173,7 +148,7 @@ describe('IOS utils tests', () => {
             ` ${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}` +
             ' arg1=val1 arg2=val2 ';
 
-        await IOSUtils.launchAppInBootedSimulator(udid, undefined, targetApp, targetAppArgs);
+        await IOSUtils.launchAppInBootedSimulator(udid, targetApp, undefined, targetAppArgs);
 
         expect(stub.calledTwice).to.be.true;
 
@@ -195,7 +170,7 @@ describe('IOS utils tests', () => {
         ];
 
         try {
-            await IOSUtils.launchAppInBootedSimulator(udid, undefined, targetApp, targetAppArgs);
+            await IOSUtils.launchAppInBootedSimulator(udid, targetApp, undefined, targetAppArgs);
         } catch (error) {
             return;
         }
@@ -225,7 +200,7 @@ describe('IOS utils tests', () => {
             ` ${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}` +
             ' arg1=val1 arg2=val2 ';
 
-        await IOSUtils.launchAppInBootedSimulator(udid, appBundlePath, targetApp, targetAppArgs);
+        await IOSUtils.launchAppInBootedSimulator(udid, targetApp, appBundlePath, targetAppArgs);
 
         expect(stub.calledThrice).to.be.true;
 
@@ -236,71 +211,5 @@ describe('IOS utils tests', () => {
         expect(stub.thirdCall.args[0]).to.equal(
             `/usr/bin/xcrun simctl launch "${udid}" ${targetApp} ${expectedLaunchArgs}`
         );
-    });
-
-    it('Should attempt to invoke the xcrun for fetching sim runtimes and return an array of values', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
-
-        const returnedValues = await IOSUtils.getSimulatorRuntimes();
-
-        expect(returnedValues !== null && returnedValues.length === IOSMockData.mockRuntimes.runtimes.length).to.be
-            .true;
-    });
-
-    it('Should attempt to invoke the xcrun for fetching supported runtimes and return whitelisted values', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
-
-        const returnedValues = await IOSUtils.getSupportedRuntimes();
-
-        expect(returnedValues !== null && returnedValues.length > 0).to.be.true;
-    });
-
-    it('Should attempt to invoke the xcrun for fetching supported devices and return whitelisted values', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
-
-        const returnedValues = await IOSUtils.getSupportedDevices();
-
-        expect(returnedValues !== null && returnedValues.length > 0).to.be.true;
-    });
-
-    it('Should attempt to invoke the xcrun for fetching supported sims', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
-
-        const returnedValues = await IOSUtils.getSupportedSimulators();
-
-        expect(returnedValues !== null && returnedValues.length > 0).to.be.true;
-    });
-
-    it('Should attempt to fetch a sim by name', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
-
-        const found = await IOSUtils.getSimulator('iPhone 11 Pro');
-        const notFound = await IOSUtils.getSimulator('blah');
-        expect(found?.name).to.be.equal('iPhone 11 Pro');
-        expect(notFound).to.be.null;
-    });
-
-    it('Should attempt to fetch a sim by udid', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
-
-        const found = await IOSUtils.getSimulator('F2B4097F-F33E-4D8A-8FFF-CE49F8D6C166');
-        const notFound = await IOSUtils.getSimulator('F2B4097F-F33E-4D8A-8FFF-ABCDEFGHIJ');
-        expect(found?.name).to.be.equal('iPhone-11 Pro Max');
-        expect(notFound).to.be.null;
-    });
-
-    it('Should handle Bad JSON', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
-            stdout: '{[}',
-            stderr: 'mockError'
-        });
-
-        try {
-            await IOSUtils.getSimulatorRuntimes();
-        } catch (error) {
-            return;
-        }
-
-        throw new Error('Should have thrown');
     });
 });

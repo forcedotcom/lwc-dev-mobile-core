@@ -51,8 +51,9 @@ describe('Android Launcher tests', () => {
 
         expect(
             launchAppMock.calledWith(
-                undefined,
+                5572,
                 'com.salesforce.test',
+                undefined,
                 [
                     {
                         name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX,
@@ -63,8 +64,7 @@ describe('Android Launcher tests', () => {
                         value: '~'
                     }
                 ],
-                '',
-                5572
+                undefined
             )
         ).to.be.true;
     });

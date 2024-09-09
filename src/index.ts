@@ -7,6 +7,11 @@
 
 export * from './cli/commands/force/lightning/local/setup.js';
 
+export * from './common/device/AndroidDevice.js';
+export * from './common/device/AndroidDeviceManager.js';
+export * from './common/device/AppleDevice.js';
+export * from './common/device/AppleDeviceManager.js';
+export * from './common/device/BaseDevice.js';
 export * from './common/AndroidEnvironmentRequirements.js';
 export * from './common/AndroidLauncher.js';
 export * from './common/AndroidTypes.js';
@@ -16,8 +21,6 @@ export * from './common/Common.js';
 export * from './common/CommonUtils.js';
 export * from './common/CryptoUtils.js';
 export * from './common/IOSEnvironmentRequirements.js';
-export * from './common/IOSLauncher.js';
-export * from './common/IOSTypes.js';
 export * from './common/IOSUtils.js';
 export * from './common/MacNetworkUtils.js';
 export * from './common/PerformanceMarkers.js';

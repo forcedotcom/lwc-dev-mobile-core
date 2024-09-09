@@ -7,6 +7,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { CommandLineUtils } from './Common.js';
+import { LaunchArgument } from './device/BaseDevice.js';
 
 export class PreviewConfigFile {
     public apps!: {
@@ -24,11 +25,6 @@ export class PreviewConfigFile {
 
         return config;
     }
-}
-
-export class LaunchArgument {
-    public name!: string;
-    public value!: string;
 }
 
 class BaseAppPreviewConfig {

@@ -6,9 +6,10 @@
  */
 import { Logger, Messages } from '@salesforce/core';
 import { AndroidUtils } from './AndroidUtils.js';
-import { AndroidAppPreviewConfig, LaunchArgument } from './PreviewConfigFile.js';
+import { AndroidAppPreviewConfig } from './PreviewConfigFile.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PreviewUtils } from './PreviewUtils.js';
+import { LaunchArgument } from './device/BaseDevice.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -89,6 +90,7 @@ export class AndroidLauncher {
                     CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
 
                     const launchActivity = appConfig?.activity ?? '';
+                    const target = launchActivity ? `${targetApp}/${launchActivity}` : targetApp;
 
                     const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
 
@@ -104,11 +106,10 @@ export class AndroidLauncher {
                     }
 
                     return AndroidUtils.launchAppInBootedEmulator(
-                        appBundlePath,
-                        targetApp,
-                        targetAppArguments,
-                        launchActivity,
                         emulatorPort,
+                        target,
+                        appBundlePath,
+                        targetAppArguments,
                         logger
                     );
                 }
