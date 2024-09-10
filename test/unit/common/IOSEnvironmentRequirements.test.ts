@@ -8,13 +8,14 @@ import { Logger, Messages } from '@salesforce/core';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
+import { AppleDeviceManager } from '../../../src/common/device/AppleDeviceManager.js';
+import { AppleRuntime } from '../../../src/common/device/AppleDevice.js';
 import { CommonUtils } from '../../../src/common/CommonUtils.js';
 import {
     SupportedEnvironmentRequirement,
     SupportedSimulatorRuntimeRequirement,
     XcodeInstalledRequirement
 } from '../../../src/common/IOSEnvironmentRequirements.js';
-import { IOSUtils } from '../../../src/common/IOSUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -81,14 +82,27 @@ describe('IOS Environment Requirement tests', () => {
     });
 
     it('Should attempt to validate supported Xcode runtime environments', async () => {
-        const getSimRuntimesMock = stubMethod($$.SANDBOX, IOSUtils, 'getSimulatorRuntimes').resolves(['iOS-13-1']);
+        const getSimRuntimesMock = stubMethod($$.SANDBOX, AppleDeviceManager.prototype, 'enumerateRuntimes').resolves([
+            {
+                bundlePath:
+                    '/Library/Developer/CoreSimulator/Volumes/iOS_21F79/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 17.5.simruntime',
+                identifier: 'com.apple.CoreSimulator.SimRuntime.iOS-17-5',
+                isAvailable: true,
+                isInternal: false,
+                name: 'iOS 17.5',
+                platform: 'iOS',
+                runtimeRoot:
+                    '/Library/Developer/CoreSimulator/Volumes/iOS_21F79/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 17.5.simruntime/Contents/Resources/RuntimeRoot',
+                version: '17.5'
+            } as AppleRuntime
+        ]);
         const requirement = new SupportedSimulatorRuntimeRequirement(logger);
         await requirement.checkFunction();
         expect(getSimRuntimesMock.calledOnce).to.be.true;
     });
 
     it('Should throw an error for unsupported Xcode runtime environments', async () => {
-        stubMethod($$.SANDBOX, IOSUtils, 'getSimulatorRuntimes').rejects(new Error('Bad bad mock!'));
+        stubMethod($$.SANDBOX, AppleDeviceManager.prototype, 'enumerateRuntimes').rejects(new Error('Bad mock!'));
         const requirement = new SupportedSimulatorRuntimeRequirement(logger);
         return requirement.checkFunction().catch((error) =>
             expect(error)

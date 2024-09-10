@@ -17,7 +17,7 @@ import { AndroidPackage, AndroidPackages, AndroidVirtualDevice } from './Android
 import { Version } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PlatformConfig } from './PlatformConfig.js';
-import { LaunchArgument } from './PreviewConfigFile.js';
+import { LaunchArgument } from './device/BaseDevice.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -558,13 +558,20 @@ export class AndroidUtils {
      * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
      */
     public static async rebootEmulator(portNumber: number, waitForBoot: boolean, logger?: Logger): Promise<void> {
-        return AndroidUtils.executeAdbCommand('shell reboot', portNumber, logger).then(() => {
-            if (waitForBoot) {
-                return AndroidUtils.waitUntilDeviceIsReady(portNumber, logger);
-            } else {
-                return Promise.resolve();
-            }
-        });
+        try {
+            await AndroidUtils.executeAdbCommand('shell reboot', portNumber, logger);
+        } catch (error) {
+            // Sometimes the command `adb shell reboot` completes with an error even though it has
+            // successfully rebooted the device. So we will just log the error and continue to wait
+            // for device to become ready. If that step times out then reboot was not successful.
+            logger?.warn(error);
+        }
+
+        if (waitForBoot) {
+            return AndroidUtils.waitUntilDeviceIsReady(portNumber, logger);
+        } else {
+            return Promise.resolve();
+        }
     }
 
     /**
@@ -834,18 +841,16 @@ export class AndroidUtils {
     /**
      * Attempts to launch a native app in an emulator to preview LWC components. If the app is not installed then this method will attempt to install it first.
      *
-     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
-     * @param targetApp The bundle ID of the app to be launched.
-     * @param targetAppArguments Extra arguments to be passed to the app upon launch.
-     * @param launchActivity Activity name to be used for launching the app.
      * @param emulatorPort The ADB port of an Android virtual device.
+     * @param target The bundle ID of the app to be launched + the activity name to be used when launching the app. Eg "com.salesforce.chatter/.Chatter"
+     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
+     * @param targetAppArguments Extra arguments to be passed to the app upon launch.
      */
     public static async launchAppInBootedEmulator(
-        appBundlePath: string | undefined,
-        targetApp: string,
-        targetAppArguments: LaunchArgument[],
-        launchActivity: string,
         emulatorPort: number,
+        target: string,
+        appBundlePath?: string,
+        targetAppArguments?: LaunchArgument[],
         logger?: Logger
     ): Promise<void> {
         let thePromise: Promise<string>;
@@ -863,17 +868,17 @@ export class AndroidUtils {
         return thePromise
             .then(() => {
                 let launchArgs = '';
-                targetAppArguments.forEach((arg) => {
+                targetAppArguments?.forEach((arg) => {
                     launchArgs += `--es "${arg.name}" "${arg.value}" `;
                 });
 
                 const launchCommand =
-                    `shell am start -S -n "${targetApp}/${launchActivity}"` +
+                    `shell am start -S -n "${target}"` +
                     ' -a android.intent.action.MAIN' +
                     ' -c android.intent.category.LAUNCHER' +
                     ` ${launchArgs}`;
 
-                const launchMsg = messages.getMessage('launchAppStatus', [targetApp]);
+                const launchMsg = messages.getMessage('launchAppStatus', [target]);
                 logger?.info(launchMsg);
                 CommonUtils.updateCliAction(launchMsg);
 

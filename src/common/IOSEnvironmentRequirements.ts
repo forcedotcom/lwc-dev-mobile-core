@@ -8,7 +8,7 @@
  */
 import { Logger, Messages, SfError } from '@salesforce/core';
 import { CommonUtils } from './CommonUtils.js';
-import { IOSUtils } from './IOSUtils.js';
+import { AppleDeviceManager } from './device/AppleDeviceManager.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { Requirement, RequirementList } from './Requirements.js';
 
@@ -129,10 +129,18 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
      */
     public async checkFunction(): Promise<string> {
         this.logger.info('Executing a check for iOS runtimes');
-        return IOSUtils.getSupportedRuntimes(this.logger)
+        const deviceManager = new AppleDeviceManager(this.logger);
+
+        return deviceManager
+            .enumerateRuntimes()
             .then((supportedRuntimes) => {
                 if (supportedRuntimes.length > 0) {
-                    return Promise.resolve(messages.getMessage(this.fulfilledMessage, supportedRuntimes));
+                    return Promise.resolve(
+                        messages.getMessage(
+                            this.fulfilledMessage,
+                            supportedRuntimes.map((it) => it.name)
+                        )
+                    );
                 } else {
                     return Promise.reject(
                         new SfError(

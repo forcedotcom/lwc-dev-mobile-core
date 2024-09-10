@@ -18,6 +18,55 @@ import { CustomOptions, OptionFlag } from '@oclif/core/interfaces';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
+export class CaseInsensitiveStringMap {
+    private map = new Map<string, string>();
+
+    // Set a key-value pair, normalizing the key to lowercase
+    public set(key: string, value: string): void {
+        this.map.set(key.toLowerCase(), value);
+    }
+
+    // Get a value by a case-insensitive key
+    public get(key: string): string | undefined {
+        return this.map.get(key.toLowerCase());
+    }
+
+    // Check if the map contains a case-insensitive key
+    public has(key: string): boolean {
+        return this.map.has(key.toLowerCase());
+    }
+
+    // Delete a key-value pair by a case-insensitive key
+    public delete(key: string): boolean {
+        return this.map.delete(key.toLowerCase());
+    }
+
+    /**
+     * Takes an input string containing one or more lines of data. The data per line
+     * is expected to have the format of <key><separator><value> where <separator> is
+     * either : or =
+     *
+     * It will then parse the input and converts it to a map of keys and values.
+     */
+    public static fromString(input: string): CaseInsensitiveStringMap {
+        const resultMap = new CaseInsensitiveStringMap();
+        const lines = input.split(/\r?\n/);
+
+        for (const line of lines) {
+            // Find the first occurrence of : or =
+            const match = line.match(/[:=]/);
+            if (match) {
+                const index = match.index!;
+                const key = line.slice(0, index).trim(); // Key is the part before the first : or =
+                const value = line.slice(index + 1).trim(); // Value is the part after the first : or =
+                resultMap.set(key, value);
+            }
+        }
+
+        return resultMap;
+    }
+}
+
 export class MapUtils {
     /**
      * Enables filtering operation on Map types.

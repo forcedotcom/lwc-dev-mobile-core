@@ -364,7 +364,7 @@ describe('Android utils', () => {
             stdout: `${targetApp}/.MainActivity`
         });
 
-        await AndroidUtils.launchAppInBootedEmulator(undefined, targetApp, targetAppArgs, targetActivity, port);
+        await AndroidUtils.launchAppInBootedEmulator(port, `${targetApp}/${targetActivity}`, undefined, targetAppArgs);
 
         expect(stub.calledOnce);
         expect(
@@ -390,7 +390,12 @@ describe('Android utils', () => {
         const port = 1234;
 
         try {
-            await AndroidUtils.launchAppInBootedEmulator(undefined, targetApp, targetAppArgs, targetActivity, port);
+            await AndroidUtils.launchAppInBootedEmulator(
+                port,
+                `${targetApp}/${targetActivity}`,
+                undefined,
+                targetAppArgs
+            );
         } catch (error) {
             return;
         }
@@ -421,7 +426,12 @@ describe('Android utils', () => {
             stdout: `${targetApp}/.MainActivity`
         });
 
-        await AndroidUtils.launchAppInBootedEmulator(appBundlePath, targetApp, targetAppArgs, targetActivity, port);
+        await AndroidUtils.launchAppInBootedEmulator(
+            port,
+            `${targetApp}/${targetActivity}`,
+            appBundlePath,
+            targetAppArgs
+        );
 
         const pathQuote = process.platform === 'win32' ? '"' : "'";
 
