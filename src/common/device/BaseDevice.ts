@@ -41,4 +41,6 @@ export type BaseDevice = {
     shutdown(): Promise<void>;
     openUrl(url: string): Promise<void>;
     launchApp(targetApp: string, appBundlePath?: string, targetAppArguments?: LaunchArgument[]): Promise<void>;
+    isCertInstalled(derCertificate?: Buffer, pemCertificate?: string): Promise<boolean>;
+    installCert(derCertificate?: Buffer, pemCertificate?: string): Promise<void>;
 };

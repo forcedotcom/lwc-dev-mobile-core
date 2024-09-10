@@ -5,8 +5,13 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { Logger } from '@salesforce/core';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { Logger, SfError } from '@salesforce/core';
 import { Version } from '../Common.js';
+import { CommonUtils } from '../CommonUtils.js';
+import { CryptoUtils } from '../CryptoUtils.js';
 import { IOSUtils } from '../IOSUtils.js';
 import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
 
@@ -112,5 +117,49 @@ export class AppleDevice implements BaseDevice {
         targetAppArguments?: LaunchArgument[]
     ): Promise<void> {
         await IOSUtils.launchAppInBootedSimulator(this.id, target, appBundlePath, targetAppArguments, this.logger);
+    }
+
+    /**
+     * Checks to see if a certificate is already installed on the device. When invoking
+     * this method, the caller should either provide a DER or PEM certificate (but not both).
+     *
+     * @param derCertificate A buffer containing the data of the certificate in DER format.
+     * @param pemCertificate A string representing a certificate in PEM format.
+     * @returns A boolean indicating if a certificate is already installed on the device or not.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars , class-methods-use-this
+    public async isCertInstalled(derCertificate?: Buffer, pemCertificate?: string): Promise<boolean> {
+        // Information about the certificates that are installed on a simulator is usually stored at
+        // ~/Library/Developer/CoreSimulator/Devices/<Device UDID>/data/Library/Keychains/keychain-2-debug.db
+        //
+        // The keychain/cert info stored in this DB is in an encrypted format and it is difficult to parse out.
+        // For Apple simulators we can just use `simctl keychain` to force install a cert and overwrite if it
+        // already exists on the device so for now we're not implementing this and can invest to do so in the
+        // future if it is really necessary.
+        return Promise.reject(new SfError('Not Implemented'));
+    }
+
+    /**
+     * Installs a certificate on the device. When invoking this method, the caller should either provide a
+     * DER or PEM certificate (but not both).
+     *
+     * @param derCertificate A buffer containing the data of the certificate in DER format.
+     * @param pemCertificate A string representing a certificate in PEM format.
+     */
+    public async installCert(derCertificate?: Buffer, pemCertificate?: string): Promise<void> {
+        if (!derCertificate && !pemCertificate) {
+            throw new SfError('Must provide either a DER or PEM certificate.');
+        } else if (derCertificate && pemCertificate) {
+            throw new SfError('Must provide either a DER or PEM certificate, but not both.');
+        }
+
+        // For iOS simulators we can use `simctl keychain` command along with a DER certificate file
+        // to auto install (which also will overwrite if cert already exist on device)
+        const derContent = derCertificate ?? CryptoUtils.PEMtoDER(pemCertificate!);
+        const certFilePath = path.join(os.tmpdir(), 'localhost.der');
+        fs.writeFileSync(certFilePath, derContent);
+
+        const cmd = `/usr/bin/xcrun simctl keychain ${this.id} add-root-cert ${certFilePath}`;
+        await CommonUtils.executeCommandAsync(cmd, this.logger);
     }
 }
