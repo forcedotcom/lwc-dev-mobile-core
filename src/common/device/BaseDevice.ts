@@ -37,11 +37,14 @@ export type BaseDevice = {
     readonly osType: string;
     readonly osVersion: Version | string;
 
-    boot(waitForBoot: boolean): Promise<void>;
-    reboot(waitForBoot: boolean): Promise<void>;
+    toString(): string;
+
+    boot(waitForBoot?: boolean): Promise<void>;
+    reboot(waitForBoot?: boolean): Promise<void>;
     shutdown(): Promise<void>;
     openUrl(url: string): Promise<void>;
-    launchApp(targetApp: string, appBundlePath?: string, targetAppArguments?: LaunchArgument[]): Promise<void>;
+    hasApp(target: string): Promise<boolean>;
+    launchApp(target: string, appBundlePath?: string, launchArguments?: LaunchArgument[]): Promise<void>;
     isCertInstalled(certData: SSLCertificateData): Promise<boolean>;
     installCert(certData: SSLCertificateData): Promise<void>;
 };

@@ -108,18 +108,35 @@ export class AndroidDevice implements BaseDevice {
     }
 
     /**
+     * Determines if a specific app is installed on the device.
+     *
+     * @param target The bundle ID of the app. Eg "com.salesforce.chatter"
+     * @returns A boolean indicating if the app is installed on the device or not.
+     */
+    public async hasApp(target: string): Promise<boolean> {
+        let result = '';
+        try {
+            result = await AndroidUtils.executeAdbCommand(
+                `shell pm list packages | grep "${target}"`,
+                this.port,
+                this.logger
+            );
+        } catch {
+            // ignore and continue
+        }
+
+        return Promise.resolve(result ? true : false);
+    }
+
+    /**
      * Attempts to launch a native app on the device. If the app is not installed then this method will attempt to install it first.
      *
      * @param target The bundle ID of the app to be launched + the activity name to be used when launching the app. Eg "com.salesforce.chatter/.Chatter"
      * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
-     * @param targetAppArguments Extra arguments to be passed to the app upon launch.
+     * @param launchArguments Extra arguments to be passed to the app upon launch.
      */
-    public async launchApp(
-        target: string,
-        appBundlePath?: string,
-        targetAppArguments?: LaunchArgument[]
-    ): Promise<void> {
-        await AndroidUtils.launchAppInBootedEmulator(this.port, target, appBundlePath, targetAppArguments, this.logger);
+    public async launchApp(target: string, appBundlePath?: string, launchArguments?: LaunchArgument[]): Promise<void> {
+        await AndroidUtils.launchAppInBootedEmulator(this.port, target, appBundlePath, launchArguments, this.logger);
     }
 
     /**

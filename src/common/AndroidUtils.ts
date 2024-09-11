@@ -541,7 +541,7 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the emulator.
      * @param waitForPowerOff Optional boolean indicating whether it should wait for the device to shut down. Defaults to true.
      */
-    public static async stopEmulator(portNumber: number, waitForPowerOff: boolean, logger?: Logger): Promise<void> {
+    public static async stopEmulator(portNumber: number, waitForPowerOff = true, logger?: Logger): Promise<void> {
         return AndroidUtils.executeAdbCommand('shell reboot -p', portNumber, logger).then(() => {
             if (waitForPowerOff) {
                 return AndroidUtils.waitUntilDeviceIsPoweredOff(portNumber, logger);
@@ -557,7 +557,7 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the emulator.
      * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
      */
-    public static async rebootEmulator(portNumber: number, waitForBoot: boolean, logger?: Logger): Promise<void> {
+    public static async rebootEmulator(portNumber: number, waitForBoot = true, logger?: Logger): Promise<void> {
         try {
             await AndroidUtils.executeAdbCommand('shell reboot', portNumber, logger);
         } catch (error) {
