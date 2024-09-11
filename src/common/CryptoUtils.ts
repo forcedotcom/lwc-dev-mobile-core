@@ -139,7 +139,7 @@ export class CryptoUtils {
      * @returns A buffer containing the data of the certificate in DER format.
      */
     public static pemToDer(pemCertificate: string): Buffer {
-        const cert = this.getCertFromPEM(pemCertificate);
+        const cert = this.getCertFromPem(pemCertificate);
         const derCertString = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
         const derCertBuffer = Buffer.from(derCertString, 'binary');
         return derCertBuffer;
@@ -152,7 +152,7 @@ export class CryptoUtils {
      * @returns A string representing a certificate in PEM format.
      */
     public static derToPem(derCertificate: Buffer): string {
-        const cert = this.getCertFromDER(derCertificate);
+        const cert = this.getCertFromDer(derCertificate);
         const pemCert = forge.pki.certificateToPem(cert);
         return pemCert;
     }
@@ -166,8 +166,8 @@ export class CryptoUtils {
      */
     public static getSubjectHashOld(certData: SSLCertificateData): string {
         const cert = certData.derCertificate
-            ? this.getCertFromDER(certData.derCertificate)
-            : this.getCertFromPEM(certData.pemCertificate);
+            ? this.getCertFromDer(certData.derCertificate)
+            : this.getCertFromPem(certData.pemCertificate);
 
         // Get a reference to forge.pki.distinguishedNameToAsn1 by casting to ANY
         // We do this b/c @types/node-forge doesn't expose distinguishedNameToAsn1
@@ -205,8 +205,8 @@ export class CryptoUtils {
      */
     public static isExpired(certData: SSLCertificateData): boolean {
         const cert = certData.derCertificate
-            ? this.getCertFromDER(certData.derCertificate)
-            : this.getCertFromPEM(certData.pemCertificate);
+            ? this.getCertFromDer(certData.derCertificate)
+            : this.getCertFromPem(certData.pemCertificate);
         const now = new Date();
         return cert.validity.notAfter < now;
     }
@@ -221,14 +221,14 @@ export class CryptoUtils {
         return randomBytes(byteSize).toString('base64');
     }
 
-    private static getCertFromDER(derCertificate: Buffer): forge.pki.Certificate {
+    private static getCertFromDer(derCertificate: Buffer): forge.pki.Certificate {
         const derBytes = forge.util.decode64(derCertificate.toString('binary'));
         const asn1 = forge.asn1.fromDer(derBytes);
         const cert = forge.pki.certificateFromAsn1(asn1);
         return cert;
     }
 
-    private static getCertFromPEM(pemCertificate: string): forge.pki.Certificate {
+    private static getCertFromPem(pemCertificate: string): forge.pki.Certificate {
         const cert = forge.pki.certificateFromPem(pemCertificate);
         return cert;
     }
