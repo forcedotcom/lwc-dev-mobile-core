@@ -114,10 +114,12 @@ export class AndroidDevice implements BaseDevice {
      * @returns A boolean indicating if the app is installed on the device or not.
      */
     public async hasApp(target: string): Promise<boolean> {
+        // If the caller passes in package id + activity name, just grab the package id.
+        const pkgId = target.split('/')[0];
         let result = '';
         try {
             result = await AndroidUtils.executeAdbCommand(
-                `shell pm list packages | grep "${target}"`,
+                `shell pm list packages | grep "${pkgId}"`,
                 this.port,
                 this.logger
             );
@@ -125,7 +127,7 @@ export class AndroidDevice implements BaseDevice {
             // ignore and continue
         }
 
-        return Promise.resolve(result ? true : false);
+        return Promise.resolve(result?.trim() ? true : false);
     }
 
     /**
