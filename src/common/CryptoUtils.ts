@@ -133,6 +133,85 @@ export class CryptoUtils {
     }
 
     /**
+     * Converts a certificate from PEM to DER format.
+     *
+     * @param pemCertificate A string representing a certificate in PEM format.
+     * @returns A buffer containing the data of the certificate in DER format.
+     */
+    public static pemToDer(pemCertificate: string): Buffer {
+        const cert = this.getCertFromPem(pemCertificate);
+        const derCertString = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+        const derCertBuffer = Buffer.from(derCertString, 'binary');
+        return derCertBuffer;
+    }
+
+    /**
+     * Converts a certificate from DER to PEM format.
+     *
+     * @param derCertificate A buffer containing the binary data of the certificate in DER format.
+     * @returns A string representing a certificate in PEM format.
+     */
+    public static derToPem(derCertificate: Buffer): string {
+        const cert = this.getCertFromDer(derCertificate);
+        const pemCert = forge.pki.certificateToPem(cert);
+        return pemCert;
+    }
+
+    /**
+     * Computes the old-style (MD5) subject hash (similar to subject_hash_old of OpenSSL).
+     * Android uses this info to label its user certificates.
+     *
+     * @param certData An SSLCertificateData object containing the certificate data.
+     * @returns A string representing the subject hash.
+     */
+    public static getSubjectHashOld(certData: SSLCertificateData): string {
+        const cert = certData.derCertificate
+            ? this.getCertFromDer(certData.derCertificate)
+            : this.getCertFromPem(certData.pemCertificate);
+
+        // Get a reference to forge.pki.distinguishedNameToAsn1 by casting to ANY
+        // We do this b/c @types/node-forge doesn't expose distinguishedNameToAsn1
+        // even though it is there. So we jump through this hoop to get to it.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        const distinguishedNameToAsn1 = (forge.pki as any).distinguishedNameToAsn1;
+
+        // 1. Extract the subject name in ASN.1 format
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const subjectAsn1 = distinguishedNameToAsn1(cert.subject) as forge.asn1.Asn1;
+
+        // 2. Convert the subject to DER-encoded form
+        const derSubject = forge.asn1.toDer(subjectAsn1).getBytes();
+
+        // 3. Create an MD5 hash of the DER-encoded subject
+        const md = forge.md.md5.create();
+        md.update(derSubject, 'raw');
+        const md5Hash = md.digest().getBytes();
+
+        // 4. The first four bytes of the MD5 hash are the subject hash in little-endian format
+        const hashBuffer = forge.util.createBuffer(md5Hash.slice(0, 4), 'raw');
+        const hashArray = Array.from(hashBuffer.bytes()).reverse();
+
+        // 5. Convert the little-endian hash to a hexadecimal string
+        const subjectHash = hashArray.map((byte) => ('00' + byte.charCodeAt(0).toString(16)).slice(-2)).join('');
+
+        return subjectHash;
+    }
+
+    /**
+     * Determines if a certificate is expired.
+     *
+     * @param certData An SSLCertificateData object containing the certificate data.
+     * @returns A boolean indicating whether the certificate is expired or not.
+     */
+    public static isExpired(certData: SSLCertificateData): boolean {
+        const cert = certData.derCertificate
+            ? this.getCertFromDer(certData.derCertificate)
+            : this.getCertFromPem(certData.pemCertificate);
+        const now = new Date();
+        return cert.validity.notAfter < now;
+    }
+
+    /**
      * Generates a cryptographically secure pseudorandom number generator(CSPRNG) token.
      *
      * @param {number} byteSize the size of the token to be generated. Default is 32(256-bit).
@@ -140,5 +219,17 @@ export class CryptoUtils {
      */
     public static generateIdentityToken(byteSize: number = 32): string {
         return randomBytes(byteSize).toString('base64');
+    }
+
+    private static getCertFromDer(derCertificate: Buffer): forge.pki.Certificate {
+        const derBytes = forge.util.decode64(derCertificate.toString('binary'));
+        const asn1 = forge.asn1.fromDer(derBytes);
+        const cert = forge.pki.certificateFromAsn1(asn1);
+        return cert;
+    }
+
+    private static getCertFromPem(pemCertificate: string): forge.pki.Certificate {
+        const cert = forge.pki.certificateFromPem(pemCertificate);
+        return cert;
     }
 }

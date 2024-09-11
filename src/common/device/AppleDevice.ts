@@ -5,8 +5,13 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { Logger } from '@salesforce/core';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { Logger, SfError } from '@salesforce/core';
 import { Version } from '../Common.js';
+import { CommonUtils } from '../CommonUtils.js';
+import { CryptoUtils, SSLCertificateData } from '../CryptoUtils.js';
 import { IOSUtils } from '../IOSUtils.js';
 import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
 
@@ -100,17 +105,68 @@ export class AppleDevice implements BaseDevice {
     }
 
     /**
+     * Determines if a specific app is installed on the device.
+     *
+     * @param target The bundle ID of the app. Eg "com.salesforce.chatter"
+     * @returns A boolean indicating if the app is installed on the device or not.
+     */
+    public async hasApp(target: string): Promise<boolean> {
+        let result = '';
+        try {
+            result = CommonUtils.executeCommandSync(
+                `xcrun simctl listapps ${this.id} | grep "${target}"`,
+                undefined,
+                this.logger
+            );
+        } catch {
+            // ignore and continue
+        }
+
+        return Promise.resolve(result ? true : false);
+    }
+
+    /**
      * Attempts to launch a native app on the device. If the app is not installed then this method will attempt to install it first.
      *
      * @param target The bundle ID of the app to be launched. Eg "com.salesforce.chatter"
      * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
-     * @param targetAppArguments Extra arguments to be passed to the app upon launch.
+     * @param launchArguments Extra arguments to be passed to the app upon launch.
      */
-    public async launchApp(
-        target: string,
-        appBundlePath?: string,
-        targetAppArguments?: LaunchArgument[]
-    ): Promise<void> {
-        await IOSUtils.launchAppInBootedSimulator(this.id, target, appBundlePath, targetAppArguments, this.logger);
+    public async launchApp(target: string, appBundlePath?: string, launchArguments?: LaunchArgument[]): Promise<void> {
+        await IOSUtils.launchAppInBootedSimulator(this.id, target, appBundlePath, launchArguments, this.logger);
+    }
+
+    /**
+     * Checks to see if a certificate is already installed on the device.
+     *
+     * @param certData An SSLCertificateData object containing the certificate data.
+     * @returns A boolean indicating if a certificate is already installed on the device or not.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars , class-methods-use-this
+    public async isCertInstalled(certData: SSLCertificateData): Promise<boolean> {
+        // Information about the certificates that are installed on a simulator is usually stored at
+        // ~/Library/Developer/CoreSimulator/Devices/<Device UDID>/data/Library/Keychains/keychain-2-debug.db
+        //
+        // The keychain/cert info stored in this DB is in an encrypted format and it is difficult to parse out.
+        // For Apple simulators we can just use `simctl keychain` to force install a cert and overwrite if it
+        // already exists on the device so for now we're not implementing this and can invest to do so in the
+        // future if it is really necessary.
+        return Promise.reject(new SfError('Not Implemented'));
+    }
+
+    /**
+     * Installs a certificate on the device.
+     *
+     * @param certData An SSLCertificateData object containing the certificate data.
+     */
+    public async installCert(certData: SSLCertificateData): Promise<void> {
+        // For iOS simulators we can use `simctl keychain` command along with a DER certificate file
+        // to auto install (which also will overwrite if cert already exist on device)
+        const derContent = certData.derCertificate ?? CryptoUtils.pemToDer(certData.pemCertificate);
+        const certFilePath = path.join(os.tmpdir(), 'localhost.der');
+        fs.writeFileSync(certFilePath, derContent);
+
+        const cmd = `/usr/bin/xcrun simctl keychain ${this.id} add-root-cert ${certFilePath}`;
+        await CommonUtils.executeCommandAsync(cmd, this.logger);
     }
 }
