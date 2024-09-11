@@ -7,6 +7,7 @@
 
 import { Logger } from '@salesforce/core';
 import { Version } from '../Common.js';
+import { SSLCertificateData } from '../CryptoUtils.js';
 
 export type LaunchArgument = {
     name: string;
@@ -41,6 +42,6 @@ export type BaseDevice = {
     shutdown(): Promise<void>;
     openUrl(url: string): Promise<void>;
     launchApp(targetApp: string, appBundlePath?: string, targetAppArguments?: LaunchArgument[]): Promise<void>;
-    isCertInstalled(derCertificate?: Buffer, pemCertificate?: string): Promise<boolean>;
-    installCert(derCertificate?: Buffer, pemCertificate?: string): Promise<void>;
+    isCertInstalled(certData: SSLCertificateData): Promise<boolean>;
+    installCert(certData: SSLCertificateData): Promise<void>;
 };

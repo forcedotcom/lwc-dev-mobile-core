@@ -11,7 +11,7 @@ import os from 'node:os';
 import { Logger, SfError } from '@salesforce/core';
 import { AndroidUtils } from '../AndroidUtils.js';
 import { Version } from '../Common.js';
-import { CryptoUtils } from '../CryptoUtils.js';
+import { CryptoUtils, SSLCertificateData } from '../CryptoUtils.js';
 import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
 
 export enum AndroidOSType {
@@ -123,18 +123,16 @@ export class AndroidDevice implements BaseDevice {
     }
 
     /**
-     * Checks to see if a certificate is already installed on the device. When invoking
-     * this method, the caller should either provide a DER or PEM certificate (but not both).
+     * Checks to see if a certificate is already installed on the device.
      *
-     * @param derCertificate A buffer containing the data of the certificate in DER format.
-     * @param pemCertificate A string representing a certificate in PEM format.
+     * @param certData An SSLCertificateData object containing the certificate data.
      * @returns A boolean indicating if a certificate is already installed on the device or not.
      */
-    public async isCertInstalled(derCertificate?: Buffer, pemCertificate?: string): Promise<boolean> {
+    public async isCertInstalled(certData: SSLCertificateData): Promise<boolean> {
         // For Android emulators, certificates are installed in files named as their subject hash.
         // We can query the device to see if it has the file with the name as the subject hash of the
         // provided certificate. If so then we can say that the cert is already installed.
-        const subjectHash = CryptoUtils.getSubjectHashOld(derCertificate, pemCertificate);
+        const subjectHash = CryptoUtils.getSubjectHashOld(certData);
         const fileName = `${subjectHash}.0`; // this is the special file name
 
         try {
@@ -158,16 +156,14 @@ export class AndroidDevice implements BaseDevice {
     }
 
     /**
-     * Installs a certificate on the device. When invoking this method, the caller should either provide a
-     * DER or PEM certificate (but not both).
+     * Installs a certificate on the device.
      *
-     * @param derCertificate A buffer containing the data of the certificate in DER format.
-     * @param pemCertificate A string representing a certificate in PEM format.
+     * @param certData An SSLCertificateData object containing the certificate data.
      */
-    public async installCert(derCertificate?: Buffer, pemCertificate?: string): Promise<void> {
+    public async installCert(certData: SSLCertificateData): Promise<void> {
         // For Android emulators, we need to save the PEM certificate in a file named as the cert subject hash.
-        const subjectHash = CryptoUtils.getSubjectHashOld(derCertificate, pemCertificate);
-        const pemContent = pemCertificate ?? CryptoUtils.DERtoPEM(derCertificate!);
+        const subjectHash = CryptoUtils.getSubjectHashOld(certData);
+        const pemContent = certData.pemCertificate ?? CryptoUtils.derToPem(certData.derCertificate);
         const fileName = `${subjectHash}.0`; // this is the special file name
         const certFilePath = path.join(os.tmpdir(), fileName);
         fs.writeFileSync(certFilePath, pemContent);

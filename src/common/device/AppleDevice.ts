@@ -11,7 +11,7 @@ import os from 'node:os';
 import { Logger, SfError } from '@salesforce/core';
 import { Version } from '../Common.js';
 import { CommonUtils } from '../CommonUtils.js';
-import { CryptoUtils } from '../CryptoUtils.js';
+import { CryptoUtils, SSLCertificateData } from '../CryptoUtils.js';
 import { IOSUtils } from '../IOSUtils.js';
 import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
 
@@ -120,15 +120,13 @@ export class AppleDevice implements BaseDevice {
     }
 
     /**
-     * Checks to see if a certificate is already installed on the device. When invoking
-     * this method, the caller should either provide a DER or PEM certificate (but not both).
+     * Checks to see if a certificate is already installed on the device.
      *
-     * @param derCertificate A buffer containing the data of the certificate in DER format.
-     * @param pemCertificate A string representing a certificate in PEM format.
+     * @param certData An SSLCertificateData object containing the certificate data.
      * @returns A boolean indicating if a certificate is already installed on the device or not.
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars , class-methods-use-this
-    public async isCertInstalled(derCertificate?: Buffer, pemCertificate?: string): Promise<boolean> {
+    public async isCertInstalled(certData: SSLCertificateData): Promise<boolean> {
         // Information about the certificates that are installed on a simulator is usually stored at
         // ~/Library/Developer/CoreSimulator/Devices/<Device UDID>/data/Library/Keychains/keychain-2-debug.db
         //
@@ -140,22 +138,14 @@ export class AppleDevice implements BaseDevice {
     }
 
     /**
-     * Installs a certificate on the device. When invoking this method, the caller should either provide a
-     * DER or PEM certificate (but not both).
+     * Installs a certificate on the device.
      *
-     * @param derCertificate A buffer containing the data of the certificate in DER format.
-     * @param pemCertificate A string representing a certificate in PEM format.
+     * @param certData An SSLCertificateData object containing the certificate data.
      */
-    public async installCert(derCertificate?: Buffer, pemCertificate?: string): Promise<void> {
-        if (!derCertificate && !pemCertificate) {
-            throw new SfError('Must provide either a DER or PEM certificate.');
-        } else if (derCertificate && pemCertificate) {
-            throw new SfError('Must provide either a DER or PEM certificate, but not both.');
-        }
-
+    public async installCert(certData: SSLCertificateData): Promise<void> {
         // For iOS simulators we can use `simctl keychain` command along with a DER certificate file
         // to auto install (which also will overwrite if cert already exist on device)
-        const derContent = derCertificate ?? CryptoUtils.PEMtoDER(pemCertificate!);
+        const derContent = certData.derCertificate ?? CryptoUtils.pemToDer(certData.pemCertificate);
         const certFilePath = path.join(os.tmpdir(), 'localhost.der');
         fs.writeFileSync(certFilePath, derContent);
 

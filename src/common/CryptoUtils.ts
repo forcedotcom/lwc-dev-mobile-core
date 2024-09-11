@@ -6,7 +6,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import forge from 'node-forge';
-import { Messages, SfError } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -138,7 +138,7 @@ export class CryptoUtils {
      * @param pemCertificate A string representing a certificate in PEM format.
      * @returns A buffer containing the data of the certificate in DER format.
      */
-    public static PEMtoDER(pemCertificate: string): Buffer {
+    public static pemToDer(pemCertificate: string): Buffer {
         const cert = this.getCertFromPEM(pemCertificate);
         const derCertString = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
         const derCertBuffer = Buffer.from(derCertString, 'binary');
@@ -151,76 +151,24 @@ export class CryptoUtils {
      * @param derCertificate A buffer containing the binary data of the certificate in DER format.
      * @returns A string representing a certificate in PEM format.
      */
-    public static DERtoPEM(derCertificate: Buffer): string {
+    public static derToPem(derCertificate: Buffer): string {
         const cert = this.getCertFromDER(derCertificate);
         const pemCert = forge.pki.certificateToPem(cert);
         return pemCert;
     }
 
     /**
-     * Computes the subject hash (similar to subject_hash_old of OpenSSL). When invoking
-     * this method, the caller should either provide a DER or PEM certificate (but not both).
+     * Computes the old-style (MD5) subject hash (similar to subject_hash_old of OpenSSL).
+     * Android uses this info to label its user certificates.
      *
-     * @param derCertificate A buffer containing the data of the certificate in DER format.
-     * @param pemCertificate A string representing a certificate in PEM format.
+     * @param certData An SSLCertificateData object containing the certificate data.
      * @returns A string representing the subject hash.
      */
-    public static getSubjectHashOld(derCertificate?: Buffer, pemCertificate?: string): string {
-        if (!derCertificate && !pemCertificate) {
-            throw new SfError('Must provide either a DER or PEM certificate.');
-        } else if (derCertificate && pemCertificate) {
-            throw new SfError('Must provide either a DER or PEM certificate, but not both.');
-        }
+    public static getSubjectHashOld(certData: SSLCertificateData): string {
+        const cert = certData.derCertificate
+            ? this.getCertFromDER(certData.derCertificate)
+            : this.getCertFromPEM(certData.pemCertificate);
 
-        const cert = derCertificate ? this.getCertFromDER(derCertificate) : this.getCertFromPEM(pemCertificate!);
-
-        return this.doGetSubjectHashOld(cert);
-    }
-
-    /**
-     * Determines if a certificate is expired. When invoking this method, the caller
-     * should either provide a DER or PEM certificate (but not both).
-     *
-     * @param derCertificate A buffer containing the binary data of the certificate in DER format.
-     * @param pemCertificate A string representing a certificate in PEM format.
-     * @returns A boolean indicating whether the certificate is expired or not.
-     */
-    public static isExpired(derCertificate?: Buffer, pemCertificate?: string): boolean {
-        if (!derCertificate && !pemCertificate) {
-            throw new SfError('Must provide either a DER or PEM certificate.');
-        } else if (derCertificate && pemCertificate) {
-            throw new SfError('Must provide either a DER or PEM certificate, but not both.');
-        }
-
-        const cert = derCertificate ? this.getCertFromDER(derCertificate) : this.getCertFromPEM(pemCertificate!);
-        const now = new Date();
-
-        return cert.validity.notAfter < now;
-    }
-
-    /**
-     * Generates a cryptographically secure pseudorandom number generator(CSPRNG) token.
-     *
-     * @param {number} byteSize the size of the token to be generated. Default is 32(256-bit).
-     * @returns the generated CSPRNG token expressed in base64.
-     */
-    public static generateIdentityToken(byteSize: number = 32): string {
-        return randomBytes(byteSize).toString('base64');
-    }
-
-    private static getCertFromDER(derCertificate: Buffer): forge.pki.Certificate {
-        const derBytes = forge.util.decode64(derCertificate.toString('binary'));
-        const asn1 = forge.asn1.fromDer(derBytes);
-        const cert = forge.pki.certificateFromAsn1(asn1);
-        return cert;
-    }
-
-    private static getCertFromPEM(pemCertificate: string): forge.pki.Certificate {
-        const cert = forge.pki.certificateFromPem(pemCertificate);
-        return cert;
-    }
-
-    private static doGetSubjectHashOld(cert: forge.pki.Certificate): string {
         // Get a reference to forge.pki.distinguishedNameToAsn1 by casting to ANY
         // We do this b/c @types/node-forge doesn't expose distinguishedNameToAsn1
         // even though it is there. So we jump through this hoop to get to it.
@@ -247,5 +195,41 @@ export class CryptoUtils {
         const subjectHash = hashArray.map((byte) => ('00' + byte.charCodeAt(0).toString(16)).slice(-2)).join('');
 
         return subjectHash;
+    }
+
+    /**
+     * Determines if a certificate is expired.
+     *
+     * @param certData An SSLCertificateData object containing the certificate data.
+     * @returns A boolean indicating whether the certificate is expired or not.
+     */
+    public static isExpired(certData: SSLCertificateData): boolean {
+        const cert = certData.derCertificate
+            ? this.getCertFromDER(certData.derCertificate)
+            : this.getCertFromPEM(certData.pemCertificate);
+        const now = new Date();
+        return cert.validity.notAfter < now;
+    }
+
+    /**
+     * Generates a cryptographically secure pseudorandom number generator(CSPRNG) token.
+     *
+     * @param {number} byteSize the size of the token to be generated. Default is 32(256-bit).
+     * @returns the generated CSPRNG token expressed in base64.
+     */
+    public static generateIdentityToken(byteSize: number = 32): string {
+        return randomBytes(byteSize).toString('base64');
+    }
+
+    private static getCertFromDER(derCertificate: Buffer): forge.pki.Certificate {
+        const derBytes = forge.util.decode64(derCertificate.toString('binary'));
+        const asn1 = forge.asn1.fromDer(derBytes);
+        const cert = forge.pki.certificateFromAsn1(asn1);
+        return cert;
+    }
+
+    private static getCertFromPEM(pemCertificate: string): forge.pki.Certificate {
+        const cert = forge.pki.certificateFromPem(pemCertificate);
+        return cert;
     }
 }
