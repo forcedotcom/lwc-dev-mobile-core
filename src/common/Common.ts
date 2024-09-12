@@ -1,45 +1,17 @@
-/* eslint-disable @typescript-eslint/member-ordering */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/unbound-method */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
-import { LoggerLevel, Messages, SfError } from '@salesforce/core';
-import { Command } from '@oclif/core';
-import { CustomOptions, OptionFlag } from '@oclif/core/interfaces';
+
+import { Messages } from '@salesforce/core';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export class CaseInsensitiveStringMap {
     private map = new Map<string, string>();
-
-    // Set a key-value pair, normalizing the key to lowercase
-    public set(key: string, value: string): void {
-        this.map.set(key.toLowerCase(), value);
-    }
-
-    // Get a value by a case-insensitive key
-    public get(key: string): string | undefined {
-        return this.map.get(key.toLowerCase());
-    }
-
-    // Check if the map contains a case-insensitive key
-    public has(key: string): boolean {
-        return this.map.has(key.toLowerCase());
-    }
-
-    // Delete a key-value pair by a case-insensitive key
-    public delete(key: string): boolean {
-        return this.map.delete(key.toLowerCase());
-    }
 
     /**
      * Takes an input string containing one or more lines of data. The data per line
@@ -64,6 +36,26 @@ export class CaseInsensitiveStringMap {
         }
 
         return resultMap;
+    }
+
+    // Set a key-value pair, normalizing the key to lowercase
+    public set(key: string, value: string): void {
+        this.map.set(key.toLowerCase(), value);
+    }
+
+    // Get a value by a case-insensitive key
+    public get(key: string): string | undefined {
+        return this.map.get(key.toLowerCase());
+    }
+
+    // Check if the map contains a case-insensitive key
+    public has(key: string): boolean {
+        return this.map.has(key.toLowerCase());
+    }
+
+    // Delete a key-value pair by a case-insensitive key
+    public delete(key: string): boolean {
+        return this.map.delete(key.toLowerCase());
     }
 }
 
@@ -118,130 +110,17 @@ export enum FlagsConfigType {
     JsonFlag
 }
 
-export class CommandLineUtils {
-    /**
-     * Checks to see if a flag is targeting iOS.
-     *
-     * @param input The input flag.
-     * @returns True if flag is targeting iOS.
-     */
-    public static platformFlagIsIOS(input: Platform | string): boolean {
-        return (input ?? '').trim().toLowerCase() === (Platform.ios as string);
-    }
-
-    /**
-     * Checks to see if a flag is targeting Android.
-     *
-     * @param input The input flag.
-     * @returns True if flag is targeting Android.
-     */
-    public static platformFlagIsAndroid(input: string): boolean {
-        return (input ?? '').trim().toLowerCase() === (Platform.android as string);
-    }
-
-    /**
-     * Checks to see if a flag is targeting Desktop.
-     *
-     * @param input The input flag.
-     * @returns True if flag is targeting Desktop.
-     */
-    public static platformFlagIsDesktop(input: string): boolean {
-        return (input ?? '').trim().toLowerCase() === (Platform.desktop as string);
-    }
-
-    /**
-     * Helper method for resolving flag values.
-     *
-     * @param flag The input flag.
-     * @param defaultValue The default value for a flag.
-     * @returns If the input flag can be cast to a string that is not undefined/null/empty then
-     * the string value will be returned. Otherwise, the provided default value will be returned.
-     */
-    public static resolveFlag(flag: any, defaultValue: string): string {
-        const resolvedFlag = flag as string;
-        if (resolvedFlag && resolvedFlag.trim().length > 0) {
-            return resolvedFlag;
-        } else {
-            return defaultValue;
-        }
-    }
-
-    public static createFlag(type: FlagsConfigType, isRequired: boolean, supportsDesktop = false): any {
-        switch (type) {
-            case FlagsConfigType.ApiLevelFlag:
-                return {
-                    apilevel: Flags.string({
-                        char: 'l',
-                        description: messages.getMessage('apiLevelFlagDescription'),
-                        required: isRequired,
-                        validate: CommandLineUtils.validateApiLevelFlag
-                    })
-                };
-            case FlagsConfigType.PlatformFlag:
-                return {
-                    platform: Flags.option({
-                        char: 'p',
-                        description: messages.getMessage('platformFlagDescription'),
-                        required: true,
-                        options: supportsDesktop
-                            ? ([Platform.desktop, Platform.ios, Platform.android] as const)
-                            : ([Platform.ios, Platform.android] as const)
-                    })({ required: isRequired })
-                };
-            case FlagsConfigType.LogLevelFlag:
-                return {
-                    loglevel: Flags.string({
-                        description: messages.getMessage('logLevelFlagDescription'),
-                        required: false,
-                        default: LoggerLevel[LoggerLevel.WARN],
-                        validate: (level: string) => level && (LoggerLevel as any)[level.trim().toUpperCase()]
-                    })
-                };
-            case FlagsConfigType.JsonFlag:
-                return {
-                    json: Flags.boolean({
-                        description: messages.getMessage('jsonFlagDescription'),
-                        required: false,
-                        default: false
-                    })
-                };
-        }
-    }
-
-    public static async flagParser(
-        input: string | boolean,
-        context: Command,
-        opts: CustomOptions & OptionFlag<string, CustomOptions>
-    ): Promise<any> {
-        const validateFunction = opts.validate as (flag: any) => boolean;
-
-        if (validateFunction && !validateFunction(input)) {
-            // get the examples array (if any) and reduce it
-            // to only keep the string examples
-            const examples = (context.constructor as typeof SfCommand).examples?.reduce(
-                (results: string[], item: any) => {
-                    if (typeof item === 'string') {
-                        results.push(item.toString());
-                    }
-                    return results;
-                },
-                []
-            );
-
-            return Promise.reject(
-                new SfError(messages.getMessage('error:invalidFlagValue', [input]), undefined, examples)
-            );
-        }
-
-        return Promise.resolve(input);
-    }
-
-    private static validateApiLevelFlag(flag: string): boolean {
-        return flag.trim().length > 0; // if it doesn't follow semver then we'll automatically consider it as a code name
-    }
-}
-
 export class Version {
+    public readonly major: number;
+    public readonly minor: number;
+    public readonly patch: number;
+
+    public constructor(major: number, minor: number, patch: number) {
+        this.major = major;
+        this.minor = minor;
+        this.patch = patch;
+    }
+
     /**
      * Creates a Version object from a string that follows a basic versioning syntax
      * of x[.y[.z]] or x[-y[-z]].
@@ -272,16 +151,6 @@ export class Version {
         const patch = versionMatch.groups?.Patch !== undefined ? Number.parseInt(versionMatch.groups.Patch, 10) : 0;
 
         return new Version(major, minor, patch);
-    }
-
-    public readonly major: number;
-    public readonly minor: number;
-    public readonly patch: number;
-
-    public constructor(major: number, minor: number, patch: number) {
-        this.major = major;
-        this.minor = minor;
-        this.patch = patch;
     }
 
     /**

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -57,11 +55,11 @@ export class SupportedEnvironmentRequirement implements Requirement {
                     return Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage, [output])));
                 }
             })
-            .catch((error) =>
+            .catch((error: Error) =>
                 Promise.reject(
                     new SfError(
                         messages.getMessage(this.unfulfilledMessage, [
-                            `command '${unameCommand}' failed: ${error}, error code: ${error.code}`
+                            `command '${unameCommand}' failed: ${error.message}`
                         ])
                     )
                 )
@@ -101,10 +99,8 @@ export class XcodeInstalledRequirement implements Requirement {
                     );
                 }
             })
-            .catch((error) =>
-                Promise.reject(
-                    new SfError(messages.getMessage(this.unfulfilledMessage, [`${error}, error code: ${error.code}`]))
-                )
+            .catch((error: Error) =>
+                Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage, [error.message])))
             );
     }
 }

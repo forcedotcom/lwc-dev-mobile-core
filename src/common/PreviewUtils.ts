@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -13,7 +8,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
 import { Logger } from '@salesforce/core';
-import { CommandLineUtils } from './Common.js';
+import { CommandLineUtils } from './CommandLineUtils.js';
 import { CommonUtils } from './CommonUtils.js';
 import { AndroidAppPreviewConfig, IOSAppPreviewConfig, PreviewConfigFile } from './PreviewConfigFile.js';
 
@@ -124,7 +119,9 @@ export class PreviewUtils {
     ): string | undefined {
         if (appConfig.get_app_bundle) {
             const require = createRequire(import.meta.url);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const module = require(path.resolve(basePath, appConfig.get_app_bundle));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
             return module.run();
         } else {
             return undefined;

@@ -222,7 +222,7 @@ export class CryptoUtils {
     }
 
     private static getCertFromDer(derCertificate: Buffer): forge.pki.Certificate {
-        const derBytes = forge.util.decode64(derCertificate.toString('binary'));
+        const derBytes = forge.util.decode64(derCertificate.toString('base64'));
         const asn1 = forge.asn1.fromDer(derBytes);
         const cert = forge.pki.certificateFromAsn1(asn1);
         return cert;

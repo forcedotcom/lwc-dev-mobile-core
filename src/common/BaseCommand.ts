@@ -1,11 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable class-methods-use-this */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/member-ordering */
-/* eslint-disable no-underscore-dangle */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /*
  * Copyright (c) 2023, salesforce.com, inc.
  * All rights reserved.
@@ -14,33 +6,46 @@
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Logger, LoggerLevel } from '@salesforce/core';
-import { CommandLineUtils } from './Common.js';
+import { CommandLineUtils } from './CommandLineUtils.js';
 import { HasRequirements, CommandRequirements } from './Requirements.js';
 
-export abstract class BaseCommand extends SfCommand<any> implements HasRequirements {
-    protected _commandName = 'BaseCommand';
+export abstract class BaseCommand extends SfCommand<unknown> implements HasRequirements {
+    private cmdName = 'BaseCommand';
+    private cmdFlagValues: unknown;
+    private cmdLogger!: Logger;
+    private cmdRequirements: CommandRequirements = {};
+
     public get commandName(): string {
-        return this._commandName;
+        return this.cmdName;
     }
 
-    protected _flagValues: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public get flagValues(): any {
-        return this._flagValues;
+        return this.cmdFlagValues;
     }
 
-    protected _logger!: Logger;
     public get logger(): Logger {
-        return this._logger;
+        return this.cmdLogger;
     }
 
-    protected _commandRequirements: CommandRequirements = {};
     public get commandRequirements(): CommandRequirements {
-        return this._commandRequirements;
+        return this.cmdRequirements;
     }
 
-    protected populateCommandRequirements(): void {
-        // override in child classes and update _commandRequirements
-        // to include whatever requirements the command has.
+    public set commandName(value: string) {
+        this.cmdName = value;
+    }
+
+    public set flagValues(value: unknown) {
+        this.cmdFlagValues = value;
+    }
+
+    public set logger(value: Logger) {
+        this.cmdLogger = value;
+    }
+
+    public set commandRequirements(value: CommandRequirements) {
+        this.cmdRequirements = value;
     }
 
     public async init(): Promise<void> {
@@ -55,17 +60,24 @@ export abstract class BaseCommand extends SfCommand<any> implements HasRequireme
             .init()
             .then(() => this.parse())
             .then((parserOutput) => {
-                this._flagValues = parserOutput.flags;
+                this.cmdFlagValues = parserOutput.flags;
                 return new Logger(this.commandName);
             })
             .then((logger) => {
                 // extract the log level flag (if any) and
                 // set the logger's level to this value
-                const logLevel = this.getLogLevel(this._flagValues.loglevel);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+                const logLevel = this.getLogLevel((this.cmdFlagValues as any).loglevel as string | undefined);
                 logger.setLevel(logLevel);
-                this._logger = logger;
+                this.cmdLogger = logger;
                 return this.populateCommandRequirements();
             });
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected populateCommandRequirements(): void {
+        // override in child classes and update _commandRequirements
+        // to include whatever requirements the command has.
     }
 
     // Loops over all of the flags of a command and checks to see
@@ -93,6 +105,7 @@ export abstract class BaseCommand extends SfCommand<any> implements HasRequireme
         });
     }
 
+    // eslint-disable-next-line class-methods-use-this
     private getLogLevel(level?: string): LoggerLevel {
         const normalized = (level ?? '').trim().toLocaleLowerCase();
 
