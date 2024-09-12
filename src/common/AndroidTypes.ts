@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/member-ordering */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -11,6 +9,9 @@ import { Logger } from '@salesforce/core';
 import { Version } from './Common.js';
 
 export class AndroidPackages {
+    public platforms: AndroidPackage[] = [];
+    public systemImages: AndroidPackage[] = [];
+
     /**
      * Attempts to parse the output of `sdkmanager --list` command.
      *
@@ -71,15 +72,6 @@ export class AndroidPackages {
     }
 
     /**
-     * Checks to see if the object is empty (i.e the platforms and system images are both empty)
-     *
-     * @returns True if empty, false otherwise.
-     */
-    public isEmpty(): boolean {
-        return this.platforms.length < 1 && this.systemImages.length < 1;
-    }
-
-    /**
      * Creates a readable string of AndroidPackage object data.
      *
      * @param packageArray The array of package objects to render.
@@ -94,6 +86,15 @@ export class AndroidPackages {
     }
 
     /**
+     * Checks to see if the object is empty (i.e the platforms and system images are both empty)
+     *
+     * @returns True if empty, false otherwise.
+     */
+    public isEmpty(): boolean {
+        return this.platforms.length < 1 && this.systemImages.length < 1;
+    }
+
+    /**
      * A string representation of the different package data.
      *
      * @returns The string containing the Android package data.
@@ -105,12 +106,21 @@ export class AndroidPackages {
         retString += AndroidPackages.packageArrayAsString(this.systemImages);
         return retString;
     }
-
-    public platforms: AndroidPackage[] = [];
-    public systemImages: AndroidPackage[] = [];
 }
 
 export class AndroidPackage {
+    public path: string;
+    public version: Version | string;
+    public description: string;
+    public location: string;
+
+    public constructor(path: string, version: Version | string, description: string, location: string) {
+        this.path = path;
+        this.version = version;
+        this.description = description;
+        this.location = location;
+    }
+
     public get platformAPI(): string {
         const tokens: string[] = this.path.split(';');
         return tokens.length > 0 ? tokens[0] : '';
@@ -126,18 +136,6 @@ export class AndroidPackage {
         return tokens.length > 2 ? tokens[2] : '';
     }
 
-    public path: string;
-    public version: Version | string;
-    public description: string;
-    public location: string;
-
-    public constructor(path: string, version: Version | string, description: string, location: string) {
-        this.path = path;
-        this.version = version;
-        this.description = description;
-        this.location = location;
-    }
-
     /**
      * A log-readable string of the AndroidPackage data.
      *
@@ -151,6 +149,33 @@ export class AndroidPackage {
 }
 
 export class AndroidVirtualDevice {
+    public name: string;
+    public displayName: string;
+    public deviceName: string;
+    public path: string;
+    public target: string;
+    public api: string;
+    public apiLevel: Version | string;
+
+    public constructor(
+        name: string,
+        deviceName: string,
+        path: string,
+        target: string,
+        api: string,
+        apiLevel: Version | string
+    ) {
+        this.name = name;
+        this.displayName = name.replace(/[_-]/gi, ' ').trim(); // eg. Pixel_XL --> Pixel XL, tv-emulator --> tv emulator
+        // eslint-disable-next-line no-useless-escape
+        this.deviceName = deviceName.replace(/\([^\(]*\)/gi, '').trim(); // eg. Nexus 5X (Google) --> Nexus 5X
+        this.path = path.trim();
+        // eslint-disable-next-line no-useless-escape
+        this.target = target.replace(/\([^\(]*\)/gi, '').trim(); // eg. Google APIs (Google Inc.) --> Google APIs
+        this.api = api.trim();
+        this.apiLevel = apiLevel;
+    }
+
     /**
      * Attempts to parse the output of `avdmanager list avd` command.
      *
@@ -258,33 +283,6 @@ export class AndroidVirtualDevice {
             }
         }
         return null;
-    }
-
-    public name: string;
-    public displayName: string;
-    public deviceName: string;
-    public path: string;
-    public target: string;
-    public api: string;
-    public apiLevel: Version | string;
-
-    public constructor(
-        name: string,
-        deviceName: string,
-        path: string,
-        target: string,
-        api: string,
-        apiLevel: Version | string
-    ) {
-        this.name = name;
-        this.displayName = name.replace(/[_-]/gi, ' ').trim(); // eg. Pixel_XL --> Pixel XL, tv-emulator --> tv emulator
-        // eslint-disable-next-line no-useless-escape
-        this.deviceName = deviceName.replace(/\([^\(]*\)/gi, '').trim(); // eg. Nexus 5X (Google) --> Nexus 5X
-        this.path = path.trim();
-        // eslint-disable-next-line no-useless-escape
-        this.target = target.replace(/\([^\(]*\)/gi, '').trim(); // eg. Google APIs (Google Inc.) --> Google APIs
-        this.api = api.trim();
-        this.apiLevel = apiLevel;
     }
 
     /**

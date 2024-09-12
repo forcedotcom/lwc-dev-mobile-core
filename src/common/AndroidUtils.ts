@@ -1,8 +1,3 @@
-/* eslint-disable no-await-in-loop */
-/* eslint-disable @typescript-eslint/member-ordering */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -38,6 +33,15 @@ export type AndroidSDKRoot = {
 };
 
 export class AndroidUtils {
+    private static packageCache: AndroidPackages = new AndroidPackages();
+    private static emulatorCommand: string | undefined;
+    private static androidCmdLineToolsBin: string | undefined;
+    private static androidPlatformTools: string | undefined;
+    private static avdManagerCommand: string | undefined;
+    private static adbShellCommand: string | undefined;
+    private static sdkManagerCommand: string | undefined;
+    private static sdkRoot: AndroidSDKRoot | undefined;
+
     /**
      * Indicates whether Android packages are cached or not.
      *
@@ -80,15 +84,16 @@ export class AndroidUtils {
         return AndroidUtils.fetchAndroidCmdLineToolsLocation(logger)
             .then((result) => Promise.resolve(result))
             .catch((error) => {
-                const e: Error = error;
-                const stack = e.stack ?? '';
-                const idx = stack.indexOf('java.lang.NoClassDefFoundError: javax/xml/bind/annotation/XmlSchema');
-
                 if (!AndroidUtils.isJavaHomeSet()) {
                     return Promise.reject(new SfError('JAVA_HOME is not set.'));
-                } else if (idx !== -1) {
+                } else if (
+                    ((error as Error).stack ?? '').includes(
+                        'java.lang.NoClassDefFoundError: javax/xml/bind/annotation/XmlSchema'
+                    )
+                ) {
                     return Promise.reject(new SfError('unsupported Java version.'));
-                } else if (error.status && error.status === 127) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                } else if (error.status === 127) {
                     return Promise.reject(
                         new SfError(`SDK Manager not found. Expected at ${AndroidUtils.getSdkManagerCommand()}`)
                     );
@@ -268,6 +273,7 @@ export class AndroidUtils {
                 if (mustHaveSupportedEmulatorImages) {
                     for (const pkg of matchingPlatforms) {
                         try {
+                            // eslint-disable-next-line no-await-in-loop
                             const emulatorImage = await AndroidUtils.packageWithRequiredEmulatorImages(pkg, logger);
 
                             // if it has a supported emulator image then include it
@@ -790,6 +796,7 @@ export class AndroidUtils {
             let err: Error | undefined;
 
             try {
+                // eslint-disable-next-line no-await-in-loop
                 result = await CommonUtils.executeCommandAsync(adbCmd, logger);
             } catch (error) {
                 err = error as Error;
@@ -812,6 +819,7 @@ export class AndroidUtils {
                 );
                 if (i < numRetries) {
                     // If we still have more retries left, delay and retry
+                    // eslint-disable-next-line no-await-in-loop
                     await CommonUtils.delay(retryDelay);
                 }
             } else {
@@ -1098,19 +1106,11 @@ export class AndroidUtils {
         });
     }
 
-    private static packageCache: AndroidPackages = new AndroidPackages();
-    private static emulatorCommand: string | undefined;
-    private static androidCmdLineToolsBin: string | undefined;
-    private static androidPlatformTools: string | undefined;
-    private static avdManagerCommand: string | undefined;
-    private static adbShellCommand: string | undefined;
-    private static sdkManagerCommand: string | undefined;
-    private static sdkRoot: AndroidSDKRoot | undefined;
-
     private static async emulatorHasPort(emulatorName: string, logger?: Logger): Promise<number | null> {
         try {
             const ports = await AndroidUtils.getAllCurrentlyUsedAdbPorts(logger);
             for (const port of ports) {
+                // eslint-disable-next-line no-await-in-loop
                 const name = await AndroidUtils.fetchEmulatorNameFromPort(port, logger);
                 if (name === emulatorName) {
                     return port;

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/member-ordering */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -15,10 +13,6 @@ export type PerformanceMarker = {
 export class PerformanceMarkers {
     public static FETCH_DEVICES_MARKER_KEY = 'FetchDevicesMarker';
     public static REQUIREMENTS_MARKER_KEY = 'RequirementsMarker';
-
-    public static getByName(markerKey: string): PerformanceMarker | undefined {
-        return PerformanceMarkers.markerMap.get(markerKey);
-    }
 
     private static markerMap: Map<string, PerformanceMarker> = new Map([
         [
@@ -38,4 +32,8 @@ export class PerformanceMarkers {
             }
         ]
     ]);
+
+    public static getByName(markerKey: string): PerformanceMarker | undefined {
+        return PerformanceMarkers.markerMap.get(markerKey);
+    }
 }

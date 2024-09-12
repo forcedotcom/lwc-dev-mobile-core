@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -79,7 +78,7 @@ export class Java8AvailableRequirement implements Requirement {
     public async checkFunction(): Promise<string> {
         return AndroidUtils.androidSDKPrerequisitesCheck(this.logger)
             .then(() => Promise.resolve(messages.getMessage(this.fulfilledMessage)))
-            .catch((error) =>
+            .catch((error: Error) =>
                 Promise.reject(new SfError(messages.getMessage(this.unfulfilledMessage, [error.message])))
             );
     }
@@ -134,6 +133,7 @@ export class AndroidSDKPlatformToolsInstalledRequirement implements Requirement 
                 Promise.resolve(messages.getMessage(this.fulfilledMessage, [CommonUtils.convertToUnixPath(result)]))
             )
             .catch((error) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (error.status === 127) {
                     return Promise.reject(
                         new SfError(messages.getMessage(this.notFoundMessage, [AndroidUtils.getAndroidPlatformTools()]))

@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -11,7 +7,8 @@
 import { Messages } from '@salesforce/core';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements.js';
 import { BaseCommand } from '../../../../../common/BaseCommand.js';
-import { CommandLineUtils, FlagsConfigType } from '../../../../../common/Common.js';
+import { FlagsConfigType } from '../../../../../common/Common.js';
+import { CommandLineUtils } from '../../../../../common/CommandLineUtils.js';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements.js';
 import { CommandRequirements, RequirementProcessor } from '../../../../../common/Requirements.js';
 
@@ -22,6 +19,7 @@ export class Setup extends BaseCommand {
     public static readonly summary = messages.getMessage('summary');
     public static readonly examples = messages.getMessages('examples');
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     public static readonly flags = {
         ...CommandLineUtils.createFlag(FlagsConfigType.JsonFlag, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.LogLevelFlag, false),
@@ -32,6 +30,7 @@ export class Setup extends BaseCommand {
     protected _commandName = 'force:lightning:local:setup';
 
     public async run(): Promise<void> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         this.logger.info(`Setup command called for ${this.flagValues.platform}`);
         return RequirementProcessor.execute(this.commandRequirements);
     }
@@ -39,11 +38,17 @@ export class Setup extends BaseCommand {
     protected populateCommandRequirements(): void {
         const requirements: CommandRequirements = {};
 
-        requirements.setup = CommandLineUtils.platformFlagIsAndroid(this.flagValues.platform)
-            ? new AndroidEnvironmentRequirements(this.logger, this.flagValues.apilevel)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        const platform = this.flagValues.platform;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        const apiLevel = this.flagValues.apilevel as string | undefined;
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        requirements.setup = CommandLineUtils.platformFlagIsAndroid(platform)
+            ? new AndroidEnvironmentRequirements(this.logger, apiLevel)
             : new IOSEnvironmentRequirements(this.logger);
 
         // eslint-disable-next-line no-underscore-dangle
-        this._commandRequirements = requirements;
+        this.commandRequirements = requirements;
     }
 }

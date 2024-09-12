@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/member-ordering */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
@@ -18,6 +12,7 @@ import util from 'node:util';
 import path from 'node:path';
 import os from 'node:os';
 import { Logger, Messages, SfError } from '@salesforce/core';
+import { AnyJson } from '@salesforce/ts-types';
 import { ux } from '@oclif/core';
 
 type StdioOptions = childProcess.StdioOptions;
@@ -144,10 +139,9 @@ export class CommonUtils {
      * @param file The path to the JSON file.
      * @returns Content of the file as JSON object.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public static loadJsonFromFile(file: string): any {
+    public static loadJsonFromFile(file: string): AnyJson {
         const fileContent = fs.readFileSync(file, 'utf8');
-        const json = JSON.parse(fileContent);
+        const json = JSON.parse(fileContent) as AnyJson;
         return json;
     }
 
@@ -211,7 +205,7 @@ export class CommonUtils {
                 .toString();
         } catch (error) {
             logger?.error(`Error executing command '${command}':`);
-            logger?.error(`${error}`);
+            logger?.error(error);
             throw error;
         }
     }
@@ -274,11 +268,11 @@ export class CommonUtils {
 
             const prc = CommonUtils.spawnWrapper(command, args, stdioOptions);
 
-            prc.stdout?.on('data', (data) => {
+            prc.stdout?.on('data', (data: Buffer) => {
                 capturedStdout.push(data.toString());
             });
 
-            prc.stderr?.on('data', (data) => {
+            prc.stderr?.on('data', (data: Buffer) => {
                 capturedStderr.push(data.toString());
             });
 
@@ -289,7 +283,7 @@ export class CommonUtils {
                     // also include stderr & stdout for more detailed error
                     let msg = `stderr:\n${capturedStderr.join()}`;
                     if (capturedStdout.length > 0) {
-                        msg = `${msg}\nstdout:\n${capturedStdout}`;
+                        msg = `${msg}\nstdout:\n${capturedStdout.join('\n')}`;
                     }
 
                     logger?.error(msg);
@@ -386,6 +380,41 @@ export class CommonUtils {
     }
 
     /**
+     * Given an sfdc.co shortened url it returns the actual/full url that this will redirect to.
+     *
+     * @param httpsUrl The sfdc.co shortened url
+     * @returns The actual/full url
+     */
+    public static async fetchFullUrlFromSfdcShortenedUrl(httpsUrl: string): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            https
+                .get(httpsUrl, (response) => {
+                    let data = '';
+                    response.on('data', (chunk) => {
+                        data += chunk;
+                    });
+                    response.on('end', () => {
+                        // sfdc.co urls will lead to an html page where, among other elements, there would be
+                        // an element with id='full-url' and whose value would be the url to redirect to, eg:
+                        // <h2 class="home-heading" style="word-wrap:break-word;" id="full-url">
+                        //      https://developer.salesforce.com/files/sfmobiletools/SalesforceApp-Simulator-248.061-iOS.zip
+                        // </h2>
+                        const regex = /<[^>]*id\s*=\s*["']full-url["'][^>]*>(.*?)<\/[^>]*>/i;
+                        const match = data.match(regex);
+                        if (match?.[1]) {
+                            resolve(match[1]);
+                        } else {
+                            resolve('');
+                        }
+                    });
+                })
+                .on('error)', (error) => {
+                    reject(error);
+                });
+        });
+    }
+
+    /**
      * Downloads a resource from a given url into a destination file.
      */
     public static async downloadFile(url: string, dest: string, logger?: Logger): Promise<void> {
@@ -398,7 +427,7 @@ export class CommonUtils {
 
             const request = protocol.get(finalUrl, (response) => {
                 if (response.statusCode !== 200) {
-                    const msg = `Error downloading ${finalUrl}: ${response.statusMessage}`;
+                    const msg = `Error downloading ${finalUrl}: ${response.statusMessage ?? ''}`;
                     logger?.error(msg);
                     fs.unlink(dest, () => reject(new Error(msg)));
                     return;
@@ -412,19 +441,42 @@ export class CommonUtils {
             });
 
             destFile.on('error', (err) => {
-                const msg = `Error saving ${finalUrl} to file ${dest} - ${err}`;
+                const msg = `Error saving ${finalUrl} to file ${dest} - ${err.message}`;
                 logger?.error(msg);
                 fs.unlink(dest, () => reject(new Error(msg)));
             });
 
             request.on('error', (err) => {
-                const msg = `Error downloading ${finalUrl} - ${err}`;
+                const msg = `Error downloading ${finalUrl} - ${err.message}`;
                 logger?.error(msg);
                 fs.unlink(dest, () => reject(new Error(msg)));
             });
 
             request.end();
         });
+    }
+
+    /**
+     * Extracts a ZIP archive to an output directory.
+     *
+     * @param zipFilePath The path to the ZIP archive
+     * @param outputDir An optional output directory - if omitted then defaults to the same directory as the ZIP file
+     * @param logger An optional logger to be used for logging
+     */
+    public static async extractZIPArchive(zipFilePath: string, outputDir?: string, logger?: Logger): Promise<void> {
+        let archive = path.resolve(CommonUtils.resolveUserHomePath(zipFilePath));
+        let outDir = outputDir ? path.resolve(CommonUtils.resolveUserHomePath(outputDir)) : path.dirname(archive);
+
+        archive = CommonUtils.convertToUnixPath(archive);
+        outDir = CommonUtils.convertToUnixPath(outDir);
+
+        const cmd =
+            process.platform === 'win32'
+                ? `powershell -Command "$ProgressPreference = 'SilentlyContinue'; Expand-Archive -Path \\"${archive}\\" -DestinationPath \\"${outDir}\\" -Force"`
+                : `unzip -o -qq ${archive} -d ${outDir}`;
+
+        logger?.debug(`Extracting archive ${zipFilePath}`);
+        await CommonUtils.executeCommandAsync(cmd, logger);
     }
 
     /**

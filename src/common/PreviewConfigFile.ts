@@ -1,12 +1,10 @@
-/* eslint-disable camelcase */
-
 /*
  * Copyright (c) 2021, salesforce.com, inc.
  * All rights reserved.
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { CommandLineUtils } from './Common.js';
+import { CommandLineUtils } from './CommandLineUtils.js';
 import { LaunchArgument } from './device/BaseDevice.js';
 
 export class PreviewConfigFile {
@@ -30,8 +28,11 @@ export class PreviewConfigFile {
 class BaseAppPreviewConfig {
     public id!: string;
     public name!: string;
+    // eslint-disable-next-line camelcase
     public get_app_bundle?: string;
+    // eslint-disable-next-line camelcase
     public launch_arguments?: LaunchArgument[];
+    // eslint-disable-next-line camelcase
     public preview_server_enabled?: boolean;
 }
 
