@@ -13,6 +13,7 @@ import { Version } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { LaunchArgument } from './device/BaseDevice.js';
+import { BootMode } from './device/AndroidDevice.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -472,13 +473,15 @@ export class AndroidUtils {
      * Attempts to launch an emulator and returns the ADB port that the emulator was launched on.
      *
      * @param emulatorName Name of the emulator to be launched (e.g Pixel XL, Nexus_6_API_30).
-     * @param writable Optional boolean indicating whether the emulator should launch with the '-writable-system' flag. Defaults to false.
+     * @param bootMode Optional enum indicating the boot mode. Defaults to Normal.
+     * @param coldBoot Optional boolean indicating whether we should perform a cold boot. Defaults to false.
      * @param waitForBoot Optional boolean indicating whether it should wait for the device to finish booting up. Defaults to true.
      * @returns The ADB port that the emulator was launched on.
      */
     public static async startEmulator(
         emulatorName: string,
-        writable = false,
+        bootMode = BootMode.normal,
+        coldBoot = false,
         waitForBoot = true,
         logger?: Logger
     ): Promise<number> {
@@ -497,21 +500,22 @@ export class AndroidUtils {
                 const resolvedPortNumber = port ? port : await AndroidUtils.getNextAvailableAdbPort(logger);
 
                 if (resolvedPortNumber === port) {
-                    // already is running on a port
-                    const isWritable = await AndroidUtils.isEmulatorSystemWritable(resolvedPortNumber, logger);
+                    // Already booted and running on a port, so determine whether need to relaunch with system writable or not.
+                    const isAlreadyWritable = await AndroidUtils.isEmulatorSystemWritable(resolvedPortNumber, logger);
 
-                    if (writable === false || isWritable === true) {
-                        // If we're not asked for a writable, or if it already
-                        // is writable then we're done so just return its port.
+                    // If it is already writable or it is not mandatory to have a writable system then we're done so just return its port.
+                    if (isAlreadyWritable || bootMode !== BootMode.systemWritableMandatory) {
                         return Promise.resolve(resolvedPortNumber);
+                    } else {
+                        // It is mandatory to have writable system but the emulator is already booted without it.
+                        // Shut it down and relaunch it in the right mode.
+                        CommonUtils.updateCliAction(messages.getMessage('notWritableSystemShutDownStatus'));
+                        await AndroidUtils.stopEmulator(resolvedPortNumber, true, logger);
                     }
-
-                    // mismatch... shut it down and relaunch it in the right mode
-                    CommonUtils.updateCliAction(messages.getMessage('notWritableSystemShutDownStatus'));
-                    await AndroidUtils.stopEmulator(resolvedPortNumber, true, logger);
                 }
 
                 let msgKey = '';
+                const writable = bootMode !== BootMode.normal;
                 if (resolvedPortNumber === port) {
                     msgKey = writable ? 'emulatorRelaunchWritableStatus' : 'emulatorRelaunchNotWritableStatus';
                 } else {
@@ -524,10 +528,10 @@ export class AndroidUtils {
                 // spit out a bunch of output to stderr where they are not really errors. This
                 // is specially true on Windows platform. So instead we spawn the process to launch
                 // the emulator and later attempt at polling the emulator to see if it failed to boot.
+                const writableFlag = writable ? '-writable-system' : '';
+                const coldFlag = coldBoot ? '-no-snapshot-load' : '';
                 const child = childProcess.spawn(
-                    `${AndroidUtils.getEmulatorCommand()} @${resolvedEmulatorName} -port ${resolvedPortNumber}${
-                        writable ? ' -writable-system' : ''
-                    }`,
+                    `${AndroidUtils.getEmulatorCommand()} @${resolvedEmulatorName} -port ${resolvedPortNumber} ${writableFlag} ${coldFlag}`,
                     { detached: true, shell: true, stdio: 'ignore' }
                 );
                 child.unref();
@@ -548,7 +552,7 @@ export class AndroidUtils {
      * @param waitForPowerOff Optional boolean indicating whether it should wait for the device to shut down. Defaults to true.
      */
     public static async stopEmulator(portNumber: number, waitForPowerOff = true, logger?: Logger): Promise<void> {
-        return AndroidUtils.executeAdbCommand('shell reboot -p', portNumber, logger).then(() => {
+        return AndroidUtils.executeAdbCommand('emu kill', portNumber, logger).then(() => {
             if (waitForPowerOff) {
                 return AndroidUtils.waitUntilDeviceIsPoweredOff(portNumber, logger);
             } else {
@@ -629,7 +633,7 @@ export class AndroidUtils {
         // to see if it is also running with writable system already or not. If so then nothing will happen and startEmulator()
         // will just return. Otherwise startEmulator() will power off the emulator first, then relaunch it with writable system,
         // and finally wait for it to finish booting.
-        return AndroidUtils.startEmulator(emulatorName, true, true, logger)
+        return AndroidUtils.startEmulator(emulatorName, BootMode.systemWritableMandatory, true, true, logger)
             .then((port) => {
                 portNumber = port;
                 // Now that emulator is launched with writable system, run root command

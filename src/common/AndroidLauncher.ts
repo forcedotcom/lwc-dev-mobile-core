@@ -10,6 +10,7 @@ import { AndroidAppPreviewConfig } from './PreviewConfigFile.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PreviewUtils } from './PreviewUtils.js';
 import { LaunchArgument } from './device/BaseDevice.js';
+import { BootMode } from './device/AndroidDevice.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -66,7 +67,7 @@ export class AndroidLauncher {
             })
             .then(() => {
                 CommonUtils.updateCliAction(messages.getMessage('startDeviceStatus', [emuName]));
-                return AndroidUtils.startEmulator(emuName, false, true, logger);
+                return AndroidUtils.startEmulator(emuName, BootMode.normal, undefined, undefined, logger);
             })
             .then((emulatorPort) => {
                 const useServer = PreviewUtils.useLwcServerForPreviewing(targetApp, appConfig);

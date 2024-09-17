@@ -505,7 +505,7 @@ describe('Android utils', () => {
         stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
         stubMethod($$.SANDBOX, fs, 'readFileSync').returns('');
 
-        const port = await AndroidUtils.startEmulator(testAvdName, true);
+        const port = await AndroidUtils.startEmulator(testAvdName, undefined, undefined, true);
         expect(port).to.be.equal(5572);
     });
 

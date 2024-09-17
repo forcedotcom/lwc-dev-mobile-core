@@ -8,11 +8,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { Logger, SfError } from '@salesforce/core';
+import { Logger, Messages, SfError } from '@salesforce/core';
 import { AndroidUtils } from '../AndroidUtils.js';
 import { Version } from '../Common.js';
 import { CryptoUtils, SSLCertificateData } from '../CryptoUtils.js';
+import { CommonUtils } from '../CommonUtils.js';
 import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export enum AndroidOSType {
     googleAPIs = 'google_apis',
@@ -21,6 +25,12 @@ export enum AndroidOSType {
     googleTV = 'google-tv',
     androidWear = 'android-wear',
     androidAutomotive = 'android-automotive'
+}
+
+export enum BootMode {
+    normal = 'normal',
+    systemWritablePreferred = 'systemWritablePreferred',
+    systemWritableMandatory = 'systemWritableMandatory'
 }
 
 export class AndroidDevice implements BaseDevice {
@@ -67,14 +77,19 @@ export class AndroidDevice implements BaseDevice {
      * Attempts to boot up the device.
      *
      * @param waitForBoot Optional boolean indicating whether to wait for the device to boot up. Defaults to true.
-     * @param systemWritable Optional boolean indicating whether the emulator should launch with the '-writable-system' flag. Defaults to false.
+     * @param bootMode Optional enum indicating the boot mode. Defaults to Normal.
+     * @param coldBoot Optional boolean indicating whether we should perform a cold boot. Defaults to false.
      */
-    public async boot(waitForBoot = true, systemWritable = false): Promise<void> {
-        if (systemWritable && this.isPlayStore) {
-            throw new SfError('Play Store devices cannot be booted with writable system.');
+    public async boot(waitForBoot = true, bootMode = BootMode.normal, coldBoot = false): Promise<void> {
+        if (this.isPlayStore) {
+            if (bootMode === BootMode.systemWritableMandatory) {
+                throw new SfError(messages.getMessage('playStoreNotWritableError'));
+            } else if (bootMode === BootMode.systemWritablePreferred) {
+                this.logger?.warn(messages.getMessage('playStoreNotWritableWarning'));
+            }
         }
 
-        this.port = await AndroidUtils.startEmulator(this.id, systemWritable, waitForBoot, this.logger);
+        this.port = await AndroidUtils.startEmulator(this.id, bootMode, coldBoot, waitForBoot, this.logger);
     }
 
     /**
@@ -87,7 +102,7 @@ export class AndroidDevice implements BaseDevice {
             // Has not been booted yet so instead of rebooting just start it up.
             await this.boot(waitForBoot);
         } else {
-            await AndroidUtils.rebootEmulator(this.port, waitForBoot);
+            await AndroidUtils.rebootEmulator(this.port, waitForBoot, this.logger);
         }
     }
 
@@ -188,7 +203,16 @@ export class AndroidDevice implements BaseDevice {
         fs.writeFileSync(certFilePath, pemContent);
 
         // We then need to push the file to the emulator (needs to be root-mountable).
-        await AndroidUtils.mountAsRootWritableSystem(this.id, this.logger); // boot with writable system access
+        CommonUtils.updateCliAction(messages.getMessage('bootingWritable'));
+        await this.boot(true, BootMode.systemWritableMandatory, false);
+
+        CommonUtils.updateCliAction(messages.getMessage('adbRoot'));
+        await AndroidUtils.executeAdbCommandWithRetry('root', this.port, undefined, undefined, this.logger);
+
+        CommonUtils.updateCliAction(messages.getMessage('remountSystemWritableStatus'));
+        await AndroidUtils.executeAdbCommandWithRetry('remount', this.port, undefined, undefined, this.logger);
+
+        CommonUtils.updateCliAction(messages.getMessage('certificateInstall'));
         await AndroidUtils.executeAdbCommand(
             `push ${certFilePath} /data/misc/user/0/cacerts-added/${fileName}`,
             this.port,
@@ -199,5 +223,8 @@ export class AndroidDevice implements BaseDevice {
             this.port,
             this.logger
         );
+
+        CommonUtils.updateCliAction(messages.getMessage('rebootChangesStatus'));
+        await this.reboot();
     }
 }

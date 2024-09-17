@@ -46,6 +46,18 @@ terminating app %s
 
 error encountered
 
+# playStoreNotWritableError
+
+Play Store devices cannot be booted with writable system.
+
+# playStoreNotWritableWarning
+
+Play Store devices cannot be booted with writable system. Booting normally instead.
+
+# bootingWritable
+
+booting with system writable option
+
 # notWritableSystemShutDownStatus
 
 emulator currently launched without -writable-system. Shutting down.
@@ -81,6 +93,14 @@ rebooting for changes to take effect
 # remountSystemWritableStatus
 
 remounting system partition to be writable
+
+# certificateInstall
+
+installing certificate on device
+
+# adbRoot
+
+running ADB as root
 
 # openBrowserWithUrlStatus
 
