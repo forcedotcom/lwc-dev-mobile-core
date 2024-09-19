@@ -129,7 +129,7 @@ export class AndroidDevice implements BaseDevice {
      * @param target The bundle ID of the app. Eg "com.salesforce.chatter"
      * @returns A boolean indicating if the app is installed on the device or not.
      */
-    public async hasApp(target: string): Promise<boolean> {
+    public async isAppInstalled(target: string): Promise<boolean> {
         // If the caller passes in package id + activity name, just grab the package id.
         const pkgId = target.split('/')[0];
         let result = '';
@@ -147,13 +147,24 @@ export class AndroidDevice implements BaseDevice {
     }
 
     /**
+     * Attempts to install a native app on the device.
+     *
+     * @param appBundlePath Path to the app bundle of the native app.
+     */
+    public async installApp(appBundlePath: string): Promise<void> {
+        const pathQuote = process.platform === 'win32' ? '"' : "'";
+        const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
+        await AndroidUtils.executeAdbCommand(installCommand, this.port, this.logger);
+    }
+
+    /**
      * Attempts to launch a native app on the device. If the app is not installed then this method will attempt to install it first.
      *
      * @param target The bundle ID of the app to be launched + the activity name to be used when launching the app. Eg "com.salesforce.chatter/.Chatter"
-     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
      * @param launchArguments Extra arguments to be passed to the app upon launch.
+     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
      */
-    public async launchApp(target: string, appBundlePath?: string, launchArguments?: LaunchArgument[]): Promise<void> {
+    public async launchApp(target: string, launchArguments?: LaunchArgument[], appBundlePath?: string): Promise<void> {
         await AndroidUtils.launchAppInBootedEmulator(this.port, target, appBundlePath, launchArguments, this.logger);
     }
 

@@ -52,16 +52,20 @@ describe('Android Launcher tests', () => {
         const launchAppMock = stubMethod($$.SANDBOX, AndroidDevice.prototype, 'launchApp').resolves();
         await launcher.launchPreview('helloWorld', '~', undefined, 'com.salesforce.test', undefined, '3333');
         expect(
-            launchAppMock.calledWith('com.salesforce.test', undefined, [
-                {
-                    name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX,
-                    value: 'helloWorld'
-                },
-                {
-                    name: PreviewUtils.PROJECT_DIR_ARG_PREFIX,
-                    value: '~'
-                }
-            ])
+            launchAppMock.calledWith(
+                'com.salesforce.test',
+                [
+                    {
+                        name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX,
+                        value: 'helloWorld'
+                    },
+                    {
+                        name: PreviewUtils.PROJECT_DIR_ARG_PREFIX,
+                        value: '~'
+                    }
+                ],
+                undefined
+            )
         ).to.be.true;
     });
 });

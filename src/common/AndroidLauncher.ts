@@ -108,7 +108,7 @@ export class AndroidLauncher {
                 }
 
                 CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
-                await device.launchApp(target, appBundlePath, targetAppArguments);
+                await device.launchApp(target, targetAppArguments, appBundlePath);
                 CommonUtils.stopCliAction();
             }
         } catch (error) {

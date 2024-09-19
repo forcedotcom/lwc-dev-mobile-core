@@ -43,8 +43,9 @@ export type BaseDevice = {
     reboot(waitForBoot?: boolean): Promise<void>;
     shutdown(): Promise<void>;
     openUrl(url: string): Promise<void>;
-    hasApp(target: string): Promise<boolean>;
-    launchApp(target: string, appBundlePath?: string, launchArguments?: LaunchArgument[]): Promise<void>;
+    isAppInstalled(target: string): Promise<boolean>;
+    installApp(appBundlePath: string): Promise<void>;
+    launchApp(target: string, launchArguments?: LaunchArgument[], appBundlePath?: string): Promise<void>;
     isCertInstalled(certData: SSLCertificateData): Promise<boolean>;
     installCert(certData: SSLCertificateData): Promise<void>;
 };
