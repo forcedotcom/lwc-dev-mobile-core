@@ -134,11 +134,9 @@ export class AndroidDevice implements BaseDevice {
         const pkgId = target.split('/')[0];
         let result = '';
         try {
-            result = await AndroidUtils.executeAdbCommandWithRetry(
+            result = await AndroidUtils.executeAdbCommand(
                 `shell "pm list packages | grep '${pkgId}'"`,
                 this.port,
-                undefined,
-                undefined,
                 this.logger
             );
         } catch {
@@ -210,10 +208,10 @@ export class AndroidDevice implements BaseDevice {
         await this.boot(true, BootMode.systemWritableMandatory, false);
 
         CommonUtils.updateCliAction(messages.getMessage('adbRoot'));
-        await AndroidUtils.executeAdbCommandWithRetry('root', this.port, undefined, undefined, this.logger);
+        await AndroidUtils.executeAdbCommand('root', this.port, this.logger);
 
         CommonUtils.updateCliAction(messages.getMessage('remountSystemWritableStatus'));
-        await AndroidUtils.executeAdbCommandWithRetry('remount', this.port, undefined, undefined, this.logger);
+        await AndroidUtils.executeAdbCommand('remount', this.port, this.logger);
 
         CommonUtils.updateCliAction(messages.getMessage('certificateInstall'));
         await AndroidUtils.executeAdbCommand(
@@ -223,6 +221,11 @@ export class AndroidDevice implements BaseDevice {
         );
         await AndroidUtils.executeAdbCommand(
             `shell "su 0 chmod 644 /data/misc/user/0/cacerts-added/${fileName}"`,
+            this.port,
+            this.logger
+        );
+        await AndroidUtils.executeAdbCommand(
+            `shell "su 0 chown root:root /data/misc/user/0/cacerts-added/${fileName}"`,
             this.port,
             this.logger
         );
@@ -243,28 +246,16 @@ export class AndroidDevice implements BaseDevice {
         await this.startEmulator(BootMode.systemWritableMandatory);
 
         // Now that emulator is launched with writable system, run root command
-        await AndroidUtils.executeAdbCommandWithRetry('root', this.port, undefined, undefined, this.logger);
+        await AndroidUtils.executeAdbCommand('root', this.port, this.logger);
 
         // For API 29 or higher there are a few more steps to be done before we can remount after rooting
         if (Version.sameOrNewer(this.osVersion, Version.from('29')!)) {
             const verificationIsAlreadyDisabled = (
-                await AndroidUtils.executeAdbCommandWithRetry(
-                    'shell avbctl get-verification',
-                    this.port,
-                    undefined,
-                    undefined,
-                    this.logger
-                )
+                await AndroidUtils.executeAdbCommand('shell avbctl get-verification', this.port, this.logger)
             ).includes('disabled');
 
             const verityIsAlreadyDisabled = (
-                await AndroidUtils.executeAdbCommandWithRetry(
-                    'shell avbctl get-verity',
-                    this.port,
-                    undefined,
-                    undefined,
-                    this.logger
-                )
+                await AndroidUtils.executeAdbCommand('shell avbctl get-verity', this.port, this.logger)
             ).includes('disabled');
 
             if (!verificationIsAlreadyDisabled || !verityIsAlreadyDisabled) {
@@ -273,24 +264,12 @@ export class AndroidDevice implements BaseDevice {
 
             if (!verificationIsAlreadyDisabled) {
                 // Disable Android Verified Boot
-                await AndroidUtils.executeAdbCommandWithRetry(
-                    'shell avbctl disable-verification',
-                    this.port,
-                    undefined,
-                    undefined,
-                    this.logger
-                );
+                await AndroidUtils.executeAdbCommand('shell avbctl disable-verification', this.port, this.logger);
             }
 
             if (!verityIsAlreadyDisabled) {
                 // Disable Verity
-                await AndroidUtils.executeAdbCommandWithRetry(
-                    'disable-verity',
-                    this.port,
-                    undefined,
-                    undefined,
-                    this.logger
-                );
+                await AndroidUtils.executeAdbCommand('disable-verity', this.port, this.logger);
             }
 
             // If AVB and Verity were not disabled already and we had to run
@@ -302,13 +281,13 @@ export class AndroidDevice implements BaseDevice {
                 await this.reboot(true);
 
                 // Root again
-                await AndroidUtils.executeAdbCommandWithRetry('root', this.port, undefined, undefined, this.logger);
+                await AndroidUtils.executeAdbCommand('root', this.port, this.logger);
             }
         }
 
         CommonUtils.updateCliAction(messages.getMessage('remountSystemWritableStatus'));
         // Now we're ready to remount and truly have root & writable access to system
-        await AndroidUtils.executeAdbCommandWithRetry('remount', this.port, undefined, undefined, this.logger);
+        await AndroidUtils.executeAdbCommand('remount', this.port, this.logger);
     }
 
     /**
