@@ -240,9 +240,6 @@ export class AndroidDevice implements BaseDevice {
             this.port,
             this.logger
         );
-
-        CommonUtils.updateCliAction(messages.getMessage('rebootChangesStatus'));
-        await this.reboot();
     }
 
     /**
