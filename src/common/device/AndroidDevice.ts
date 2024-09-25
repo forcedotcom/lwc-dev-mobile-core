@@ -152,7 +152,7 @@ export class AndroidDevice implements BaseDevice {
      * @param appBundlePath Path to the app bundle of the native app.
      */
     public async installApp(appBundlePath: string): Promise<void> {
-        const pathQuote = process.platform === 'win32' ? '"' : "'";
+        const pathQuote = AndroidUtils.platformSpecificPathQuote();
         const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
         await AndroidUtils.executeAdbCommand(installCommand, this.port, this.logger);
     }
@@ -309,8 +309,9 @@ export class AndroidDevice implements BaseDevice {
     private async startEmulator(bootMode = BootMode.normal, coldBoot = false, waitForBoot = true): Promise<void> {
         const port = await AndroidUtils.emulatorHasPort(this.id, this.logger);
         const resolvedPortNumber = port ? port : await AndroidUtils.getNextAvailableAdbPort(this.logger);
+        const isAlreadyBooted = resolvedPortNumber === port;
 
-        if (resolvedPortNumber === port) {
+        if (isAlreadyBooted) {
             // Already booted and running on a port, so determine whether need to relaunch with system writable or not.
             const isAlreadyWritable = await AndroidUtils.isEmulatorSystemWritable(resolvedPortNumber, this.logger);
 
@@ -338,7 +339,7 @@ export class AndroidDevice implements BaseDevice {
 
         // We intentionally use spawn and ignore stdio here b/c emulator command can
         // spit out a bunch of output to stderr where they are not really errors. This
-        // is specially true on Windows platform. So instead we spawn the process to launch
+        // is especially true on the Windows platform. So instead we spawn the process to launch
         // the emulator and later attempt at polling the emulator to see if it failed to boot.
         const writableFlag = writable ? '-writable-system' : '';
         const coldFlag = coldBoot ? '-no-snapshot-load' : '';

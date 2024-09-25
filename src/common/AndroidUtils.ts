@@ -571,6 +571,13 @@ export class AndroidUtils {
     }
 
     /**
+     * @returns " on Windows and ' on other platforms
+     */
+    public static platformSpecificPathQuote(): string {
+        return process.platform === WINDOWS_OS ? '"' : "'";
+    }
+
+    /**
      * Attempts to launch a native app in an emulator to preview LWC components. If the app is not installed then this method will attempt to install it first.
      *
      * @param emulatorPort The ADB port of an Android virtual device.
@@ -590,7 +597,7 @@ export class AndroidUtils {
             const installMsg = messages.getMessage('installAppStatus', [appBundlePath.trim()]);
             logger?.info(installMsg);
             CommonUtils.startCliAction(messages.getMessage('launchAppAction'), installMsg);
-            const pathQuote = process.platform === WINDOWS_OS ? '"' : "'";
+            const pathQuote = AndroidUtils.platformSpecificPathQuote();
             const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
             thePromise = AndroidUtils.executeAdbCommand(installCommand, emulatorPort, logger);
         } else {
