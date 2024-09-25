@@ -110,7 +110,7 @@ export class AppleDevice implements BaseDevice {
      * @param target The bundle ID of the app. Eg "com.salesforce.chatter"
      * @returns A boolean indicating if the app is installed on the device or not.
      */
-    public async hasApp(target: string): Promise<boolean> {
+    public async isAppInstalled(target: string): Promise<boolean> {
         let result = '';
         try {
             result = CommonUtils.executeCommandSync(
@@ -126,13 +126,23 @@ export class AppleDevice implements BaseDevice {
     }
 
     /**
+     * Attempts to install a native app on the device.
+     *
+     * @param appBundlePath Path to the app bundle of the native app.
+     */
+    public async installApp(appBundlePath: string): Promise<void> {
+        const installCommand = `/usr/bin/xcrun simctl install ${this.id} '${appBundlePath.trim()}'`;
+        await CommonUtils.executeCommandAsync(installCommand, this.logger);
+    }
+
+    /**
      * Attempts to launch a native app on the device. If the app is not installed then this method will attempt to install it first.
      *
      * @param target The bundle ID of the app to be launched. Eg "com.salesforce.chatter"
-     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
      * @param launchArguments Extra arguments to be passed to the app upon launch.
+     * @param appBundlePath Optional path to the app bundle of the native app. This will be used to install the app if not already installed.
      */
-    public async launchApp(target: string, appBundlePath?: string, launchArguments?: LaunchArgument[]): Promise<void> {
+    public async launchApp(target: string, launchArguments?: LaunchArgument[], appBundlePath?: string): Promise<void> {
         await IOSUtils.launchAppInBootedSimulator(this.id, target, appBundlePath, launchArguments, this.logger);
     }
 

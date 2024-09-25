@@ -10,6 +10,7 @@ import { AndroidAppPreviewConfig } from './PreviewConfigFile.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PreviewUtils } from './PreviewUtils.js';
 import { LaunchArgument } from './device/BaseDevice.js';
+import { AndroidDeviceManager } from './device/AndroidDeviceManager.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -49,78 +50,70 @@ export class AndroidLauncher {
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
-        const device = (await AndroidUtils.getSupportedDevices())[0];
+        const deviceType = (await AndroidUtils.getSupportedDevices())[0];
         const emuName = this.emulatorName;
         CommonUtils.startCliAction(
             messages.getMessage('startPreviewAction'),
             messages.getMessage('searchForDeviceStatus', [emuName])
         );
-        return AndroidUtils.hasEmulator(emuName, logger)
-            .then((result) => {
-                if (!result) {
-                    CommonUtils.updateCliAction(messages.getMessage('createDeviceStatus', [emuName]));
-                    return AndroidUtils.createNewVirtualDevice(emuName, emuImage, androidApi, device, abi, logger);
-                }
+
+        try {
+            const deviceManager = new AndroidDeviceManager(logger);
+            let device = await deviceManager.getDevice(emuName);
+
+            if (!device) {
+                CommonUtils.updateCliAction(messages.getMessage('createDeviceStatus', [emuName]));
+                await AndroidUtils.createNewVirtualDevice(emuName, emuImage, androidApi, deviceType, abi, logger);
+                device = (await deviceManager.getDevice(emuName))!;
+            } else {
                 CommonUtils.updateCliAction(messages.getMessage('foundDeviceStatus', [emuName]));
-                return Promise.resolve();
-            })
-            .then(() => {
-                CommonUtils.updateCliAction(messages.getMessage('startDeviceStatus', [emuName]));
-                return AndroidUtils.startEmulator(emuName, false, true, logger);
-            })
-            .then((emulatorPort) => {
-                const useServer = PreviewUtils.useLwcServerForPreviewing(targetApp, appConfig);
-                const address = useServer ? 'http://10.0.2.2' : undefined; // TODO: dynamically determine server address
-                const port = useServer ? serverPort : undefined;
+            }
 
-                if (PreviewUtils.isTargetingBrowser(targetApp)) {
-                    let url = '';
-                    if (targetingLwrServer) {
-                        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                        url = `${address}:${port}`;
-                    } else {
-                        const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
-                        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                        url = `${address}:${port}/lwc/preview/${compPath}`;
-                    }
+            CommonUtils.updateCliAction(messages.getMessage('startDeviceStatus', [emuName]));
+            await device.boot();
 
-                    CommonUtils.updateCliAction(messages.getMessage('launchBrowserStatus', [url]));
-                    return AndroidUtils.launchURLIntent(url, emulatorPort, logger);
+            const useServer = PreviewUtils.useLwcServerForPreviewing(targetApp, appConfig);
+            const address = useServer ? 'http://10.0.2.2' : undefined; // TODO: dynamically determine server address
+            const port = useServer ? serverPort : undefined;
+
+            if (PreviewUtils.isTargetingBrowser(targetApp)) {
+                let url = '';
+                if (targetingLwrServer) {
+                    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+                    url = `${address}:${port}`;
                 } else {
-                    CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
-
-                    const launchActivity = appConfig?.activity ?? '';
-                    const target = launchActivity ? `${targetApp}/${launchActivity}` : targetApp;
-
-                    const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
-
-                    targetAppArguments.push({ name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName });
-                    targetAppArguments.push({ name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir });
-
-                    if (address) {
-                        targetAppArguments.push({ name: PreviewUtils.SERVER_ADDRESS_PREFIX, value: address });
-                    }
-
-                    if (port) {
-                        targetAppArguments.push({ name: PreviewUtils.SERVER_PORT_PREFIX, value: port });
-                    }
-
-                    return AndroidUtils.launchAppInBootedEmulator(
-                        emulatorPort,
-                        target,
-                        appBundlePath,
-                        targetAppArguments,
-                        logger
-                    );
+                    const compPath = PreviewUtils.prefixRouteIfNeeded(compName);
+                    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+                    url = `${address}:${port}/lwc/preview/${compPath}`;
                 }
-            })
-            .then(() => {
+
+                CommonUtils.updateCliAction(messages.getMessage('launchBrowserStatus', [url]));
+                await device.openUrl(url);
                 CommonUtils.stopCliAction();
-                return Promise.resolve();
-            })
-            .catch((error) => {
-                CommonUtils.stopCliAction(messages.getMessage('genericErrorStatus'));
-                throw error;
-            });
+            } else {
+                const launchActivity = appConfig?.activity ?? '';
+                const target = launchActivity ? `${targetApp}/${launchActivity}` : targetApp;
+
+                const targetAppArguments: LaunchArgument[] = appConfig?.launch_arguments ?? [];
+
+                targetAppArguments.push({ name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX, value: compName });
+                targetAppArguments.push({ name: PreviewUtils.PROJECT_DIR_ARG_PREFIX, value: projectDir });
+
+                if (address) {
+                    targetAppArguments.push({ name: PreviewUtils.SERVER_ADDRESS_PREFIX, value: address });
+                }
+
+                if (port) {
+                    targetAppArguments.push({ name: PreviewUtils.SERVER_PORT_PREFIX, value: port });
+                }
+
+                CommonUtils.updateCliAction(messages.getMessage('launchAppStatus', [targetApp]));
+                await device.launchApp(target, targetAppArguments, appBundlePath);
+                CommonUtils.stopCliAction();
+            }
+        } catch (error) {
+            CommonUtils.stopCliAction(messages.getMessage('genericErrorStatus'));
+            throw error;
+        }
     }
 }

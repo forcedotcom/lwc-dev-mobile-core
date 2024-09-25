@@ -9,51 +9,51 @@ import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
 import { CommonUtils } from '../../../src/common/CommonUtils.js';
 import { AndroidLauncher } from '../../../src/common/AndroidLauncher.js';
-import { AndroidUtils } from '../../../src/common/AndroidUtils.js';
 import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
+import { AndroidDeviceManager } from '../../../src/common/device/AndroidDeviceManager.js';
+import { DeviceType } from '../../../src/common/device/BaseDevice.js';
+import { AndroidDevice, AndroidOSType } from '../../../src/common/device/AndroidDevice.js';
+import { Version } from '../../../src/common/Common.js';
+
 import { AndroidMockData } from './AndroidMockData.js';
 
 describe('Android Launcher tests', () => {
     const $$ = new TestContext();
+    const mockDevice = new AndroidDevice(
+        'Pixel_5_API_31',
+        'Pixel 5 API 31',
+        DeviceType.mobile,
+        AndroidOSType.googleAPIs,
+        new Version(31, 0, 0),
+        false
+    );
+    const launcher = new AndroidLauncher(mockDevice.name);
+
+    beforeEach(() => {
+        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+            stderr: '',
+            stdout: AndroidMockData.mockRawPackagesString
+        });
+        stubMethod($$.SANDBOX, AndroidDeviceManager.prototype, 'getDevice').resolves(mockDevice);
+        stubMethod($$.SANDBOX, AndroidDevice.prototype, 'boot').resolves();
+    });
 
     afterEach(() => {
         $$.restore();
     });
 
     it('Should attempt to invoke preview in mobile browser', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
-            stderr: '',
-            stdout: AndroidMockData.mockRawPackagesString
-        });
-        stubMethod($$.SANDBOX, AndroidUtils, 'hasEmulator').resolves(true);
-        stubMethod($$.SANDBOX, AndroidUtils, 'startEmulator').resolves(5572);
-
-        const launchUrlMock = stubMethod($$.SANDBOX, AndroidUtils, 'launchURLIntent').resolves();
-
-        const launcher = new AndroidLauncher('Pixel XL');
+        const launchUrlMock = stubMethod($$.SANDBOX, AndroidDevice.prototype, 'openUrl').resolves();
         await launcher.launchPreview('helloWorld', '~', undefined, 'browser', undefined, '3333');
-
-        expect(launchUrlMock.calledWith('http://10.0.2.2:3333/lwc/preview/c/helloWorld', 5572)).to.be.true;
+        expect(launchUrlMock.calledWith('http://10.0.2.2:3333/lwc/preview/c/helloWorld')).to.be.true;
     });
 
     it('Should attempt to invoke preview in native app', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
-            stderr: '',
-            stdout: AndroidMockData.mockRawPackagesString
-        });
-        stubMethod($$.SANDBOX, AndroidUtils, 'hasEmulator').resolves(true);
-        stubMethod($$.SANDBOX, AndroidUtils, 'startEmulator').resolves(5572);
-
-        const launchAppMock = stubMethod($$.SANDBOX, AndroidUtils, 'launchAppInBootedEmulator').resolves();
-
-        const launcher = new AndroidLauncher('Pixel XL');
+        const launchAppMock = stubMethod($$.SANDBOX, AndroidDevice.prototype, 'launchApp').resolves();
         await launcher.launchPreview('helloWorld', '~', undefined, 'com.salesforce.test', undefined, '3333');
-
         expect(
             launchAppMock.calledWith(
-                5572,
                 'com.salesforce.test',
-                undefined,
                 [
                     {
                         name: PreviewUtils.COMPONENT_NAME_ARG_PREFIX,
