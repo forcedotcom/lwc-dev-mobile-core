@@ -1,4 +1,4 @@
-name: Auto-Merge Dependabot PRs
+name: Auto-Merge Dependabot PRs (only for changes to minor or patch version but not major version)
 
 on:
     pull_request:
@@ -25,6 +25,19 @@ jobs:
                       if (!hasDependenciesLabel) {
                         core.setFailed("The 'dependencies' label is missing.");
                       }
+
+            - name: Fetch Dependabot metadata
+              id: metadata
+              uses: dependabot/fetch-metadata@v2
+
+            - name: Check if update is a minor or patch group or individual minor/patch update
+              run: |
+                  if [[ "${{ steps.metadata.outputs.update-type }}" != "minor" && \
+                        "${{ steps.metadata.outputs.update-type }}" != "patch" && \
+                        "${{ github.event.pull_request.title }}" != *"minor-and-patch group"* ]]; then
+                    echo "This PR is not a minor or patch update. Auto-merge aborted."
+                    exit 1
+                  fi
 
             - name: Check if CI passed
               uses: actions/github-script@v6
