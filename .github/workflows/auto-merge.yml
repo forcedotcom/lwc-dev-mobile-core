@@ -31,8 +31,8 @@ jobs:
 
             - name: Check if update is a minor or patch group or individual minor/patch update
               run: |
-                  if [[ "${{ steps.metadata.outputs.update-type }}" != "minor" && \
-                        "${{ steps.metadata.outputs.update-type }}" != "patch" && \
+                  if [[ "${{ steps.metadata.outputs.update-type }}" != *":semver-minor"* && \
+                        "${{ steps.metadata.outputs.update-type }}" != *":semver-patch"* && \
                         "${{ github.event.pull_request.title }}" != *"minor-and-patch group"* ]]; then
                     echo "This PR is not a minor or patch update. Auto-merge aborted."
                     exit 1
