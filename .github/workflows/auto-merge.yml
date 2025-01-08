@@ -15,7 +15,6 @@ jobs:
               id: check-label
               with:
                   script: |
-                      const core = require('@actions/core');
                       const { context } = require('@actions/github');
                       const { labels } = context.payload.pull_request;
 
@@ -44,7 +43,6 @@ jobs:
               uses: actions/github-script@v6
               with:
                   script: |
-                      const core = require('@actions/core');
                       const { context, github } = require('@actions/github');
                       const { pull_request } = context.payload;
 
