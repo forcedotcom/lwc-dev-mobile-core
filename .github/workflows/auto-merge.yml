@@ -1,4 +1,4 @@
-name: Auto-Merge Dependabot PRs (only for changes to minor or patch version but not major version)
+name: Auto-Merge Dependabot PRs (minor/patch only)
 
 on:
     pull_request:
@@ -7,7 +7,7 @@ on:
 
 jobs:
     auto-merge:
-        if: github.actor == 'dependabot[bot]' # Ensures this only runs for Dependabot PRs
+        if: github.event.pull_request.user.login == 'dependabot[bot]' # Ensures this only runs for Dependabot PRs
         runs-on: ubuntu-latest
         steps:
             - name: Check if the PR has the 'dependencies' label
@@ -15,6 +15,7 @@ jobs:
               id: check-label
               with:
                   script: |
+                      const core = require('@actions/core');
                       const { context } = require('@actions/github');
                       const { labels } = context.payload.pull_request;
 
@@ -43,6 +44,7 @@ jobs:
               uses: actions/github-script@v6
               with:
                   script: |
+                      const core = require('@actions/core');
                       const { context, github } = require('@actions/github');
                       const { pull_request } = context.payload;
 
