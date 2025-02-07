@@ -129,7 +129,7 @@
         "postpack": "shx rm -f oclif.manifest.json oclif.lock",
         "prepack": "yarn clean-all && npm run sf-prepack",
         "sf-prepack": "sf-prepack",
-        "test": "wireit",
+        "test": "c8 mocha 'test/unit/**/*.test.ts'",
         "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
         "test:only": "wireit",
         "version": "oclif readme"
@@ -204,7 +204,7 @@
             ]
         },
         "test:only": {
-            "command": "c8 mocha \"test/unit/**/*.test.ts\"",
+            "command": "nyc mocha \"test/unit/**/*.test.ts\"",
             "env": {
                 "FORCE_COLOR": "2"
             },
