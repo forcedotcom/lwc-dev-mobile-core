@@ -228,10 +228,20 @@ export class AndroidDeviceManager {
     */
     // eslint-disable-next-line class-methods-use-this
     private getAvdDefinitions(rawString: string): CaseInsensitiveStringMap[] {
-        const input = rawString.replace(
-            '\n\nThe following Android Virtual Devices could not be loaded:',
-            '\n---------'
-        );
+        // While 'avdmanager list avd' may not have been able to parse some info about
+        // some AVDs and may list those under the section marked as "could not load",
+        // when we actually want to interact with those AVDs, most of the time ADB may
+        // (and often actually can) interact with those AVDs. So even though avdmanager
+        // lists these under the "could not load" section, we would still want to parse
+        // the AVDs listed there and include them in our results.
+        let input = rawString.replace('\n\nThe following Android Virtual Devices could not be loaded:', '\n---------');
+
+        // Find the location where the info about AVDs start
+        const startIdx = input.indexOf('Available Android Virtual Devices');
+        if (startIdx > 0) {
+            input = input.substring(startIdx);
+        }
+
         const lines = input.trim().split('\n').slice(1); // skip the first line which is superficial line not containing any AVD data
         const separatorPattern = /^-+$/; // Regex to match separator lines with 2 or more dashes
         const chunks: string[] = []; // Array to hold the chunks
