@@ -1,17 +1,15 @@
 {
-  "extends": "@salesforce/dev-config/tsconfig-strict-esm",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "baseUrl": ".",
-    "experimentalDecorators": true,
-    "pretty": true,
-    "declarationMap": true,
-    "removeComments": true
-  },
-  "include": [
-    "./src/**/*.ts"
-  ]
+    "extends": "@salesforce/dev-config/tsconfig-strict",
+    "compilerOptions": {
+        "outDir": "dist",
+        "resolveJsonModule": true,
+        "module": "NodeNext",
+        "moduleResolution": "nodenext",
+        "target": "ESNext",
+        "rootDir": "./src",
+        "esModuleInterop": true,
+        "sourceMap": true,
+        "inlineSources": true
+    },
+    "include": ["./src/**/*.ts"]
 }
