@@ -52,6 +52,7 @@
         "@salesforce/ts-sinon": "1.4.30",
         "@types/node": "^22.10.3",
         "@types/node-forge": "^1.3.11",
+        "c8": "^10.1.3",
         "eslint": "^8.57.1",
         "eslint-plugin-sf-plugin": "^1.20.13",
         "oclif": "^4.17.7",
@@ -128,7 +129,7 @@
         "postpack": "shx rm -f oclif.manifest.json oclif.lock",
         "prepack": "yarn clean-all && npm run sf-prepack",
         "sf-prepack": "sf-prepack",
-        "test": "wireit",
+        "test": "c8 mocha 'test/unit/**/*.test.ts'",
         "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
         "test:only": "wireit",
         "version": "oclif readme"
