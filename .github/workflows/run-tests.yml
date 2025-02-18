@@ -18,7 +18,13 @@ jobs:
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v5
               with:
+                  verbose: true
                   token: ${{ secrets.CODECOV_TOKEN }}
+            - name: List coverage files
+              run: ls -R coverage/
+            - name: Show coverage report contents
+              run: cat coverage/lcov.info # Adjust this for your format (e.g., XML)
+
     run-tests-win:
         runs-on: windows-latest
         strategy:
