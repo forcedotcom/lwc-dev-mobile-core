@@ -20,6 +20,8 @@ jobs:
               with:
                   verbose: true
                   token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Force re-upload to Codecov
+              run: curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov && ./codecov -f coverage/lcov.info -v
             - name: List coverage files
               run: ls -R coverage/
             - name: Show coverage report contents
