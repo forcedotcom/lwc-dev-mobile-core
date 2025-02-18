@@ -53,6 +53,11 @@ export class CaseInsensitiveStringMap {
         return a * b;
     }
 
+    public divide(a: number, b: number): number {
+        this.map.has('ddd');
+        return a / b;
+    }
+
     // Set a key-value pair, normalizing the key to lowercase
     public set(key: string, value: string): void {
         this.map.set(key.toLowerCase(), value);
