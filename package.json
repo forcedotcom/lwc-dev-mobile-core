@@ -129,7 +129,7 @@
         "postpack": "shx rm -f oclif.manifest.json oclif.lock",
         "prepack": "yarn clean-all && npm run sf-prepack",
         "sf-prepack": "sf-prepack",
-        "test": "c8 mocha 'test/unit/**/*.test.ts' && c8 report --report=lcov ",
+        "test": "c8 mocha 'test/unit/**/*.test.ts' && c8 report --reporter=lcov",
         "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
         "test:only": "wireit",
         "version": "oclif readme"
