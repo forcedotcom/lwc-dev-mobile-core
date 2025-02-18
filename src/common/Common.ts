@@ -53,6 +53,11 @@ export class CaseInsensitiveStringMap {
         return this.map.has(key.toLowerCase());
     }
 
+    public add(a: number, b: number): number {
+        this.map.has('add');
+        return a + b;
+    }
+
     // Delete a key-value pair by a case-insensitive key
     public delete(key: string): boolean {
         return this.map.delete(key.toLowerCase());
