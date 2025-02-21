@@ -39,7 +39,7 @@
         "@oclif/core": "^4.2.7",
         "@salesforce/core": "^8.8.2",
         "@salesforce/ts-types": "^2.0.12",
-        "@salesforce/sf-plugins-core": "^11.3.10",
+        "@salesforce/sf-plugins-core": "^12.1.4",
         "ajv": "^8.17.1",
         "chalk": "^5.4.1",
         "listr2": "^8.2.5",
