@@ -36,29 +36,29 @@
     ],
     "bugs": "https://github.com/forcedotcom/lwc-dev-mobile-core/issues",
     "dependencies": {
-        "@oclif/core": "^4.2.7",
-        "@salesforce/core": "^8.8.2",
+        "@oclif/core": "^4.2.10",
+        "@salesforce/core": "^8.9.0",
         "@salesforce/ts-types": "^2.0.12",
-        "@salesforce/sf-plugins-core": "^12.2.0",
+        "@salesforce/sf-plugins-core": "^12.2.1",
         "ajv": "^8.17.1",
         "chalk": "^5.4.1",
-        "listr2": "^8.2.5",
+        "listr2": "^8.3.2",
         "node-forge": "^1.3.1"
     },
     "devDependencies": {
-        "@oclif/plugin-command-snapshot": "^5.2.35",
+        "@oclif/plugin-command-snapshot": "^5.2.38",
         "@salesforce/cli-plugins-testkit": "^5.3.39",
         "@salesforce/dev-scripts": "^10.2.10",
         "@salesforce/ts-sinon": "1.4.30",
-        "@types/node": "^22.13.4",
+        "@types/node": "^22.14.1",
         "@types/node-forge": "^1.3.11",
         "c8": "^10.1.3",
         "eslint": "^8.57.1",
-        "eslint-plugin-sf-plugin": "^1.20.14",
-        "oclif": "^4.17.30",
-        "shx": "0.3.4",
+        "eslint-plugin-sf-plugin": "^1.20.19",
+        "oclif": "^4.17.44",
+        "shx": "0.4.0",
         "ts-node": "^10.9.2",
-        "typescript": "^5.7.3"
+        "typescript": "^5.8.3"
     },
     "engines": {
         "node": ">=20.0.0"
