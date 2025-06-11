@@ -17,6 +17,7 @@ export * from './common/AndroidLauncher.js';
 export * from './common/AndroidTypes.js';
 export * from './common/AndroidUtils.js';
 export * from './common/BaseCommand.js';
+export * from './common/CommandLineUtils.js';
 export * from './common/Common.js';
 export * from './common/CommonUtils.js';
 export * from './common/CryptoUtils.js';
