@@ -592,41 +592,47 @@ export class AndroidUtils {
         targetAppArguments?: LaunchArgument[],
         logger?: Logger
     ): Promise<void> {
-        let thePromise: Promise<string>;
+        CommonUtils.startCliAction(messages.getMessage('launchAppAction'));
+
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = messages.getMessage('installAppStatus', [appBundlePath.trim()]);
             logger?.info(installMsg);
-            CommonUtils.startCliAction(messages.getMessage('launchAppAction'), installMsg);
+            CommonUtils.updateCliAction(installMsg);
             const pathQuote = AndroidUtils.platformSpecificPathQuote();
             const installCommand = `install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`;
-            thePromise = AndroidUtils.executeAdbCommand(installCommand, emulatorPort, logger);
-        } else {
-            thePromise = Promise.resolve('');
+            await AndroidUtils.executeAdbCommand(installCommand, emulatorPort, logger);
         }
 
-        return thePromise
-            .then(() => {
-                let launchArgs = '';
-                targetAppArguments?.forEach((arg) => {
-                    launchArgs += `--es "${arg.name}" "${arg.value}" `;
-                });
+        let launchArgs = '';
+        targetAppArguments?.forEach((arg) => {
+            launchArgs += `--es "${arg.name}" "${arg.value}" `;
+        });
 
-                const launchCommand =
-                    `shell am start -S -n "${target}"` +
-                    ' -a android.intent.action.MAIN' +
-                    ' -c android.intent.category.LAUNCHER' +
-                    ` ${launchArgs}`;
+        const pkgId = target.split('/')[0];
+        const terminateCommand = `shell am force-stop ${pkgId}`;
+        const launchCommand =
+            `shell am start -S -n "${target}"` +
+            ' -a android.intent.action.MAIN' +
+            ' -c android.intent.category.LAUNCHER' +
+            ` ${launchArgs}`;
 
-                const launchMsg = messages.getMessage('launchAppStatus', [target]);
-                logger?.info(launchMsg);
-                CommonUtils.updateCliAction(launchMsg);
+        // attempt at terminating the app first (in case it is already running) and then try to launch it again with new arguments.
+        // if we hit issues with terminating, just ignore and continue.
+        try {
+            const terminateMsg = messages.getMessage('terminateAppStatus', [pkgId]);
+            logger?.info(terminateMsg);
+            CommonUtils.updateCliAction(terminateMsg);
+            await AndroidUtils.executeAdbCommand(terminateCommand, emulatorPort, logger);
+        } catch {
+            // ignore and continue
+        }
 
-                return AndroidUtils.executeAdbCommand(launchCommand, emulatorPort, logger);
-            })
-            .then(() => {
-                CommonUtils.stopCliAction();
-                return Promise.resolve();
-            });
+        const launchMsg = messages.getMessage('launchAppStatus', [target]);
+        logger?.info(launchMsg);
+        CommonUtils.updateCliAction(launchMsg);
+        await AndroidUtils.executeAdbCommand(launchCommand, emulatorPort, logger);
+
+        CommonUtils.stopCliAction();
     }
 
     // This method is public for testing purposes.

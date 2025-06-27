@@ -435,11 +435,12 @@ describe('Android utils', () => {
 
         const pathQuote = process.platform === 'win32' ? '"' : "'";
 
-        expect(stub.calledTwice);
+        expect(stub.calledThrice);
         expect(stub.firstCall.args[0]).to.equal(
             `${adbCommand} -s emulator-${port} install -r -t ${pathQuote}${appBundlePath.trim()}${pathQuote}`
         );
-        expect(stub.secondCall.args[0]).to.equal(
+        expect(stub.secondCall.args[0]).to.equal(`${adbCommand} -s emulator-${port} shell am force-stop ${targetApp}`);
+        expect(stub.thirdCall.args[0]).to.equal(
             `${adbCommand} -s emulator-${port}` +
                 ` shell am start -S -n "${targetApp}/${targetActivity}"` +
                 ' -a android.intent.action.MAIN' +

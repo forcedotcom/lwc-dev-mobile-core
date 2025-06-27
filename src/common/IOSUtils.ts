@@ -127,47 +127,41 @@ export class IOSUtils {
         targetAppArguments?: LaunchArgument[],
         logger?: Logger
     ): Promise<void> {
-        let thePromise: Promise<{ stdout: string; stderr: string }>;
+        CommonUtils.startCliAction(messages.getMessage('launchAppAction'));
+
         if (appBundlePath && appBundlePath.trim().length > 0) {
             const installMsg = messages.getMessage('installAppStatus', [appBundlePath.trim()]);
             logger?.info(installMsg);
-            CommonUtils.startCliAction(messages.getMessage('launchAppAction'), installMsg);
+            CommonUtils.updateCliAction(installMsg);
             const installCommand = `${XCRUN_CMD} simctl install ${udid} '${appBundlePath.trim()}'`;
-            thePromise = CommonUtils.executeCommandAsync(installCommand, logger);
-        } else {
-            thePromise = Promise.resolve({ stdout: '', stderr: '' });
+            await CommonUtils.executeCommandAsync(installCommand, logger);
         }
 
-        return thePromise
-            .then(async () => {
-                let launchArgs = '';
-                targetAppArguments?.forEach((arg) => {
-                    launchArgs += `${arg.name}=${arg.value} `;
-                });
+        let launchArgs = '';
+        targetAppArguments?.forEach((arg) => {
+            launchArgs += `${arg.name}=${arg.value} `;
+        });
 
-                const terminateCommand = `${XCRUN_CMD} simctl terminate "${udid}" ${targetApp}`;
-                const launchCommand = `${XCRUN_CMD} simctl launch "${udid}" ${targetApp} ${launchArgs}`;
+        const terminateCommand = `${XCRUN_CMD} simctl terminate "${udid}" ${targetApp}`;
+        const launchCommand = `${XCRUN_CMD} simctl launch "${udid}" ${targetApp} ${launchArgs}`;
 
-                // attempt at terminating the app first (in case it is already running) and then try to launch it again with new arguments.
-                // if we hit issues with terminating, just ignore and continue.
-                try {
-                    const terminateMsg = messages.getMessage('terminateAppStatus', [targetApp]);
-                    logger?.info(terminateMsg);
-                    CommonUtils.updateCliAction(terminateMsg);
-                    await CommonUtils.executeCommandAsync(terminateCommand, logger);
-                } catch {
-                    // ignore and continue
-                }
+        // attempt at terminating the app first (in case it is already running) and then try to launch it again with new arguments.
+        // if we hit issues with terminating, just ignore and continue.
+        try {
+            const terminateMsg = messages.getMessage('terminateAppStatus', [targetApp]);
+            logger?.info(terminateMsg);
+            CommonUtils.updateCliAction(terminateMsg);
+            await CommonUtils.executeCommandAsync(terminateCommand, logger);
+        } catch {
+            // ignore and continue
+        }
 
-                const launchMsg = messages.getMessage('launchAppStatus', [targetApp]);
-                logger?.info(launchMsg);
-                CommonUtils.updateCliAction(launchMsg);
-                return CommonUtils.executeCommandAsync(launchCommand, logger);
-            })
-            .then(() => {
-                CommonUtils.stopCliAction();
-                return Promise.resolve();
-            });
+        const launchMsg = messages.getMessage('launchAppStatus', [targetApp]);
+        logger?.info(launchMsg);
+        CommonUtils.updateCliAction(launchMsg);
+        await CommonUtils.executeCommandAsync(launchCommand, logger);
+
+        CommonUtils.stopCliAction();
     }
 
     private static isDeviceAlreadyBootedError(error: Error): boolean {
