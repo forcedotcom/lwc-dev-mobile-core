@@ -41,14 +41,14 @@ jobs:
             - name: Install dependencies
               run: yarn install
 
-            - name: Configure npm auth manually
+            - name: Debug
               run: |
-                  echo "@salesforce:registry=https://registry.npmjs.org/" >> ~/.npmrc
-                  echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  echo "NT = ${{ secrets.NPM_TOKEN  }}"
+                  echo "GT = ${{ secrets.GITHUB_TOKEN  }}"
 
             - name: Publish to NPM
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
               run: npm publish
 
             - name: Create and push git tag
