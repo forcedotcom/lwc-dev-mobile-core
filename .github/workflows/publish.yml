@@ -17,6 +17,7 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: '20'
+                  registry-url: 'https://registry.npmjs.org/'
 
             - name: Get package version
               id: get-version
@@ -40,9 +41,13 @@ jobs:
             - name: Install dependencies
               run: yarn install
 
-            - name: Publish to NPM
+            - name: Configure npm auth manually
+              run: |
+                  echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            - name: Publish to NPM
               run: npm publish
 
             - name: Create and push git tag

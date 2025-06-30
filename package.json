@@ -114,7 +114,10 @@
         },
         "flexibleTaxonomy": true
     },
-    "repository": "https://github.com/forcedotcom/lwc-dev-mobile-core",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/forcedotcom/lwc-dev-mobile-core.git"
+    },
     "scripts": {
         "build": "wireit",
         "clean": "sf-clean",
@@ -135,7 +138,8 @@
         "version": "oclif readme"
     },
     "publishConfig": {
-        "access": "public"
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
     },
     "wireit": {
         "build": {
