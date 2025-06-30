@@ -43,6 +43,7 @@ jobs:
 
             - name: Configure npm auth manually
               run: |
+                  echo "@salesforce:registry=https://registry.npmjs.org/" >> ~/.npmrc
                   echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
