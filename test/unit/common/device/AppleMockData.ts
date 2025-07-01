@@ -17,7 +17,17 @@ export class AppleMockData {
                 version: '17.5',
                 isInternal: false,
                 isAvailable: true,
-                name: 'iOS 17.5'
+                name: 'iOS 17.5',
+                buildversion: '21F79',
+                supportedArchitectures: ['x86_64', 'arm64'],
+                supportedDeviceTypes: [
+                    {
+                        bundlePath: '/Library/Developer/CoreSimulator/Profiles/DeviceTypes/iPhone 15 Pro.simdevicetype',
+                        name: 'iPhone 15 Pro',
+                        identifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro',
+                        productFamily: 'iPhone'
+                    }
+                ]
             },
             {
                 bundlePath:
@@ -29,7 +39,17 @@ export class AppleMockData {
                 version: '17.0',
                 isInternal: false,
                 isAvailable: true,
-                name: 'iOS 17.0'
+                name: 'iOS 17.0',
+                buildversion: '21A328',
+                supportedArchitectures: ['x86_64', 'arm64'],
+                supportedDeviceTypes: [
+                    {
+                        bundlePath: '/Library/Developer/CoreSimulator/Profiles/DeviceTypes/iPhone 15 Pro.simdevicetype',
+                        name: 'iPhone 15 Pro',
+                        identifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro',
+                        productFamily: 'iPhone'
+                    }
+                ]
             },
             {
                 bundlePath:
@@ -41,7 +61,17 @@ export class AppleMockData {
                 version: '16.0',
                 isInternal: false,
                 isAvailable: true,
-                name: 'iOS 16.0'
+                name: 'iOS 16.0',
+                buildversion: '20A360',
+                supportedArchitectures: ['x86_64', 'arm64'],
+                supportedDeviceTypes: [
+                    {
+                        bundlePath: '/Library/Developer/CoreSimulator/Profiles/DeviceTypes/iPhone 15 Pro.simdevicetype',
+                        name: 'iPhone 15 Pro',
+                        identifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro',
+                        productFamily: 'iPhone'
+                    }
+                ]
             },
             {
                 bundlePath:
@@ -53,7 +83,18 @@ export class AppleMockData {
                 version: '10.5',
                 isInternal: false,
                 isAvailable: true,
-                name: 'watchOS 10.5'
+                name: 'watchOS 10.5',
+                buildversion: '22T572',
+                supportedArchitectures: ['x86_64', 'arm64'],
+                supportedDeviceTypes: [
+                    {
+                        bundlePath:
+                            '/Library/Developer/CoreSimulator/Profiles/DeviceTypes/Apple Watch Series 10 (46mm).simdevicetype',
+                        name: 'Apple Watch Series 10 (46mm)',
+                        identifier: 'com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-10-42mm',
+                        productFamily: 'Apple Watch'
+                    }
+                ]
             },
             {
                 bundlePath:
@@ -65,7 +106,18 @@ export class AppleMockData {
                 version: '17.5',
                 isInternal: false,
                 isAvailable: true,
-                name: 'tvOS 17.5'
+                name: 'tvOS 17.5',
+                buildversion: '22L572',
+                supportedArchitectures: ['x86_64', 'arm64'],
+                supportedDeviceTypes: [
+                    {
+                        bundlePath:
+                            '/Library/Developer/CoreSimulator/Profiles/DeviceTypes/Apple TV 4K (3rd generation).simdevicetype',
+                        name: 'Apple TV 4K (3rd generation)',
+                        identifier: 'com.apple.CoreSimulator.SimDeviceType.Apple-TV-4K-3rd-generation-4K',
+                        productFamily: 'Apple TV'
+                    }
+                ]
             },
             {
                 bundlePath:
@@ -77,7 +129,18 @@ export class AppleMockData {
                 version: '1.2',
                 isInternal: false,
                 isAvailable: true,
-                name: 'visionOS 1.2'
+                name: 'visionOS 1.2',
+                buildversion: '22O473',
+                supportedArchitectures: ['arm64'],
+                supportedDeviceTypes: [
+                    {
+                        bundlePath:
+                            '/Library/Developer/CoreSimulator/Profiles/DeviceTypes/Apple Vision Pro (at 2732x2048).simdevicetype',
+                        name: 'Apple Vision Pro (at 2732x2048)',
+                        identifier: 'com.apple.CoreSimulator.SimDeviceType.Apple-Vision-Pro',
+                        productFamily: 'Apple Vision'
+                    }
+                ]
             }
         ]
     };

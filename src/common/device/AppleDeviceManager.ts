@@ -119,6 +119,14 @@ export class AppleDeviceManager {
             });
         }
 
+        // generate runtimeName and typeName from identifier
+        finalResults.forEach((runtime) => {
+            runtime.runtimeName = runtime.identifier?.split('.')?.pop() ?? runtime.identifier;
+            runtime.supportedDeviceTypes.forEach((deviceType) => {
+                deviceType.typeName = deviceType.identifier?.split('.')?.pop() ?? deviceType.identifier;
+            });
+        });
+
         if (finalResults.length > 0) {
             return finalResults;
         } else {

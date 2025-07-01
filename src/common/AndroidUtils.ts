@@ -168,7 +168,7 @@ export class AndroidUtils {
      *
      * @returns The supported Android device types.
      */
-    public static async getSupportedDevices(): Promise<string[]> {
+    public static async getSupportedDeviceTypes(): Promise<string[]> {
         return Promise.resolve(PlatformConfig.androidConfig().supportedDeviceTypes);
     }
 

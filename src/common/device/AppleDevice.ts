@@ -15,15 +15,27 @@ import { CryptoUtils, SSLCertificateData } from '../CryptoUtils.js';
 import { IOSUtils } from '../IOSUtils.js';
 import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
 
+export type AppleDeviceType = {
+    bundlePath: string; // e.g: /Library/Developer/CoreSimulator/Profiles/DeviceTypes/iPhone 16 Pro.simdevicetype
+    name: string; // e.g: iPhone 16 Pro Max
+    identifier: string; // e.g: com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max
+    productFamily: string; // e.g: iPhone
+    typeName: string; // e.g: iPhone-16-Pro-Max
+};
+
 export type AppleRuntime = {
-    bundlePath: string;
-    identifier: string;
+    buildversion: string; // e.g: 20A360
+    bundlePath: string; // e.g: /Library/Developer/CoreSimulator/Volumes/iOS_20A360/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 16.0.simruntime
+    identifier: string; // e.g: com.apple.CoreSimulator.SimRuntime.iOS-16-0
     isAvailable: boolean;
     isInternal: boolean;
-    name: string;
-    platform: string;
-    runtimeRoot: string;
-    version: string;
+    name: string; // e.g: iOS 16.0
+    platform: string; // e.g: iOS
+    runtimeRoot: string; // e.g: /Library/Developer/CoreSimulator/Volumes/iOS_20A360/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 16.0.simruntime/Contents/Resources/RuntimeRoot
+    runtimeName: string; // e.g: iOS-16-0
+    supportedArchitectures: string[]; // e.g: [  x86_64, arm64 ]
+    supportedDeviceTypes: AppleDeviceType[];
+    version: string; // e.g: 16.0
 };
 
 export enum AppleOSType {

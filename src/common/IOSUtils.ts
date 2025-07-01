@@ -164,6 +164,18 @@ export class IOSUtils {
         CommonUtils.stopCliAction();
     }
 
+    /**
+     * Attempts to fetch all supported iOS device types
+     *
+     * @returns The supported iOS device types.
+     */
+    public static async getSupportedDeviceTypes(logger?: Logger): Promise<string[]> {
+        const command = `${XCRUN_CMD} simctl list devicetypes --json`;
+        const { stdout } = await CommonUtils.executeCommandAsync(command, logger);
+        const json = JSON.parse(stdout) as { devicetypes: Array<{ identifier: string }> };
+        return json.devicetypes.flatMap((item) => item.identifier.split('.').pop() ?? item.identifier);
+    }
+
     private static isDeviceAlreadyBootedError(error: Error): boolean {
         return error.message ? error.message.toLowerCase().match('state: booted') !== null : false;
     }
