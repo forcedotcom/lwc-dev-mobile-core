@@ -367,7 +367,6 @@ describe('CommonUtils', () => {
                 return false;
             },
             name: fname,
-            path: fname,
             parentPath: fname
         };
     }

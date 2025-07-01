@@ -50,7 +50,7 @@ export class AndroidLauncher {
         const emuImage = preferredPack.platformEmulatorImage || 'default';
         const androidApi = preferredPack.platformAPI;
         const abi = preferredPack.abi;
-        const deviceType = (await AndroidUtils.getSupportedDevices())[0];
+        const deviceType = (await AndroidUtils.getSupportedDeviceTypes())[0];
         const emuName = this.emulatorName;
         CommonUtils.startCliAction(
             messages.getMessage('startPreviewAction'),
