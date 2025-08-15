@@ -150,24 +150,6 @@ export class RequirementProcessor {
                 totalDuration += result.duration;
             }
 
-            if (!headless) {
-                // Log summary in headless mode
-                const logger = new Logger('RequirementProcessor');
-                logger.info(
-                    `Requirements check completed in ${RequirementProcessor.formatDurationAsSeconds(totalDuration)}`
-                );
-                logger.info(`Passed: ${testResult.tests.filter((t) => t.hasPassed).length}/${testResult.tests.length}`);
-
-                for (const test of testResult.tests) {
-                    const status = test.hasPassed ? '✓' : '✗';
-                    const duration = RequirementProcessor.formatDurationAsSeconds(test.duration);
-                    logger.info(`${status} ${test.title} (${duration})`);
-                    if (!test.hasPassed && test.message) {
-                        logger.error(`  ${test.message}`);
-                    }
-                }
-            }
-
             // In headless mode, throw an error if requirements failed (same behavior as interactive mode)
             if (!testResult.hasMetAllRequirements) {
                 return Promise.reject(
@@ -249,6 +231,24 @@ export class RequirementProcessor {
                     messages.getMessage('error:requirementCheckFailed:recommendation')
                 ])
             );
+        }
+
+        if (!headless) {
+            // Log summary when NOT in headless mode (interactive mode)
+            const logger = new Logger('RequirementProcessor');
+            logger.info(
+                `Requirements check completed in ${RequirementProcessor.formatDurationAsSeconds(totalDuration)}`
+            );
+            logger.info(`Passed: ${testResult.tests.filter((t) => t.hasPassed).length}/${testResult.tests.length}`);
+
+            for (const test of testResult.tests) {
+                const status = test.hasPassed ? '✓' : '✗';
+                const duration = RequirementProcessor.formatDurationAsSeconds(test.duration);
+                logger.info(`${status} ${test.title} (${duration})`);
+                if (!test.hasPassed && test.message) {
+                    logger.error(`  ${test.message}`);
+                }
+            }
         }
 
         return testResult;
