@@ -27,7 +27,7 @@ type RequirementResult = {
     title: string;
 };
 
-type RequirementCheckResult = {
+export type RequirementCheckResult = {
     hasMetAllRequirements: boolean;
     tests: RequirementResult[];
 };
@@ -103,11 +103,22 @@ export async function WrappedPromise(requirement: Requirement): Promise<Requirem
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'requirement');
 
+export type RequirementProcessorOptions = {
+    headless?: boolean;
+};
+
 export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(requirements: CommandRequirements): Promise<void> {
+    public static async execute(
+        requirements: CommandRequirements,
+        options: RequirementProcessorOptions = {}
+    ): Promise<RequirementCheckResult> {
+        const { headless = false } = options;
+        // headless mode is automatically silent by definition
+        const silent = headless;
+
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -124,9 +135,45 @@ export class RequirementProcessor {
         });
 
         if (enabledRequirements.length === 0) {
-            return Promise.resolve();
+            return testResult;
         }
 
+        if (headless) {
+            // Headless mode: run all requirements concurrently without Listr
+            const requirementPromises = enabledRequirements.map((requirement) => WrappedPromise(requirement));
+
+            const results = await Promise.all(requirementPromises);
+
+            for (const result of results) {
+                testResult.tests.push(result);
+                if (!result.hasPassed) {
+                    testResult.hasMetAllRequirements = false;
+                }
+                totalDuration += result.duration;
+            }
+
+            if (!silent) {
+                // Log summary in headless mode
+                const logger = new Logger('RequirementProcessor');
+                logger.info(
+                    `Requirements check completed in ${RequirementProcessor.formatDurationAsSeconds(totalDuration)}`
+                );
+                logger.info(`Passed: ${testResult.tests.filter((t) => t.hasPassed).length}/${testResult.tests.length}`);
+
+                for (const test of testResult.tests) {
+                    const status = test.hasPassed ? '✓' : '✗';
+                    const duration = RequirementProcessor.formatDurationAsSeconds(test.duration);
+                    logger.info(`${status} ${test.title} (${duration})`);
+                    if (!test.hasPassed && test.message) {
+                        logger.error(`  ${test.message}`);
+                    }
+                }
+            }
+
+            return testResult;
+        }
+
+        // Interactive mode: use Listr as before
         const rootTaskTitle = messages.getMessage('rootTaskTitle');
         const requirementTasks = new Listr(
             {
@@ -188,15 +235,7 @@ export class RequirementProcessor {
             );
         }
 
-        if (!testResult.hasMetAllRequirements) {
-            return Promise.reject(
-                new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
-                    messages.getMessage('error:requirementCheckFailed:recommendation')
-                ])
-            );
-        }
-
-        return Promise.resolve();
+        return testResult;
     }
 
     private static getFormattedTitle(testCaseResult: RequirementResult): string {

@@ -10,7 +10,11 @@ import { BaseCommand } from '../../../../../common/BaseCommand.js';
 import { FlagsConfigType } from '../../../../../common/Common.js';
 import { CommandLineUtils } from '../../../../../common/CommandLineUtils.js';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements.js';
-import { CommandRequirements, RequirementProcessor } from '../../../../../common/Requirements.js';
+import {
+    CommandRequirements,
+    RequirementProcessor,
+    RequirementCheckResult
+} from '../../../../../common/Requirements.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'setup');
@@ -29,7 +33,7 @@ export class Setup extends BaseCommand {
 
     protected _commandName = 'force:lightning:local:setup';
 
-    public async run(): Promise<void> {
+    public async run(): Promise<RequirementCheckResult> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         this.logger.info(`Setup command called for ${this.flagValues.platform}`);
         return RequirementProcessor.execute(this.commandRequirements);
