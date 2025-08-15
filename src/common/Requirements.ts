@@ -116,8 +116,6 @@ export class RequirementProcessor {
         options: RequirementProcessorOptions = {}
     ): Promise<RequirementCheckResult> {
         const { headless = false } = options;
-        // headless mode is automatically silent by definition
-        const silent = headless;
 
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
@@ -152,7 +150,7 @@ export class RequirementProcessor {
                 totalDuration += result.duration;
             }
 
-            if (!silent) {
+            if (!headless) {
                 // Log summary in headless mode
                 const logger = new Logger('RequirementProcessor');
                 logger.info(
@@ -168,6 +166,15 @@ export class RequirementProcessor {
                         logger.error(`  ${test.message}`);
                     }
                 }
+            }
+
+            // In headless mode, throw an error if requirements failed (same behavior as interactive mode)
+            if (!testResult.hasMetAllRequirements) {
+                return Promise.reject(
+                    new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
+                        messages.getMessage('error:requirementCheckFailed:recommendation')
+                    ])
+                );
             }
 
             return testResult;
@@ -232,6 +239,15 @@ export class RequirementProcessor {
         } catch (error) {
             return Promise.reject(
                 new SfError(messages.getMessage('error:unexpected', [(error as Error).message]), 'lwc-dev-mobile-core')
+            );
+        }
+
+        // Check if any requirements failed and throw appropriate error
+        if (!testResult.hasMetAllRequirements) {
+            return Promise.reject(
+                new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
+                    messages.getMessage('error:requirementCheckFailed:recommendation')
+                ])
             );
         }
 
