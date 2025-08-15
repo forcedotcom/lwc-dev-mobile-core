@@ -149,92 +149,75 @@ export class RequirementProcessor {
                 }
                 totalDuration += result.duration;
             }
+        } else {
+            // Interactive mode: use Listr for visual feedback
+            const rootTaskTitle = messages.getMessage('rootTaskTitle');
+            const requirementTasks = new Listr(
+                {
+                    task: (_rootCtx, rootTask): Listr => {
+                        const subTasks = new Listr([], {
+                            concurrent: true,
+                            exitOnError: false
+                        });
+                        for (const requirement of enabledRequirements) {
+                            subTasks.add({
+                                rendererOptions: { persistentOutput: true },
+                                task: (_subCtx, subTask): Promise<void> =>
+                                    WrappedPromise(requirement).then((result) => {
+                                        testResult.tests.push(result);
+                                        if (!result.hasPassed) {
+                                            testResult.hasMetAllRequirements = false;
+                                        }
 
-            // In headless mode, throw an error if requirements failed (same behavior as interactive mode)
-            if (!testResult.hasMetAllRequirements) {
+                                        // eslint-disable-next-line no-param-reassign
+                                        subTask.title = RequirementProcessor.getFormattedTitle(result);
+                                        // eslint-disable-next-line no-param-reassign
+                                        subTask.output = result.message;
+
+                                        totalDuration += result.duration;
+                                        // eslint-disable-next-line no-param-reassign
+                                        rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
+                                            totalDuration
+                                        )})`;
+
+                                        // In order for Lister to mark a task with ✓ or 𐄂, the task promise must either
+                                        // resolve or reject. For the failure case we just reject with an empty error
+                                        // so that Listr would not replace the task title & output with the error message.
+                                        // We want those to be formatted in a certain way so we update the task title and
+                                        // output further up ourselves.
+                                        return result.hasPassed ? Promise.resolve() : Promise.reject(new Error());
+                                    }),
+                                title: requirement.title
+                            });
+                        }
+
+                        return subTasks;
+                    },
+                    title: rootTaskTitle
+                },
+                {
+                    rendererOptions: {
+                        collapseSubtasks: false,
+                        collapseErrors: false,
+                        formatOutput: 'wrap'
+                    }
+                }
+            );
+
+            try {
+                await requirementTasks.run();
+            } catch (error) {
+                // Listr errors are typically formatting/display issues, not requirement failures
+                // Convert to a more appropriate error type
                 return Promise.reject(
-                    new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
-                        messages.getMessage('error:requirementCheckFailed:recommendation')
-                    ])
+                    new SfError(
+                        messages.getMessage('error:unexpected', [(error as Error).message]),
+                        'lwc-dev-mobile-core'
+                    )
                 );
             }
 
-            return testResult;
-        }
-
-        // Interactive mode: use Listr as before
-        const rootTaskTitle = messages.getMessage('rootTaskTitle');
-        const requirementTasks = new Listr(
-            {
-                task: (_rootCtx, rootTask): Listr => {
-                    const subTasks = new Listr([], {
-                        concurrent: true,
-                        exitOnError: false
-                    });
-                    for (const requirement of enabledRequirements) {
-                        subTasks.add({
-                            rendererOptions: { persistentOutput: true },
-                            task: (_subCtx, subTask): Promise<void> =>
-                                WrappedPromise(requirement).then((result) => {
-                                    testResult.tests.push(result);
-                                    if (!result.hasPassed) {
-                                        testResult.hasMetAllRequirements = false;
-                                    }
-
-                                    // eslint-disable-next-line no-param-reassign
-                                    subTask.title = RequirementProcessor.getFormattedTitle(result);
-                                    // eslint-disable-next-line no-param-reassign
-                                    subTask.output = result.message;
-
-                                    totalDuration += result.duration;
-                                    // eslint-disable-next-line no-param-reassign
-                                    rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
-                                        totalDuration
-                                    )})`;
-
-                                    // In order for Lister to mark a task with ✓ or 𐄂, the task promise must either
-                                    // resolve or reject. For the failure case we just reject with an empty error
-                                    // so that Listr would not replace the task title & output with the error message.
-                                    // We want those to be formatted in a certain way so we update the task title and
-                                    // output further up ourselves.
-                                    return result.hasPassed ? Promise.resolve() : Promise.reject(new Error());
-                                }),
-                            title: requirement.title
-                        });
-                    }
-
-                    return subTasks;
-                },
-                title: rootTaskTitle
-            },
-            {
-                rendererOptions: {
-                    collapseSubtasks: false,
-                    collapseErrors: false,
-                    formatOutput: 'wrap'
-                }
-            }
-        );
-
-        try {
-            await requirementTasks.run();
-        } catch (error) {
-            return Promise.reject(
-                new SfError(messages.getMessage('error:unexpected', [(error as Error).message]), 'lwc-dev-mobile-core')
-            );
-        }
-
-        // Check if any requirements failed and throw appropriate error
-        if (!testResult.hasMetAllRequirements) {
-            return Promise.reject(
-                new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
-                    messages.getMessage('error:requirementCheckFailed:recommendation')
-                ])
-            );
-        }
-
-        if (!headless) {
-            // Log summary when NOT in headless mode (interactive mode)
+            // Log summary for interactive mode
             const logger = new Logger('RequirementProcessor');
             logger.info(
                 `Requirements check completed in ${RequirementProcessor.formatDurationAsSeconds(totalDuration)}`
@@ -249,6 +232,15 @@ export class RequirementProcessor {
                     logger.error(`  ${test.message}`);
                 }
             }
+        }
+
+        // Common error handling: throw error if any requirements failed
+        if (!testResult.hasMetAllRequirements) {
+            return Promise.reject(
+                new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
+                    messages.getMessage('error:requirementCheckFailed:recommendation')
+                ])
+            );
         }
 
         return testResult;
