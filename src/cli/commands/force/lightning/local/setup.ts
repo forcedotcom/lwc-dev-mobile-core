@@ -46,7 +46,7 @@ export class Setup extends BaseCommand {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         requirements.setup = CommandLineUtils.platformFlagIsAndroid(platform)
             ? new AndroidEnvironmentRequirements(this.logger, apiLevel)
-            : new IOSEnvironmentRequirements(this.logger);
+            : new IOSEnvironmentRequirements(this.logger, apiLevel);
 
         // eslint-disable-next-line no-underscore-dangle
         this.commandRequirements = requirements;

@@ -50,7 +50,42 @@ describe('Setup Tests', () => {
     });
 
     it('Checks that Setup will validate API Level flag for Android platform', async () => {
-        await Setup.run(['-p', 'ios', '-l', '1.2.3']);
+        await Setup.run(['-p', 'android', '-l', '33']);
+        expect(executeSetupMock.calledOnce).to.be.true;
+    });
+
+    it('Should execute successfully with apiLevel for iOS platform', async () => {
+        await Setup.run(['-p', 'ios', '-l', '16.0']);
+        expect(executeSetupMock.calledOnce).to.be.true;
+    });
+
+    it('Should execute successfully with apiLevel for Android platform', async () => {
+        await Setup.run(['-p', 'android', '-l', '33']);
+        expect(executeSetupMock.calledOnce).to.be.true;
+    });
+
+    it('Should execute successfully without apiLevel for iOS', async () => {
+        await Setup.run(['-p', 'ios']);
+        expect(executeSetupMock.calledOnce).to.be.true;
+    });
+
+    it('Should execute successfully without apiLevel for Android', async () => {
+        await Setup.run(['-p', 'android']);
+        expect(executeSetupMock.calledOnce).to.be.true;
+    });
+
+    it('Should validate valid API Level format', async () => {
+        await Setup.run(['-p', 'ios', '-l', '16.4.1']);
+        expect(executeSetupMock.calledOnce).to.be.true;
+    });
+
+    it('Should validate semantic version format for API Level', async () => {
+        await Setup.run(['-p', 'ios', '-l', '17.0']);
+        expect(executeSetupMock.calledOnce).to.be.true;
+    });
+
+    it('Should validate single digit API Level', async () => {
+        await Setup.run(['-p', 'android', '-l', '34']);
         expect(executeSetupMock.calledOnce).to.be.true;
     });
 
