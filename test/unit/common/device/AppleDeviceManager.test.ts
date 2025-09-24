@@ -11,6 +11,7 @@ import { CommonUtils } from '../../../../src/common/CommonUtils.js';
 import { AppleDeviceManager } from '../../../../src/common/device/AppleDeviceManager.js';
 import { AppleOSType } from '../../../../src/common/device/AppleDevice.js';
 import { Version } from '../../../../src/common/Common.js';
+import { DeviceState } from '../../../../src/common/device/BaseDevice.js';
 import { AppleMockData } from './AppleMockData.js';
 
 describe('AppleDeviceManager tests', () => {
@@ -68,6 +69,16 @@ describe('AppleDeviceManager tests', () => {
         stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
         const results = await appleDeviceManager.enumerateDevices();
         expect(results.length === 4).to.be.true;
+
+        results.forEach((device) => {
+            let state = DeviceState.Shutdown;
+            if (device.id === '5D6ED992-29C3-43CC-8F94-3F8003B8494F') {
+                state = DeviceState.Booted;
+            } else if (device.id === '9826FDA1-7800-423C-9EC3-822FBF543C3B') {
+                state = DeviceState.Booting;
+            }
+            expect(device.state).to.be.equal(state);
+        });
     });
 
     it('Should enumerate devices using custom filtering', async () => {

@@ -11,7 +11,7 @@ import { CommonUtils } from '../../../src/common/CommonUtils.js';
 import { AndroidLauncher } from '../../../src/common/AndroidLauncher.js';
 import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
 import { AndroidDeviceManager } from '../../../src/common/device/AndroidDeviceManager.js';
-import { DeviceType } from '../../../src/common/device/BaseDevice.js';
+import { DeviceType, DeviceState } from '../../../src/common/device/BaseDevice.js';
 import { AndroidDevice, AndroidOSType } from '../../../src/common/device/AndroidDevice.js';
 import { Version } from '../../../src/common/Common.js';
 
@@ -25,7 +25,8 @@ describe('Android Launcher tests', () => {
         DeviceType.mobile,
         AndroidOSType.googleAPIs,
         new Version(31, 0, 0),
-        false
+        false,
+        DeviceState.Shutdown
     );
     const launcher = new AndroidLauncher(mockDevice.name);
 

@@ -13,7 +13,7 @@ import { Version } from '../Common.js';
 import { CommonUtils } from '../CommonUtils.js';
 import { CryptoUtils, SSLCertificateData } from '../CryptoUtils.js';
 import { IOSUtils } from '../IOSUtils.js';
-import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
+import { BaseDevice, DeviceState, DeviceType, LaunchArgument } from './BaseDevice.js';
 
 export type AppleDeviceType = {
     bundlePath: string; // e.g: /Library/Developer/CoreSimulator/Profiles/DeviceTypes/iPhone 16 Pro.simdevicetype
@@ -52,6 +52,7 @@ export class AppleDevice implements BaseDevice {
     public readonly deviceType: DeviceType;
     public readonly osType: string;
     public readonly osVersion: string | Version;
+    public readonly state: DeviceState;
 
     public constructor(
         id: string,
@@ -59,6 +60,7 @@ export class AppleDevice implements BaseDevice {
         deviceType: DeviceType,
         osType: string,
         osVersion: Version,
+        state: DeviceState,
         logger?: Logger
     ) {
         this.id = id;
@@ -66,14 +68,15 @@ export class AppleDevice implements BaseDevice {
         this.deviceType = deviceType;
         this.osType = osType;
         this.osVersion = osVersion;
+        this.state = state;
         this.logger = logger;
     }
 
     /**
-     * A string representation of an AppleDevice which includes Device Name, OS Type, OS Version, and udid
+     * A string representation of an AppleDevice which includes Device Name, OS Type, OS Version, udid and state
      */
     public toString(): string {
-        return `${this.name}, ${this.osType} ${this.osVersion.toString()}, ${this.id}`;
+        return `${this.name}, ${this.osType} ${this.osVersion.toString()}, ${this.id}, ${this.state}`;
     }
 
     /**

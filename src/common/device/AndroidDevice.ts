@@ -14,7 +14,7 @@ import { AndroidUtils } from '../AndroidUtils.js';
 import { Version } from '../Common.js';
 import { CryptoUtils, SSLCertificateData } from '../CryptoUtils.js';
 import { CommonUtils } from '../CommonUtils.js';
-import { BaseDevice, DeviceType, LaunchArgument } from './BaseDevice.js';
+import { BaseDevice, DeviceState, DeviceType, LaunchArgument } from './BaseDevice.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -42,7 +42,7 @@ export class AndroidDevice implements BaseDevice {
     public readonly osType: string;
     public readonly osVersion: string | Version;
     public readonly isPlayStore: boolean;
-
+    public readonly state: DeviceState;
     private port: number = -1;
 
     public constructor(
@@ -52,6 +52,7 @@ export class AndroidDevice implements BaseDevice {
         osType: string,
         osVersion: Version | string,
         isPlayStore: boolean,
+        state: DeviceState,
         logger?: Logger
     ) {
         this.id = id;
@@ -60,14 +61,15 @@ export class AndroidDevice implements BaseDevice {
         this.osType = osType;
         this.osVersion = osVersion;
         this.isPlayStore = isPlayStore;
+        this.state = state;
         this.logger = logger;
     }
 
     /**
-     * A string representation of an AppleDevice which includes Device Name, OS Type, and OS Version
+     * A string representation of an AppleDevice which includes Device Name, OS Type, OS Version and state
      */
     public toString(): string {
-        return `${this.name}, ${this.osType} ${this.osVersion.toString()}`;
+        return `${this.name}, ${this.osType} ${this.osVersion.toString()}, ${this.state}`;
     }
 
     public emulatorPort(): number {

@@ -14,7 +14,7 @@ import { AndroidSDKRootSource, AndroidUtils } from '../../../../src/common/Andro
 import { CommonUtils } from '../../../../src/common/CommonUtils.js';
 import { AndroidMockData } from '../AndroidMockData.js';
 import { AndroidDevice, AndroidOSType, BootMode } from '../../../../src/common/device/AndroidDevice.js';
-import { DeviceType } from '../../../../src/common/device/BaseDevice.js';
+import { DeviceType, DeviceState } from '../../../../src/common/device/BaseDevice.js';
 import { Version } from '../../../../src/common/Common.js';
 
 describe('AndroidDevice', () => {
@@ -54,7 +54,8 @@ describe('AndroidDevice', () => {
                   DeviceType.mobile,
                   AndroidOSType.googleAPIs,
                   new Version(31, 0, 0),
-                  false
+                  false,
+                  DeviceState.Shutdown
               )
             : new AndroidDevice(
                   'Pixel_4_XL_API_29',
@@ -62,7 +63,8 @@ describe('AndroidDevice', () => {
                   DeviceType.mobile,
                   AndroidOSType.googleAPIs,
                   new Version(29, 0, 0),
-                  false
+                  false,
+                  DeviceState.Shutdown
               );
 
         stubMethod($$.SANDBOX, CommonUtils, 'delay').returns(Promise.resolve());
@@ -93,7 +95,8 @@ describe('AndroidDevice', () => {
             DeviceType.mobile,
             AndroidOSType.googleAPIs,
             new Version(28, 0, 0),
-            false
+            false,
+            DeviceState.Shutdown
         );
         await anotherMockDevice.boot();
         expect(anotherMockDevice.emulatorPort()).to.be.equal(5574);
@@ -119,5 +122,18 @@ describe('AndroidDevice', () => {
 
         await mockDevice.mountAsRootWritableSystem();
         expect(mockDevice.emulatorPort()).to.be.equal(5572);
+    });
+
+    it('toString should return the correct string', async () => {
+        const device = new AndroidDevice(
+            'Pixel_5_API_31',
+            'Pixel 5 API 31',
+            DeviceType.mobile,
+            AndroidOSType.googleAPIs,
+            new Version(31, 0, 0),
+            false,
+            DeviceState.Shutdown
+        );
+        expect(device.toString()).to.be.equal('Pixel 5 API 31, google apis 31.0.0, Shutdown');
     });
 });

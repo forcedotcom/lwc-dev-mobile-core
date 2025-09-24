@@ -13,7 +13,7 @@ import { CaseInsensitiveStringMap, Version } from '../Common.js';
 import { CommonUtils } from '../CommonUtils.js';
 import { PlatformConfig } from '../PlatformConfig.js';
 import { AndroidDevice, AndroidOSType } from './AndroidDevice.js';
-import { DeviceType } from './BaseDevice.js';
+import { DeviceState, DeviceType } from './BaseDevice.js';
 
 export class AndroidDeviceManager {
     private logger?: Logger;
@@ -96,7 +96,7 @@ export class AndroidDeviceManager {
             const command = `${AndroidUtils.getAvdManagerCommand()} list avd`;
             const result = await CommonUtils.executeCommandAsync(command, this.logger);
             if (result.stdout && result.stdout.length > 0) {
-                devices = this.parseEnumerationRawString(result.stdout);
+                devices = await this.parseEnumerationRawString(result.stdout);
             } else if (result.stderr && result.stderr.length > 0) {
                 this.logger?.warn(result.stderr);
             }
@@ -126,10 +126,12 @@ export class AndroidDeviceManager {
      * @returns An array of AndroidDevice objects containing information about the devices.
      */
     // eslint-disable-next-line complexity
-    private parseEnumerationRawString(rawString: string): AndroidDevice[] {
+    private async parseEnumerationRawString(rawString: string): Promise<AndroidDevice[]> {
         const avds = this.getAvdDefinitions(rawString);
         const results: AndroidDevice[] = [];
 
+        // First, collect all device info without async calls
+        const deviceInfos = [];
         for (const avd of avds) {
             const avdPath = avd.get('Path');
             const configINI = avdPath && path.join(avdPath, 'config.ini');
@@ -200,8 +202,38 @@ export class AndroidDeviceManager {
                         break;
                 }
 
-                results.push(new AndroidDevice(id, name, deviceType, targetType, apiVersion ?? targetAPI, isPlayStore));
+                deviceInfos.push({
+                    id,
+                    name,
+                    deviceType,
+                    targetType,
+                    apiVersion: apiVersion ?? targetAPI,
+                    isPlayStore
+                });
             }
+        }
+
+        // Then, check all emulator ports concurrently
+        const portChecks = deviceInfos.map((info) => AndroidUtils.emulatorHasPort(info.id, this.logger));
+        const ports = await Promise.all(portChecks);
+
+        // Finally, create devices with their states
+        for (let i = 0; i < deviceInfos.length; i++) {
+            const info = deviceInfos[i];
+            const port = ports[i];
+            const state = port ? DeviceState.Booted : DeviceState.Shutdown;
+
+            results.push(
+                new AndroidDevice(
+                    info.id,
+                    info.name,
+                    info.deviceType,
+                    info.targetType,
+                    info.apiVersion,
+                    info.isPlayStore,
+                    state
+                )
+            );
         }
 
         return results;

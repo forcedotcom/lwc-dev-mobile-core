@@ -15,19 +15,48 @@ import { AndroidOSType } from '../../../../src/common/device/AndroidDevice.js';
 import { Version } from '../../../../src/common/Common.js';
 import { AndroidMockData } from '../AndroidMockData.js';
 import { AndroidUtils } from '../../../../src/common/AndroidUtils.js';
+import { DeviceState } from '../../../../src/common/device/BaseDevice.js';
 
 describe('AndroidDeviceManager tests', () => {
     const $$ = new TestContext();
     const androidDeviceManager = new AndroidDeviceManager();
+    const bootedDeviceId = 'Pixel_5_API_31';
 
-    const myCommandRouterBlock = (command: string): Promise<{ stdout: string; stderr: string }> =>
-        Promise.resolve({
-            stderr: '',
-            stdout: command.endsWith('avdmanager list avd') ? AndroidMockData.avdList : ''
-        });
+    const myCommandRouterBlock = (command: string): Promise<{ stdout: string; stderr: string }> => {
+        if (command.endsWith('avdmanager list avd')) {
+            return Promise.resolve({
+                stderr: '',
+                stdout: AndroidMockData.avdList
+            });
+        } else if (command.includes('adb devices')) {
+            // Mock ADB devices output showing one emulator running on port 5572
+            return Promise.resolve({
+                stderr: '',
+                stdout: 'List of devices attached\nemulator-5572\tdevice\n'
+            });
+        } else {
+            return Promise.resolve({
+                stderr: '',
+                stdout: ''
+            });
+        }
+    };
 
     beforeEach(() => {
         stubMethod($$.SANDBOX, AndroidUtils, 'getAvdManagerCommand').returns('avdmanager');
+        stubMethod($$.SANDBOX, AndroidUtils, 'getAdbShellCommand').returns('adb');
+
+        // Stub fetchEmulatorNameFromPort to return the expected device name for port 5572
+        stubMethod($$.SANDBOX, AndroidUtils, 'fetchEmulatorNameFromPort').callsFake((port) => {
+            if (port === 5572) {
+                return Promise.resolve(bootedDeviceId);
+            } else {
+                return Promise.resolve('some_other_device');
+            }
+        });
+
+        // Stub ensureValidEmulatorAuthToken to avoid file system operations
+        stubMethod($$.SANDBOX, AndroidUtils, 'ensureValidEmulatorAuthToken').resolves();
 
         stubMethod($$.SANDBOX, fs, 'existsSync').callsFake((filePath) => !filePath.endsWith('config.ini'));
 
@@ -64,6 +93,9 @@ describe('AndroidDeviceManager tests', () => {
         stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake(myCommandRouterBlock);
         const devices = await androidDeviceManager.enumerateDevices(null);
         expect(devices.length).to.be.equal(8);
+        devices.forEach((device) => {
+            expect(device.state).to.be.equal(device.id === bootedDeviceId ? DeviceState.Booted : DeviceState.Shutdown);
+        });
     });
 
     it('Should enumerate devices using default filtering', async () => {

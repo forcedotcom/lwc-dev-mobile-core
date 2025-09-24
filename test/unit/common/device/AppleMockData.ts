@@ -154,7 +154,7 @@ export class AppleMockData {
                     udid: '9826FDA1-7800-423C-9EC3-822FBF543C3B',
                     isAvailable: true,
                     deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro',
-                    state: 'Shutdown',
+                    state: 'Booting',
                     name: 'iPhone 15 Pro'
                 },
                 {
@@ -164,7 +164,7 @@ export class AppleMockData {
                     udid: '5D6ED992-29C3-43CC-8F94-3F8003B8494F',
                     isAvailable: true,
                     deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4-8GB',
-                    state: 'Shutdown',
+                    state: 'Booted',
                     name: 'iPad Pro 13-inch (M4)'
                 }
             ],

@@ -36,6 +36,7 @@ export type BaseDevice = {
     readonly deviceType: DeviceType;
     readonly osType: string;
     readonly osVersion: Version | string;
+    readonly state: DeviceState;
 
     toString(): string;
 
@@ -49,3 +50,15 @@ export type BaseDevice = {
     isCertInstalled(certData: SSLCertificateData): Promise<boolean>;
     installCert(certData: SSLCertificateData): Promise<void>;
 };
+
+/**
+ * The state of the device.
+ */
+export enum DeviceState {
+    // The simulator device is in the process of starting up
+    Booting = 'Booting',
+    // The simulator device is fully booted and ready to use
+    Booted = 'Booted',
+    // The simulator device is not running
+    Shutdown = 'Shutdown'
+}

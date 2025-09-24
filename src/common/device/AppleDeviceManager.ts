@@ -10,7 +10,7 @@ import { Version } from '../Common.js';
 import { CommonUtils } from '../CommonUtils.js';
 import { PlatformConfig } from '../PlatformConfig.js';
 import { AppleDevice, AppleOSType, AppleRuntime } from './AppleDevice.js';
-import { DeviceType } from './BaseDevice.js';
+import { DeviceState, DeviceType } from './BaseDevice.js';
 
 export class AppleDeviceManager {
     private logger?: Logger;
@@ -186,8 +186,20 @@ export class AppleDeviceManager {
 
                     const osVersion = Version.from(runtimeDefinition.version);
 
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const stateString = runtimeDevice.state as string;
+                    let state = DeviceState.Shutdown;
+                    switch (stateString) {
+                        case 'Booted':
+                            state = DeviceState.Booted;
+                            break;
+                        case 'Booting':
+                            state = DeviceState.Booting;
+                            break;
+                    }
+
                     if (id && name && osVersion) {
-                        results.push(new AppleDevice(id, name, deviceType, osType, osVersion, this.logger));
+                        results.push(new AppleDevice(id, name, deviceType, osType, osVersion, state, this.logger));
                     }
                 }
             }
