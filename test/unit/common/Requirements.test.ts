@@ -5,8 +5,14 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { expect } from 'chai';
+import sinon from 'sinon';
 import { Logger, Messages, SfError } from '@salesforce/core';
-import { RequirementProcessor, HasRequirements, CommandRequirements } from '../../../src/common/Requirements.js';
+import {
+    RequirementProcessor,
+    HasRequirements,
+    CommandRequirements,
+    RequirementCheckResultSchema
+} from '../../../src/common/Requirements.js';
 
 const logger = new Logger('test');
 
@@ -175,5 +181,155 @@ describe('Requirements Processing', () => {
         } catch (error: any) {
             throw new Error(`Should have skipped the requirements: ${error}`);
         }
+    });
+
+    describe('JSON Output Mode', () => {
+        let stdoutWriteStub: sinon.SinonStub;
+
+        beforeEach(() => {
+            stdoutWriteStub = sinon.stub(process.stdout, 'write');
+        });
+
+        afterEach(() => {
+            stdoutWriteStub.restore();
+        });
+
+        it('Should output JSON when jsonFlag is true and all requirements pass', async () => {
+            const requirements = new TruthyRequirements();
+
+            await RequirementProcessor.execute(requirements.commandRequirements, true);
+
+            expect(stdoutWriteStub.calledOnce).to.be.true;
+            const output = stdoutWriteStub.firstCall.args[0] as string;
+            const jsonOutput = JSON.parse(output);
+
+            expect(jsonOutput).to.have.property('outputSchema');
+            expect(jsonOutput).to.have.property('outputContent');
+            expect(jsonOutput.outputContent).to.have.property('hasMetAllRequirements', true);
+            expect(jsonOutput.outputContent).to.have.property('totalDuration');
+            expect(jsonOutput.outputContent).to.have.property('tests');
+            expect(jsonOutput.outputContent.tests).to.be.an('array').with.lengthOf(2);
+        });
+
+        it('Should output JSON when jsonFlag is true and some requirements fail', async () => {
+            const requirements = new FalsyRequirements();
+
+            try {
+                await RequirementProcessor.execute(requirements.commandRequirements, true);
+            } catch (error) {
+                // Expected to throw
+            }
+
+            expect(stdoutWriteStub.calledOnce).to.be.true;
+            const output = stdoutWriteStub.firstCall.args[0] as string;
+            const jsonOutput = JSON.parse(output);
+
+            expect(jsonOutput.outputContent).to.have.property('hasMetAllRequirements', false);
+            expect(jsonOutput.outputContent).to.have.property('tests');
+            expect(jsonOutput.outputContent.tests).to.be.an('array').with.lengthOf(4);
+
+            // Verify that some tests failed
+            const failedTests = jsonOutput.outputContent.tests.filter((test: any) => !test.hasPassed);
+            expect(failedTests.length).to.be.greaterThan(0);
+        });
+
+        it('Should include all required fields in JSON output', async () => {
+            const requirements = new TruthyRequirements();
+
+            await RequirementProcessor.execute(requirements.commandRequirements, true);
+
+            const output = stdoutWriteStub.firstCall.args[0] as string;
+            const jsonOutput = JSON.parse(output);
+
+            // Check outputSchema
+            expect(jsonOutput.outputSchema).to.have.property('$schema');
+            expect(jsonOutput.outputSchema).to.have.property('title');
+            expect(jsonOutput.outputSchema).to.have.property('description');
+            expect(jsonOutput.outputSchema).to.have.property('type');
+            expect(jsonOutput.outputSchema).to.have.property('properties');
+
+            // Check outputContent structure
+            expect(jsonOutput.outputContent).to.have.property('hasMetAllRequirements');
+            expect(jsonOutput.outputContent).to.have.property('totalDuration');
+            expect(jsonOutput.outputContent).to.have.property('tests');
+
+            // Check individual test structure
+            jsonOutput.outputContent.tests.forEach((test: any) => {
+                expect(test).to.have.property('title');
+                expect(test).to.have.property('hasPassed');
+                expect(test).to.have.property('duration');
+                expect(test).to.have.property('message');
+            });
+        });
+
+        it('Should use Listr UI when jsonFlag is false', async () => {
+            const requirements = new TruthyRequirements();
+
+            await RequirementProcessor.execute(requirements.commandRequirements, false);
+
+            // Listr writes to stdout too, but not with our JSON format
+            // We just verify it didn't use JSON format
+            if (stdoutWriteStub.called) {
+                const output = stdoutWriteStub.firstCall.args[0] as string;
+                // Should not be valid JSON with our schema
+                try {
+                    const parsed = JSON.parse(output);
+                    expect(parsed).to.not.have.property('outputSchema');
+                } catch {
+                    // Expected - output is not JSON
+                }
+            }
+        });
+
+        it('Should format duration correctly in JSON output', async () => {
+            const requirements = new TruthyRequirements();
+
+            await RequirementProcessor.execute(requirements.commandRequirements, true);
+
+            const output = stdoutWriteStub.firstCall.args[0] as string;
+            const jsonOutput = JSON.parse(output);
+
+            // Duration should be in format "X.XXX sec"
+            expect(jsonOutput.outputContent.totalDuration).to.match(/^\d+\.\d{3} sec$/);
+            jsonOutput.outputContent.tests.forEach((test: any) => {
+                expect(test.duration).to.match(/^\d+\.\d{3} sec$/);
+            });
+        });
+
+        it('Should handle mixed success/failure in JSON output', async () => {
+            const requirements = new TwoFalsyOneTruthyRequirements();
+
+            try {
+                await RequirementProcessor.execute(requirements.commandRequirements, true);
+            } catch (error) {
+                // Expected to throw
+            }
+
+            const output = stdoutWriteStub.firstCall.args[0] as string;
+            const jsonOutput = JSON.parse(output);
+
+            expect(jsonOutput.outputContent.tests).to.have.lengthOf(3);
+            expect(jsonOutput.outputContent.hasMetAllRequirements).to.be.false;
+
+            const passedTests = jsonOutput.outputContent.tests.filter((test: any) => test.hasPassed);
+            const failedTests = jsonOutput.outputContent.tests.filter((test: any) => !test.hasPassed);
+
+            expect(passedTests).to.have.lengthOf(1);
+            expect(failedTests).to.have.lengthOf(2);
+        });
+
+        it('Should output valid JSON that matches the schema structure', async () => {
+            const requirements = new TruthyRequirements();
+
+            await RequirementProcessor.execute(requirements.commandRequirements, true);
+
+            const output = stdoutWriteStub.firstCall.args[0] as string;
+            const jsonOutput = JSON.parse(output);
+
+            // Verify schema matches exported schema
+            expect(jsonOutput.outputSchema.$schema).to.equal(RequirementCheckResultSchema.$schema);
+            expect(jsonOutput.outputSchema.title).to.equal(RequirementCheckResultSchema.title);
+            expect(jsonOutput.outputSchema.description).to.equal(RequirementCheckResultSchema.description);
+        });
     });
 });

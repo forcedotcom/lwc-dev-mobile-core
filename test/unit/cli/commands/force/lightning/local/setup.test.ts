@@ -98,4 +98,43 @@ describe('Setup Tests', () => {
     it('Messages folder should be loaded', async () => {
         expect(!Setup.summary).to.be.false;
     });
+
+    describe('JSON Flag Tests', () => {
+        it('Should pass jsonFlag=false to RequirementProcessor when --json is not provided', async () => {
+            await Setup.run(['-p', 'android']);
+            expect(executeSetupMock.calledOnce).to.be.true;
+            const callArgs = executeSetupMock.firstCall.args;
+            expect(callArgs).to.have.lengthOf(2);
+            expect(callArgs[1]).to.equal(false);
+        });
+
+        it('Should pass jsonFlag=true to RequirementProcessor when --json is provided', async () => {
+            await Setup.run(['-p', 'android', '--json']);
+            expect(executeSetupMock.calledOnce).to.be.true;
+            const callArgs = executeSetupMock.firstCall.args;
+            expect(callArgs).to.have.lengthOf(2);
+            expect(callArgs[1]).to.equal(true);
+        });
+
+        it('Should pass jsonFlag=true for iOS platform with --json', async () => {
+            await Setup.run(['-p', 'ios', '--json']);
+            expect(executeSetupMock.calledOnce).to.be.true;
+            const callArgs = executeSetupMock.firstCall.args;
+            expect(callArgs[1]).to.equal(true);
+        });
+
+        it('Should pass jsonFlag correctly with other flags', async () => {
+            await Setup.run(['-p', 'android', '-l', '33', '--json']);
+            expect(executeSetupMock.calledOnce).to.be.true;
+            const callArgs = executeSetupMock.firstCall.args;
+            expect(callArgs[1]).to.equal(true);
+        });
+
+        it('Should handle jsonFlag with API level for iOS', async () => {
+            await Setup.run(['-p', 'ios', '-l', '16.0', '--json']);
+            expect(executeSetupMock.calledOnce).to.be.true;
+            const callArgs = executeSetupMock.firstCall.args;
+            expect(callArgs[1]).to.equal(true);
+        });
+    });
 });
