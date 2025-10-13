@@ -157,7 +157,7 @@ export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(requirements: CommandRequirements, jsonFlag: boolean = false): Promise<void> {
+    public static async execute(requirements: CommandRequirements, outputAsJson: boolean = false): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -178,7 +178,7 @@ export class RequirementProcessor {
         }
 
         // JSON mode: Execute all requirements concurrently and output JSON
-        if (jsonFlag) {
+        if (outputAsJson) {
             try {
                 // Execute all WrappedPromise calls concurrently
                 const promises = enabledRequirements.map((requirement) => WrappedPromise(requirement));
