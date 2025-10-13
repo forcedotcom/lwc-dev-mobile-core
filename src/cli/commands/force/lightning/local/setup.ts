@@ -32,7 +32,8 @@ export class Setup extends BaseCommand {
     public async run(): Promise<void> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         this.logger.info(`Setup command called for ${this.flagValues.platform}`);
-        return RequirementProcessor.execute(this.commandRequirements);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+        return RequirementProcessor.execute(this.commandRequirements, this.flagValues.json);
     }
 
     protected populateCommandRequirements(): void {

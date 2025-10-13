@@ -44,6 +44,56 @@ export type HasRequirements = {
 };
 
 /**
+ * JSON Schema for RequirementCheckResult
+ * Defines the structure of the JSON output when using the --json flag
+ */
+export const RequirementCheckResultSchema = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'RequirementCheckResult',
+    description: 'Result of requirement checks execution',
+    type: 'object',
+    properties: {
+        hasMetAllRequirements: {
+            type: 'boolean',
+            description: 'Whether all requirements have been met'
+        },
+        totalDuration: {
+            type: 'string',
+            description: 'Total duration of all requirement checks in seconds'
+        },
+        tests: {
+            type: 'array',
+            description: 'Array of individual requirement check results',
+            items: {
+                type: 'object',
+                properties: {
+                    title: {
+                        type: 'string',
+                        description: 'Title/name of the requirement check'
+                    },
+                    hasPassed: {
+                        type: 'boolean',
+                        description: 'Whether this individual requirement check passed'
+                    },
+                    duration: {
+                        type: 'string',
+                        description: 'Duration of this individual check in seconds'
+                    },
+                    message: {
+                        type: 'string',
+                        description: 'Detailed message about the check result'
+                    }
+                },
+                required: ['title', 'hasPassed', 'message'],
+                additionalProperties: false
+            }
+        }
+    },
+    required: ['hasMetAllRequirements', 'tests'],
+    additionalProperties: false
+};
+
+/**
  * This function wraps existing promises with the intention to allow the collection of promises
  * to settle when used in conjunction with Promise.all(). Promise.all() by default executes until the first
  * rejection. We are looking for the equivalent of Promise.allSettled() which is scheduled for ES2020.
@@ -107,7 +157,7 @@ export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(requirements: CommandRequirements): Promise<void> {
+    public static async execute(requirements: CommandRequirements, outputAsJson: boolean = false): Promise<void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -127,6 +177,56 @@ export class RequirementProcessor {
             return Promise.resolve();
         }
 
+        // JSON mode: Execute all requirements concurrently and output JSON
+        if (outputAsJson) {
+            try {
+                // Execute all WrappedPromise calls concurrently
+                const promises = enabledRequirements.map((requirement) => WrappedPromise(requirement));
+                const results = await Promise.all(promises);
+
+                // Process results
+                results.forEach((result) => {
+                    testResult.tests.push(result);
+                    if (!result.hasPassed) {
+                        testResult.hasMetAllRequirements = false;
+                    }
+                    totalDuration += result.duration;
+                });
+
+                // Output JSON result with schema information
+                process.stdout.write(
+                    JSON.stringify(
+                        {
+                            outputSchema: RequirementCheckResultSchema,
+
+                            outputContent: {
+                                hasMetAllRequirements: testResult.hasMetAllRequirements,
+                                totalDuration: RequirementProcessor.formatDurationAsSeconds(totalDuration),
+                                tests: testResult.tests.map((test) => ({
+                                    title: test.title,
+                                    hasPassed: test.hasPassed,
+                                    duration: RequirementProcessor.formatDurationAsSeconds(test.duration),
+                                    message: test.message
+                                }))
+                            }
+                        },
+                        null,
+                        2
+                    )
+                );
+
+                return await Promise.resolve();
+            } catch (error) {
+                return Promise.reject(
+                    new SfError(
+                        messages.getMessage('error:unexpected', [(error as Error).message]),
+                        'lwc-dev-mobile-core'
+                    )
+                );
+            }
+        }
+
+        // Default mode: Use Listr for interactive UI
         const rootTaskTitle = messages.getMessage('rootTaskTitle');
         const requirementTasks = new Listr(
             {
