@@ -150,10 +150,6 @@ export class RequirementProcessor {
             }
         });
 
-        if (enabledRequirements.length === 0) {
-            return Promise.resolve();
-        }
-
         // JSON mode: Execute all requirements concurrently and output JSON
         if (outputAsJson) {
             try {
@@ -183,13 +179,15 @@ export class RequirementProcessor {
 
                 return finalResult;
             } catch (error) {
-                return Promise.reject(
-                    new SfError(
-                        messages.getMessage('error:unexpected', [(error as Error).message]),
-                        'lwc-dev-mobile-core'
-                    )
+                throw new SfError(
+                    messages.getMessage('error:unexpected', [(error as Error).message]),
+                    'lwc-dev-mobile-core'
                 );
             }
+        }
+
+        if (enabledRequirements.length === 0) {
+            return;
         }
 
         // Default mode: Use Listr for interactive UI
@@ -249,20 +247,19 @@ export class RequirementProcessor {
         try {
             await requirementTasks.run();
         } catch (error) {
-            return Promise.reject(
-                new SfError(messages.getMessage('error:unexpected', [(error as Error).message]), 'lwc-dev-mobile-core')
+            throw new SfError(
+                messages.getMessage('error:unexpected', [(error as Error).message]),
+                'lwc-dev-mobile-core'
             );
         }
 
         if (!testResult.hasMetAllRequirements) {
-            return Promise.reject(
-                new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
-                    messages.getMessage('error:requirementCheckFailed:recommendation')
-                ])
-            );
+            throw new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
+                messages.getMessage('error:requirementCheckFailed:recommendation')
+            ]);
         }
 
-        return Promise.resolve();
+        return;
     }
 
     private static getFormattedTitle(testCaseResult: RequirementResult): string {

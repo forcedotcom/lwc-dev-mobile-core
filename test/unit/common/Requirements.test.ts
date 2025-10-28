@@ -305,6 +305,30 @@ describe('Requirements Processing', () => {
             expect(failedTests).to.have.lengthOf(2);
         });
 
+        it('Should return correct result when non requirements is enabled in JSON output', async () => {
+            const requirements = new TruthyRequirements();
+
+            requirements.commandRequirements.baseRequirements.enabled = false;
+
+            const result = (await RequirementProcessor.execute(
+                requirements.commandRequirements,
+                true
+            )) as any as RequirementCheckResultType;
+
+            expect(result.tests).to.have.lengthOf(0);
+            expect(result.hasMetAllRequirements).to.be.true;
+        });
+
+        it('Should return correct result when non requirements is enabled in cli output', async () => {
+            const requirements = new TruthyRequirements();
+
+            requirements.commandRequirements.baseRequirements.enabled = false;
+
+            const result = await RequirementProcessor.execute(requirements.commandRequirements, false);
+
+            expect(result).to.be.undefined;
+        });
+
         it('Should output valid JSON that matches the schema structure', async () => {
             const requirements = new TruthyRequirements();
 
