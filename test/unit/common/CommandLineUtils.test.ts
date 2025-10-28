@@ -6,7 +6,7 @@
  */
 import { Messages } from '@salesforce/core';
 import { expect } from 'chai';
-import { FlagsConfigType } from '../../../src/common/Common.js';
+import { FlagsConfigType, OutputFormat } from '../../../src/common/Common.js';
 import { CommandLineUtils } from '../../../src/common/CommandLineUtils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -102,5 +102,7 @@ describe('Commons utils tests', () => {
         );
 
         expect(requiredKeyValuePair![1]).to.be.false;
+
+        expect(outputFormatFlagConfig.outputFormat?.default).to.be.equal(OutputFormat.cli);
     });
 });

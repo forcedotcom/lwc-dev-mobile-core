@@ -104,6 +104,7 @@ export enum Platform {
 }
 
 export enum OutputFormat {
+    cli = 'cli',
     api = 'api'
 }
 

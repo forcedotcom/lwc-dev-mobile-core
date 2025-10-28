@@ -102,7 +102,8 @@ export class CommandLineUtils {
                     outputFormat: Flags.option({
                         char: 'f',
                         description: messages.getMessage('outputFormatFlagDescription'),
-                        options: [OutputFormat.api] as const
+                        options: [OutputFormat.cli, OutputFormat.api] as const,
+                        default: OutputFormat.cli
                     })({ required: isRequired })
                 };
         }

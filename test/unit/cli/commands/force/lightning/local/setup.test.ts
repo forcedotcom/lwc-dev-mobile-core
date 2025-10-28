@@ -197,5 +197,21 @@ describe('Setup Tests', () => {
 
             expect(parsedOutput.outputContent).to.deep.equal(sampleCheckResult);
         });
+
+        it('Should print correct result JSON to process.stdout for outputformat=cli and --json', async () => {
+            executeSetupMock.resolves(Promise.resolve(sampleCheckResult));
+            const stdoutSpy = stubMethod($$.SANDBOX, process.stdout, 'write');
+
+            await Setup.run(['-p', 'android', '-f', 'api', '--json']);
+
+            expect(stdoutSpy.calledOnce).to.be.true;
+            const output = stdoutSpy.firstCall.args[0] as string;
+            const parsedOutput = JSON.parse(output);
+
+            expect(parsedOutput).to.have.property('outputSchema');
+            expect(parsedOutput).to.have.property('outputContent');
+
+            expect(parsedOutput.outputContent).to.deep.equal(sampleCheckResult);
+        });
     });
 });

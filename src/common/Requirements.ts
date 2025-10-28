@@ -133,7 +133,7 @@ export class RequirementProcessor {
      */
     public static async execute(
         requirements: CommandRequirements,
-        jsonEnabled: boolean = false
+        outputAsJson: boolean = false
     ): Promise<RequirementCheckResultType | void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
@@ -155,7 +155,7 @@ export class RequirementProcessor {
         }
 
         // JSON mode: Execute all requirements concurrently and output JSON
-        if (jsonEnabled) {
+        if (outputAsJson) {
             try {
                 // Execute all WrappedPromise calls concurrently
                 const promises = enabledRequirements.map((requirement) => WrappedPromise(requirement));
@@ -181,7 +181,7 @@ export class RequirementProcessor {
                     }))
                 };
 
-                return await Promise.resolve(finalResult);
+                return finalResult;
             } catch (error) {
                 return Promise.reject(
                     new SfError(
