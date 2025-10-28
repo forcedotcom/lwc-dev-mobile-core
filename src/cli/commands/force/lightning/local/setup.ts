@@ -36,16 +36,14 @@ export class Setup extends BaseCommand {
 
     protected _commandName = 'force:lightning:local:setup';
 
+    protected static override getOutputSchema(): z.ZodTypeAny | undefined {
+        return RequirementCheckResultSchema;
+    }
+
     public async run(): Promise<RequirementCheckResultType | void> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         this.logger.info(`Setup command called for ${this.flagValues.platform}`);
         return RequirementProcessor.execute(this.commandRequirements, this.jsonEnabled());
-    }
-
-    // eslint-disable-next-line class-methods-use-this
-    protected override getOutputSchema<TSchema extends z.ZodTypeAny>(): TSchema | undefined {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-        return RequirementCheckResultSchema as any;
     }
 
     protected populateCommandRequirements(): void {

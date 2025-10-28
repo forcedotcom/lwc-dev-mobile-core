@@ -50,6 +50,10 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
         this.cmdRequirements = value;
     }
 
+    protected static getOutputSchema(): z.ZodTypeAny | undefined {
+        return undefined;
+    }
+
     public async init(): Promise<void> {
         if (this.logger) {
             // already initialized
@@ -83,7 +87,7 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
      */
     public logJson(json: SfCommand.Json<unknown>): void {
         let output: string = '';
-        const outputSchema = this.getOutputSchema();
+        const outputSchema = (this.constructor as typeof BaseCommand).getOutputSchema();
         if (outputSchema) {
             // Validate the result against the schema
             const parsedResult = outputSchema.parse(json.result);
@@ -92,7 +96,7 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
             output = JSON.stringify({ outputContent: json.result }, null, 2);
         }
 
-        process.stdout.write(output);
+        process.stdout.write(output + '\n');
     }
 
     /**
@@ -106,12 +110,6 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return super.jsonEnabled() || outputFlag === OutputFormat.api;
-    }
-
-    // eslint-disable-next-line class-methods-use-this
-    protected getOutputSchema<TSchema extends z.ZodTypeAny>(): TSchema | undefined {
-        // override in child classes to return the
-        return undefined;
     }
 
     // eslint-disable-next-line class-methods-use-this
