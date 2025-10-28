@@ -5,12 +5,18 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Messages } from '@salesforce/core';
+import { z } from 'zod/v4';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements.js';
 import { BaseCommand } from '../../../../../common/BaseCommand.js';
 import { FlagsConfigType } from '../../../../../common/Common.js';
 import { CommandLineUtils } from '../../../../../common/CommandLineUtils.js';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements.js';
-import { CommandRequirements, RequirementProcessor } from '../../../../../common/Requirements.js';
+import {
+    CommandRequirements,
+    RequirementProcessor,
+    RequirementCheckResultSchema,
+    RequirementCheckResultType
+} from '../../../../../common/Requirements.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'setup');
@@ -22,6 +28,7 @@ export class Setup extends BaseCommand {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     public static readonly flags = {
         ...CommandLineUtils.createFlag(FlagsConfigType.JsonFlag, false),
+        ...CommandLineUtils.createFlag(FlagsConfigType.OutputFormatFlag, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.LogLevelFlag, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.ApiLevelFlag, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.PlatformFlag, true)
@@ -29,11 +36,16 @@ export class Setup extends BaseCommand {
 
     protected _commandName = 'force:lightning:local:setup';
 
-    public async run(): Promise<void> {
+    public async run(): Promise<RequirementCheckResultType | void> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         this.logger.info(`Setup command called for ${this.flagValues.platform}`);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
-        return RequirementProcessor.execute(this.commandRequirements, this.flagValues.json);
+        return RequirementProcessor.execute(this.commandRequirements, this.jsonEnabled());
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected override getOutputSchema<TSchema extends z.ZodTypeAny>(): TSchema | undefined {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+        return RequirementCheckResultSchema as any;
     }
 
     protected populateCommandRequirements(): void {

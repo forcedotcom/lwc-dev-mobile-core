@@ -8,6 +8,7 @@ import { performance, PerformanceObserver } from 'node:perf_hooks';
 import { Logger, Messages, SfError } from '@salesforce/core';
 import chalk from 'chalk';
 import { Listr } from 'listr2';
+import { z } from 'zod/v4';
 import { PerformanceMarkers } from './PerformanceMarkers.js';
 export type CheckRequirementsFunc = () => Promise<string | undefined>;
 
@@ -44,54 +45,27 @@ export type HasRequirements = {
 };
 
 /**
- * JSON Schema for RequirementCheckResult
+ * Zod Schema for RequirementCheckResult
  * Defines the structure of the JSON output when using the --json flag
  */
-export const RequirementCheckResultSchema = {
-    $schema: 'http://json-schema.org/draft-07/schema#',
-    title: 'RequirementCheckResult',
-    description: 'Result of requirement checks execution',
-    type: 'object',
-    properties: {
-        hasMetAllRequirements: {
-            type: 'boolean',
-            description: 'Whether all requirements have been met'
-        },
-        totalDuration: {
-            type: 'string',
-            description: 'Total duration of all requirement checks in seconds'
-        },
-        tests: {
-            type: 'array',
-            description: 'Array of individual requirement check results',
-            items: {
-                type: 'object',
-                properties: {
-                    title: {
-                        type: 'string',
-                        description: 'Title/name of the requirement check'
-                    },
-                    hasPassed: {
-                        type: 'boolean',
-                        description: 'Whether this individual requirement check passed'
-                    },
-                    duration: {
-                        type: 'string',
-                        description: 'Duration of this individual check in seconds'
-                    },
-                    message: {
-                        type: 'string',
-                        description: 'Detailed message about the check result'
-                    }
-                },
-                required: ['title', 'hasPassed', 'message'],
-                additionalProperties: false
-            }
-        }
-    },
-    required: ['hasMetAllRequirements', 'tests'],
-    additionalProperties: false
-};
+const RequirementResultItemSchema = z
+    .object({
+        title: z.string().describe('Title/name of the requirement check'),
+        hasPassed: z.boolean().describe('Whether this individual requirement check passed'),
+        duration: z.string().optional().describe('Duration of this individual check in seconds'),
+        message: z.string().describe('Detailed message about the check result')
+    })
+    .strict();
+
+export const RequirementCheckResultSchema = z
+    .object({
+        hasMetAllRequirements: z.boolean().describe('Whether all requirements have been met'),
+        totalDuration: z.string().optional().describe('Total duration of all requirement checks in seconds'),
+        tests: z.array(RequirementResultItemSchema).describe('Array of individual requirement check results')
+    })
+    .strict();
+
+export type RequirementCheckResultType = z.infer<typeof RequirementCheckResultSchema>;
 
 /**
  * This function wraps existing promises with the intention to allow the collection of promises
@@ -157,7 +131,10 @@ export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(requirements: CommandRequirements, outputAsJson: boolean = false): Promise<void> {
+    public static async execute(
+        requirements: CommandRequirements,
+        jsonEnabled: boolean = false
+    ): Promise<RequirementCheckResultType | void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -178,7 +155,7 @@ export class RequirementProcessor {
         }
 
         // JSON mode: Execute all requirements concurrently and output JSON
-        if (outputAsJson) {
+        if (jsonEnabled) {
             try {
                 // Execute all WrappedPromise calls concurrently
                 const promises = enabledRequirements.map((requirement) => WrappedPromise(requirement));
@@ -193,29 +170,18 @@ export class RequirementProcessor {
                     totalDuration += result.duration;
                 });
 
-                // Output JSON result with schema information
-                process.stdout.write(
-                    JSON.stringify(
-                        {
-                            outputSchema: RequirementCheckResultSchema,
+                const finalResult = {
+                    hasMetAllRequirements: testResult.hasMetAllRequirements,
+                    totalDuration: RequirementProcessor.formatDurationAsSeconds(totalDuration),
+                    tests: testResult.tests.map((test) => ({
+                        title: test.title,
+                        hasPassed: test.hasPassed,
+                        duration: RequirementProcessor.formatDurationAsSeconds(test.duration),
+                        message: test.message
+                    }))
+                };
 
-                            outputContent: {
-                                hasMetAllRequirements: testResult.hasMetAllRequirements,
-                                totalDuration: RequirementProcessor.formatDurationAsSeconds(totalDuration),
-                                tests: testResult.tests.map((test) => ({
-                                    title: test.title,
-                                    hasPassed: test.hasPassed,
-                                    duration: RequirementProcessor.formatDurationAsSeconds(test.duration),
-                                    message: test.message
-                                }))
-                            }
-                        },
-                        null,
-                        2
-                    )
-                );
-
-                return await Promise.resolve();
+                return await Promise.resolve(finalResult);
             } catch (error) {
                 return Promise.reject(
                     new SfError(

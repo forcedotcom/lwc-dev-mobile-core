@@ -82,4 +82,25 @@ describe('Commons utils tests', () => {
 
         expect(requiredKeyValuePair![1]).to.be.false;
     });
+
+    it('Output format flag config property returns expected flag', async () => {
+        let outputFormatFlagConfig = CommandLineUtils.createFlag(FlagsConfigType.OutputFormatFlag, true);
+        expect(outputFormatFlagConfig.outputFormat?.description).to.be.equal(
+            messages.getMessage('outputFormatFlagDescription')
+        );
+
+        let requiredKeyValuePair = Object.entries(outputFormatFlagConfig.outputFormat).find(
+            (keyValuePair) => keyValuePair[0] === 'required'
+        );
+
+        expect(requiredKeyValuePair?.[1]).to.be.true;
+
+        outputFormatFlagConfig = CommandLineUtils.createFlag(FlagsConfigType.OutputFormatFlag, false);
+
+        requiredKeyValuePair = Object.entries(outputFormatFlagConfig.outputFormat).find(
+            (keyValuePair) => keyValuePair[0] === 'required'
+        );
+
+        expect(requiredKeyValuePair![1]).to.be.false;
+    });
 });

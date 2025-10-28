@@ -103,11 +103,16 @@ export enum Platform {
     android = 'android'
 }
 
+export enum OutputFormat {
+    api = 'api'
+}
+
 export enum FlagsConfigType {
     PlatformFlag,
     ApiLevelFlag,
     LogLevelFlag,
-    JsonFlag
+    JsonFlag,
+    OutputFormatFlag
 }
 
 export class Version {

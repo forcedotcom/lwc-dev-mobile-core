@@ -6,8 +6,10 @@
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Logger, LoggerLevel } from '@salesforce/core';
+import { z, toJSONSchema } from 'zod/v4';
 import { CommandLineUtils } from './CommandLineUtils.js';
 import { HasRequirements, CommandRequirements } from './Requirements.js';
+import { OutputFormat } from './Common.js';
 
 export abstract class BaseCommand extends SfCommand<unknown> implements HasRequirements {
     private cmdName = 'BaseCommand';
@@ -72,6 +74,44 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 this.cmdLogger = logger;
                 return this.populateCommandRequirements();
             });
+    }
+
+    /**
+     * When jsonEnabled flag is true, this method is called to output the result in JSON format.
+     *
+     * @param result The result to output in JSON format, something like { outputSchema: jsonSchema, outputContent: AnyJson }
+     */
+    public logJson(json: SfCommand.Json<unknown>): void {
+        let output: string = '';
+        const outputSchema = this.getOutputSchema();
+        if (outputSchema) {
+            // Validate the result against the schema
+            const parsedResult = outputSchema.parse(json.result);
+            output = JSON.stringify({ outputSchema: toJSONSchema(outputSchema), outputContent: parsedResult }, null, 2);
+        } else {
+            output = JSON.stringify({ outputContent: json.result }, null, 2);
+        }
+
+        process.stdout.write(output);
+    }
+
+    /**
+     *
+     * @returns true if the command is configured to output in JSON format when
+     * command is executed with --json flag or -outputformat api flag
+     */
+    public override jsonEnabled(): boolean {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const outputFlag = this.flagValues?.outputFormat as string | undefined;
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        return super.jsonEnabled() || outputFlag === OutputFormat.api;
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected getOutputSchema<TSchema extends z.ZodTypeAny>(): TSchema | undefined {
+        // override in child classes to return the
+        return undefined;
     }
 
     // eslint-disable-next-line class-methods-use-this

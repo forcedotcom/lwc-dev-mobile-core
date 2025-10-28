@@ -126,6 +126,10 @@ Specify Android API level. Defaults to the latest API level installed.
 
 Format output as json.
 
+# outputFormatFlagDescription
+
+Specify output format (options: api).
+
 # logLevelFlagDescription
 
 Logging level for this command invocation (options: TRACE, DEBUG, INFO, WARN, ERROR, FATAL).
