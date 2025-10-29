@@ -86,12 +86,13 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
      * @param json The result or error to output in JSON format
      */
     public logJson(json: SfCommand.Json<unknown>): void {
-        // output the json directly if the json is for error output
-        if ('exitCode' in json && json.exitCode !== undefined) {
+        // output the json directly if the json is for error output by checking for the exitCode and cause properties
+        if ('exitCode' in json && json.exitCode !== undefined && 'cause' in json && json.cause !== undefined) {
             process.stdout.write(JSON.stringify(json, null, 2) + '\n');
             return;
         }
 
+        // repackage the json.result into the outputSchema and outputContent format
         let output: string = '';
         const outputSchema = (this.constructor as typeof BaseCommand).getOutputSchema();
         if (outputSchema) {
