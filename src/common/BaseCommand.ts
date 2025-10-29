@@ -81,11 +81,17 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
     }
 
     /**
-     * When jsonEnabled flag is true, this method is called to output the result in JSON format.
+     * When jsonEnabled flag is true, this method is called to output the result or error in JSON format.
      *
-     * @param result The result to output in JSON format, something like { outputSchema: jsonSchema, outputContent: AnyJson }
+     * @param json The result or error to output in JSON format
      */
     public logJson(json: SfCommand.Json<unknown>): void {
+        // output the json directly if the json is for error output
+        if ('exitCode' in json && json.exitCode !== undefined) {
+            process.stdout.write(JSON.stringify(json, null, 2) + '\n');
+            return;
+        }
+
         let output: string = '';
         const outputSchema = (this.constructor as typeof BaseCommand).getOutputSchema();
         if (outputSchema) {
@@ -95,7 +101,6 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
         } else {
             output = JSON.stringify({ outputContent: json.result }, null, 2);
         }
-
         process.stdout.write(output + '\n');
     }
 
