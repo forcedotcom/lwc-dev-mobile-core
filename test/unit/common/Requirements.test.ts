@@ -5,8 +5,15 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { expect } from 'chai';
+import sinon from 'sinon';
 import { Logger, Messages, SfError } from '@salesforce/core';
-import { RequirementProcessor, HasRequirements, CommandRequirements } from '../../../src/common/Requirements.js';
+import {
+    RequirementProcessor,
+    HasRequirements,
+    CommandRequirements,
+    RequirementCheckResultSchema,
+    RequirementCheckResultType
+} from '../../../src/common/Requirements.js';
 
 const logger = new Logger('test');
 
@@ -175,5 +182,159 @@ describe('Requirements Processing', () => {
         } catch (error: any) {
             throw new Error(`Should have skipped the requirements: ${error}`);
         }
+    });
+
+    describe('JSON Output Mode', () => {
+        let stdoutWriteStub: sinon.SinonStub;
+
+        beforeEach(() => {
+            stdoutWriteStub = sinon.stub(process.stdout, 'write');
+        });
+
+        afterEach(() => {
+            stdoutWriteStub.restore();
+        });
+
+        it('Should output JSON when jsonFlag is true and all requirements pass', async () => {
+            const requirements = new TruthyRequirements();
+
+            const result = (await RequirementProcessor.execute(
+                requirements.commandRequirements,
+                true
+            )) as any as RequirementCheckResultType;
+
+            expect(result).to.not.be.undefined;
+            expect(result).to.have.property('hasMetAllRequirements', true);
+            expect(result).to.have.property('totalDuration');
+            expect(result).to.have.property('tests');
+            expect(result.tests).to.be.an('array').with.lengthOf(2);
+        });
+
+        it('Should output JSON when jsonFlag is true and some requirements fail', async () => {
+            const requirements = new FalsyRequirements();
+
+            const result = (await RequirementProcessor.execute(
+                requirements.commandRequirements,
+                true
+            )) as any as RequirementCheckResultType;
+
+            expect(result).to.not.be.undefined;
+            expect(result).to.have.property('hasMetAllRequirements', false);
+            expect(result).to.have.property('tests');
+            const tests = result.tests;
+            expect(tests).to.be.an('array').with.lengthOf(4);
+
+            // Verify that some tests failed
+            const failedTests = tests.filter((test: any) => !test.hasPassed);
+            expect(failedTests.length).to.be.greaterThan(0);
+        });
+
+        it('Should include all required fields in JSON output', async () => {
+            const requirements = new TruthyRequirements();
+
+            const result = (await RequirementProcessor.execute(
+                requirements.commandRequirements,
+                true
+            )) as any as RequirementCheckResultType;
+
+            // Check result structure
+            expect(result).to.not.be.undefined;
+            expect(result).to.have.property('hasMetAllRequirements');
+            expect(result).to.have.property('totalDuration');
+            expect(result).to.have.property('tests');
+
+            // Check individual test structure
+            result.tests.forEach((test: any) => {
+                expect(test).to.have.property('title');
+                expect(test).to.have.property('hasPassed');
+                expect(test).to.have.property('duration');
+                expect(test).to.have.property('message');
+            });
+        });
+
+        it('Should use Listr UI when jsonFlag is false', async () => {
+            const requirements = new TruthyRequirements();
+
+            await RequirementProcessor.execute(requirements.commandRequirements, false);
+
+            // Listr writes to stdout too, but not with our JSON format
+            // We just verify it didn't use JSON format
+            if (stdoutWriteStub.called) {
+                const output = stdoutWriteStub.firstCall.args[0] as string;
+                // Should not be valid JSON with our schema
+                try {
+                    const parsed = JSON.parse(output);
+                    expect(parsed).to.not.have.property('outputSchema');
+                } catch {
+                    // Expected - output is not JSON
+                }
+            }
+        });
+
+        it('Should format duration correctly in JSON output', async () => {
+            const requirements = new TruthyRequirements();
+
+            const result = (await RequirementProcessor.execute(
+                requirements.commandRequirements,
+                true
+            )) as any as RequirementCheckResultType;
+
+            expect(result).to.not.be.undefined;
+            // Duration should be in format "X.XXX sec"
+            expect(result.totalDuration).to.match(/^\d+\.\d{3} sec$/);
+            result.tests.forEach((test: any) => {
+                expect(test.duration).to.match(/^\d+\.\d{3} sec$/);
+            });
+        });
+
+        it('Should handle mixed success/failure in JSON output', async () => {
+            const requirements = new TwoFalsyOneTruthyRequirements();
+
+            const result = (await RequirementProcessor.execute(
+                requirements.commandRequirements,
+                true
+            )) as any as RequirementCheckResultType;
+
+            expect(result.tests).to.have.lengthOf(3);
+            expect(result.hasMetAllRequirements).to.be.false;
+
+            const passedTests = result.tests.filter((test: any) => test.hasPassed);
+            const failedTests = result.tests.filter((test: any) => !test.hasPassed);
+
+            expect(passedTests).to.have.lengthOf(1);
+            expect(failedTests).to.have.lengthOf(2);
+        });
+
+        it('Should return correct result when non requirements is enabled in JSON output', async () => {
+            const requirements = new TruthyRequirements();
+
+            requirements.commandRequirements.baseRequirements.enabled = false;
+
+            const result = (await RequirementProcessor.execute(
+                requirements.commandRequirements,
+                true
+            )) as any as RequirementCheckResultType;
+
+            expect(result.tests).to.have.lengthOf(0);
+            expect(result.hasMetAllRequirements).to.be.true;
+        });
+
+        it('Should return correct result when non requirements is enabled in cli output', async () => {
+            const requirements = new TruthyRequirements();
+
+            requirements.commandRequirements.baseRequirements.enabled = false;
+
+            const result = await RequirementProcessor.execute(requirements.commandRequirements, false);
+
+            expect(result).to.be.undefined;
+        });
+
+        it('Should output valid JSON that matches the schema structure', async () => {
+            const requirements = new TruthyRequirements();
+
+            const result = await RequirementProcessor.execute(requirements.commandRequirements, true);
+
+            expect(() => RequirementCheckResultSchema.parse(result)).to.not.throw();
+        });
     });
 });

@@ -8,6 +8,7 @@ import { performance, PerformanceObserver } from 'node:perf_hooks';
 import { Logger, Messages, SfError } from '@salesforce/core';
 import chalk from 'chalk';
 import { Listr } from 'listr2';
+import { z } from 'zod/v4';
 import { PerformanceMarkers } from './PerformanceMarkers.js';
 export type CheckRequirementsFunc = () => Promise<string | undefined>;
 
@@ -42,6 +43,29 @@ export type CommandRequirements = { [key: string]: RequirementList };
 export type HasRequirements = {
     commandRequirements: CommandRequirements;
 };
+
+/**
+ * Zod Schema for RequirementCheckResult
+ * Defines the structure of the JSON output when using the --json flag
+ */
+const RequirementResultItemSchema = z
+    .object({
+        title: z.string().describe('Title/name of the requirement check'),
+        hasPassed: z.boolean().describe('Whether this individual requirement check passed'),
+        duration: z.string().optional().describe('Duration of this individual check in seconds'),
+        message: z.string().describe('Detailed message about the check result')
+    })
+    .strict();
+
+export const RequirementCheckResultSchema = z
+    .object({
+        hasMetAllRequirements: z.boolean().describe('Whether all requirements have been met'),
+        totalDuration: z.string().optional().describe('Total duration of all requirement checks in seconds'),
+        tests: z.array(RequirementResultItemSchema).describe('Array of individual requirement check results')
+    })
+    .strict();
+
+export type RequirementCheckResultType = z.infer<typeof RequirementCheckResultSchema>;
 
 /**
  * This function wraps existing promises with the intention to allow the collection of promises
@@ -107,7 +131,10 @@ export class RequirementProcessor {
     /**
      * Executes all of the base and command requirement checks.
      */
-    public static async execute(requirements: CommandRequirements): Promise<void> {
+    public static async execute(
+        requirements: CommandRequirements,
+        outputAsJson: boolean = false
+    ): Promise<RequirementCheckResultType | void> {
         const testResult: RequirementCheckResult = {
             hasMetAllRequirements: true,
             tests: []
@@ -123,10 +150,47 @@ export class RequirementProcessor {
             }
         });
 
-        if (enabledRequirements.length === 0) {
-            return Promise.resolve();
+        // JSON mode: Execute all requirements concurrently and output JSON
+        if (outputAsJson) {
+            try {
+                // Execute all WrappedPromise calls concurrently
+                const promises = enabledRequirements.map((requirement) => WrappedPromise(requirement));
+                const results = await Promise.all(promises);
+
+                // Process results
+                results.forEach((result) => {
+                    testResult.tests.push(result);
+                    if (!result.hasPassed) {
+                        testResult.hasMetAllRequirements = false;
+                    }
+                    totalDuration += result.duration;
+                });
+
+                const finalResult = {
+                    hasMetAllRequirements: testResult.hasMetAllRequirements,
+                    totalDuration: RequirementProcessor.formatDurationAsSeconds(totalDuration),
+                    tests: testResult.tests.map((test) => ({
+                        title: test.title,
+                        hasPassed: test.hasPassed,
+                        duration: RequirementProcessor.formatDurationAsSeconds(test.duration),
+                        message: test.message
+                    }))
+                };
+
+                return finalResult;
+            } catch (error) {
+                throw new SfError(
+                    messages.getMessage('error:unexpected', [(error as Error).message]),
+                    'lwc-dev-mobile-core'
+                );
+            }
         }
 
+        if (enabledRequirements.length === 0) {
+            return;
+        }
+
+        // Default mode: Use Listr for interactive UI
         const rootTaskTitle = messages.getMessage('rootTaskTitle');
         const requirementTasks = new Listr(
             {
@@ -183,20 +247,19 @@ export class RequirementProcessor {
         try {
             await requirementTasks.run();
         } catch (error) {
-            return Promise.reject(
-                new SfError(messages.getMessage('error:unexpected', [(error as Error).message]), 'lwc-dev-mobile-core')
+            throw new SfError(
+                messages.getMessage('error:unexpected', [(error as Error).message]),
+                'lwc-dev-mobile-core'
             );
         }
 
         if (!testResult.hasMetAllRequirements) {
-            return Promise.reject(
-                new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
-                    messages.getMessage('error:requirementCheckFailed:recommendation')
-                ])
-            );
+            throw new SfError(messages.getMessage('error:requirementCheckFailed'), 'lwc-dev-mobile-core', [
+                messages.getMessage('error:requirementCheckFailed:recommendation')
+            ]);
         }
 
-        return Promise.resolve();
+        return;
     }
 
     private static getFormattedTitle(testCaseResult: RequirementResult): string {

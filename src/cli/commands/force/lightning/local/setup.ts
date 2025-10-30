@@ -5,12 +5,18 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { Messages } from '@salesforce/core';
+import { z } from 'zod/v4';
 import { AndroidEnvironmentRequirements } from '../../../../../common/AndroidEnvironmentRequirements.js';
 import { BaseCommand } from '../../../../../common/BaseCommand.js';
 import { FlagsConfigType } from '../../../../../common/Common.js';
 import { CommandLineUtils } from '../../../../../common/CommandLineUtils.js';
 import { IOSEnvironmentRequirements } from '../../../../../common/IOSEnvironmentRequirements.js';
-import { CommandRequirements, RequirementProcessor } from '../../../../../common/Requirements.js';
+import {
+    CommandRequirements,
+    RequirementProcessor,
+    RequirementCheckResultSchema,
+    RequirementCheckResultType
+} from '../../../../../common/Requirements.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'setup');
@@ -22,6 +28,7 @@ export class Setup extends BaseCommand {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     public static readonly flags = {
         ...CommandLineUtils.createFlag(FlagsConfigType.JsonFlag, false),
+        ...CommandLineUtils.createFlag(FlagsConfigType.OutputFormatFlag, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.LogLevelFlag, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.ApiLevelFlag, false),
         ...CommandLineUtils.createFlag(FlagsConfigType.PlatformFlag, true)
@@ -29,10 +36,14 @@ export class Setup extends BaseCommand {
 
     protected _commandName = 'force:lightning:local:setup';
 
-    public async run(): Promise<void> {
+    protected static override getOutputSchema(): z.ZodTypeAny | undefined {
+        return RequirementCheckResultSchema;
+    }
+
+    public async run(): Promise<RequirementCheckResultType | void> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         this.logger.info(`Setup command called for ${this.flagValues.platform}`);
-        return RequirementProcessor.execute(this.commandRequirements);
+        return RequirementProcessor.execute(this.commandRequirements, this.jsonEnabled());
     }
 
     protected populateCommandRequirements(): void {
@@ -46,7 +57,7 @@ export class Setup extends BaseCommand {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         requirements.setup = CommandLineUtils.platformFlagIsAndroid(platform)
             ? new AndroidEnvironmentRequirements(this.logger, apiLevel)
-            : new IOSEnvironmentRequirements(this.logger);
+            : new IOSEnvironmentRequirements(this.logger, apiLevel);
 
         // eslint-disable-next-line no-underscore-dangle
         this.commandRequirements = requirements;
