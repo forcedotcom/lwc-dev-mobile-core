@@ -6,8 +6,10 @@
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
 import { Logger, LoggerLevel } from '@salesforce/core';
+import { z, toJSONSchema } from 'zod/v4';
 import { CommandLineUtils } from './CommandLineUtils.js';
 import { HasRequirements, CommandRequirements } from './Requirements.js';
+import { OutputFormat } from './Common.js';
 
 export abstract class BaseCommand extends SfCommand<unknown> implements HasRequirements {
     private cmdName = 'BaseCommand';
@@ -48,6 +50,20 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
         this.cmdRequirements = value;
     }
 
+    protected static getOutputSchema(): z.ZodTypeAny | undefined {
+        return undefined;
+    }
+
+    /**
+     * Checks if the JSON is an error response by checking for the exitCode and cause properties
+     *
+     * @param json The JSON to check if it is an error response
+     * @returns true if the JSON is an error response
+     */
+    private static isErrorResponse(json: SfCommand.Json<unknown>): boolean {
+        return 'exitCode' in json && json.exitCode !== undefined && 'cause' in json && json.cause !== undefined;
+    }
+
     public async init(): Promise<void> {
         if (this.logger) {
             // already initialized
@@ -72,6 +88,47 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 this.cmdLogger = logger;
                 return this.populateCommandRequirements();
             });
+    }
+
+    /**
+     * When jsonEnabled flag is true, this method is called to output the result or error in JSON format.
+     *
+     * @param json The result or error to output in JSON format
+     */
+    public logJson(json: SfCommand.Json<unknown>): void {
+        let writeStream;
+        let outputJson;
+
+        if (BaseCommand.isErrorResponse(json)) {
+            writeStream = process.stderr;
+            outputJson = json;
+        } else {
+            writeStream = process.stdout;
+            // repackage the json.result into the outputSchema and outputContent format
+            const outputSchema = (this.constructor as typeof BaseCommand).getOutputSchema();
+            if (outputSchema) {
+                // Validate the result against the schema
+                const parsedResult = outputSchema.parse(json.result);
+                outputJson = { outputSchema: toJSONSchema(outputSchema), outputContent: parsedResult };
+            } else {
+                outputJson = { outputContent: json.result };
+            }
+        }
+
+        writeStream.write(JSON.stringify(outputJson, null, 2) + '\n');
+    }
+
+    /**
+     *
+     * @returns true if the command is configured to output in JSON format when
+     * command is executed with --json flag or -outputformat api flag
+     */
+    public override jsonEnabled(): boolean {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const outputFlag = this.flagValues?.outputFormat as string | undefined;
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        return super.jsonEnabled() || outputFlag === OutputFormat.api;
     }
 
     // eslint-disable-next-line class-methods-use-this

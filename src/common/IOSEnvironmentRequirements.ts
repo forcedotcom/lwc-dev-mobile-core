@@ -6,6 +6,8 @@
  */
 import { Logger, Messages, SfError } from '@salesforce/core';
 import { CommonUtils } from './CommonUtils.js';
+import { Version } from './Common.js';
+import { AppleOSType } from './device/AppleDevice.js';
 import { AppleDeviceManager } from './device/AppleDeviceManager.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { Requirement, RequirementList } from './Requirements.js';
@@ -16,11 +18,11 @@ const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'requi
 export class IOSEnvironmentRequirements implements RequirementList {
     public requirements: Requirement[] = [];
     public enabled = true;
-    public constructor(logger: Logger) {
+    public constructor(logger: Logger, apiLevel?: string) {
         this.requirements = [
             new SupportedEnvironmentRequirement(logger),
             new XcodeInstalledRequirement(logger),
-            new SupportedSimulatorRuntimeRequirement(logger)
+            new SupportedSimulatorRuntimeRequirement(logger, apiLevel)
         ];
     }
 }
@@ -110,12 +112,13 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
     public fulfilledMessage: string;
     public unfulfilledMessage: string;
     public logger: Logger;
-
-    public constructor(logger: Logger) {
+    private apiLevel?: string;
+    public constructor(logger: Logger, apiLevel?: string) {
         this.title = messages.getMessage('ios:reqs:simulator:title');
         this.fulfilledMessage = 'ios:reqs:simulator:fulfilledMessage';
         this.unfulfilledMessage = 'ios:reqs:simulator:unfulfilledMessage';
         this.logger = logger;
+        this.apiLevel = apiLevel;
     }
 
     /**
@@ -128,7 +131,9 @@ export class SupportedSimulatorRuntimeRequirement implements Requirement {
         const deviceManager = new AppleDeviceManager(this.logger);
 
         return deviceManager
-            .enumerateRuntimes()
+            .enumerateRuntimes(
+                this.apiLevel ? [{ osType: AppleOSType.iOS, minOSVersion: Version.from(this.apiLevel)! }] : undefined
+            )
             .then((supportedRuntimes) => {
                 if (supportedRuntimes.length > 0) {
                     return Promise.resolve(
