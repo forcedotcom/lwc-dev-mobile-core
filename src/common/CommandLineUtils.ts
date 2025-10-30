@@ -9,7 +9,7 @@ import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 import { LoggerLevel, Messages, SfError } from '@salesforce/core';
 import { Command } from '@oclif/core';
 import { CustomOptions, OptionFlag } from '@oclif/core/interfaces';
-import { FlagsConfigType, Platform } from './Common.js';
+import { FlagsConfigType, OutputFormat, Platform } from './Common.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
@@ -96,6 +96,15 @@ export class CommandLineUtils {
                         required: false,
                         default: false
                     })
+                };
+            case FlagsConfigType.OutputFormatFlag:
+                return {
+                    outputFormat: Flags.option({
+                        char: 'f',
+                        description: messages.getMessage('outputFormatFlagDescription'),
+                        options: [OutputFormat.cli, OutputFormat.api] as const,
+                        default: OutputFormat.cli
+                    })({ required: isRequired })
                 };
         }
     }
