@@ -54,6 +54,16 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
         return undefined;
     }
 
+    /**
+     * Checks if the JSON is an error response by checking for the exitCode and cause properties
+     *
+     * @param json The JSON to check if it is an error response
+     * @returns true if the JSON is an error response
+     */
+    private static isErrorResponse(json: SfCommand.Json<unknown>): boolean {
+        return 'exitCode' in json && json.exitCode !== undefined && 'cause' in json && json.cause !== undefined;
+    }
+
     public async init(): Promise<void> {
         if (this.logger) {
             // already initialized
@@ -86,23 +96,26 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
      * @param json The result or error to output in JSON format
      */
     public logJson(json: SfCommand.Json<unknown>): void {
-        // output the json directly if the json is for error output by checking for the exitCode and cause properties
-        if ('exitCode' in json && json.exitCode !== undefined && 'cause' in json && json.cause !== undefined) {
-            process.stderr.write(JSON.stringify(json, null, 2) + '\n');
-            return;
+        let writeStream;
+        let outputJson;
+
+        if (BaseCommand.isErrorResponse(json)) {
+            writeStream = process.stderr;
+            outputJson = json;
+        } else {
+            writeStream = process.stdout;
+            // repackage the json.result into the outputSchema and outputContent format
+            const outputSchema = (this.constructor as typeof BaseCommand).getOutputSchema();
+            if (outputSchema) {
+                // Validate the result against the schema
+                const parsedResult = outputSchema.parse(json.result);
+                outputJson = { outputSchema: toJSONSchema(outputSchema), outputContent: parsedResult };
+            } else {
+                outputJson = { outputContent: json.result };
+            }
         }
 
-        // repackage the json.result into the outputSchema and outputContent format
-        let output: string = '';
-        const outputSchema = (this.constructor as typeof BaseCommand).getOutputSchema();
-        if (outputSchema) {
-            // Validate the result against the schema
-            const parsedResult = outputSchema.parse(json.result);
-            output = JSON.stringify({ outputSchema: toJSONSchema(outputSchema), outputContent: parsedResult }, null, 2);
-        } else {
-            output = JSON.stringify({ outputContent: json.result }, null, 2);
-        }
-        process.stdout.write(output + '\n');
+        writeStream.write(JSON.stringify(outputJson, null, 2) + '\n');
     }
 
     /**
