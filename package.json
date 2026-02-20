@@ -35,6 +35,9 @@
         }
     ],
     "bugs": "https://github.com/forcedotcom/lwc-dev-mobile-core/issues",
+    "enableO11y": true,
+    "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
+    "productFeatureId": "aJCEE0000000mGf4AI",
     "dependencies": {
         "@oclif/core": "^4.8.0",
         "@salesforce/core": "^8.23.4",

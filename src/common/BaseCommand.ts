@@ -10,12 +10,14 @@ import { z, toJSONSchema } from 'zod/v4';
 import { CommandLineUtils } from './CommandLineUtils.js';
 import { HasRequirements, CommandRequirements } from './Requirements.js';
 import { OutputFormat } from './Common.js';
+import { SfCliTelemetryEmitter, TelemetryEmitter } from './Telemetry.js';
 
 export abstract class BaseCommand extends SfCommand<unknown> implements HasRequirements {
     private cmdName = 'BaseCommand';
     private cmdFlagValues: unknown;
     private cmdLogger!: Logger;
     private cmdRequirements: CommandRequirements = {};
+    private cmdTelemetryEmitter: TelemetryEmitter = new SfCliTelemetryEmitter();
 
     public get commandName(): string {
         return this.cmdName;
@@ -34,6 +36,10 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
         return this.cmdRequirements;
     }
 
+    public get telemetryEmitter(): TelemetryEmitter {
+        return this.cmdTelemetryEmitter;
+    }
+
     public set commandName(value: string) {
         this.cmdName = value;
     }
@@ -48,6 +54,10 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
 
     public set commandRequirements(value: CommandRequirements) {
         this.cmdRequirements = value;
+    }
+
+    public set telemetryEmitter(value: TelemetryEmitter) {
+        this.cmdTelemetryEmitter = value;
     }
 
     protected static getOutputSchema(): z.ZodTypeAny | undefined {
@@ -87,6 +97,11 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 logger.setLevel(logLevel);
                 this.cmdLogger = logger;
                 return this.populateCommandRequirements();
+            })
+            .then(() => {
+                this.cmdTelemetryEmitter.emitTelemetry('lwc-dev-mobile-core', {
+                    commandName: this.commandName
+                });
             });
     }
 
