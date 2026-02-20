@@ -149,3 +149,7 @@ Comparing 2 codename versions is not supported.
 # error:network:hardware:port
 
 Error collecting network hardware ports: %s
+
+# error:cli:unsupportedVersion
+
+This command requires @salesforce/cli version %s or later. You are running version %s. Please update by running: npm install -g @salesforce/cli@latest
