@@ -46,6 +46,11 @@ export class Setup extends BaseCommand {
         return RequirementProcessor.execute(this.commandRequirements, this.jsonEnabled());
     }
 
+    protected getTelemetryEventName(): string {
+        // eslint-disable-next-line no-underscore-dangle
+        return `${this._commandName} executed`;
+    }
+
     protected populateCommandRequirements(): void {
         const requirements: CommandRequirements = {};
 

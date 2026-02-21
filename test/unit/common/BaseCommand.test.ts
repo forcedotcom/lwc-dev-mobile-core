@@ -27,7 +27,7 @@ describe('BaseCommand Telemetry', () => {
 
         expect(emitTelemetryStub.calledOnce).to.be.true;
         const payload = emitTelemetryStub.firstCall.args[0];
-        expect(payload).to.have.property('eventName', 'lwc-dev-mobile-core');
+        expect(payload).to.have.property('eventName', 'force:lightning:local:setup executed');
         expect(payload).to.have.property('commandName');
     });
 });

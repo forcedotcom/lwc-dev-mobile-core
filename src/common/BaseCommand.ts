@@ -122,7 +122,7 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 return this.populateCommandRequirements();
             })
             .then(() => {
-                this.cmdTelemetryEmitter.emitTelemetry('lwc-dev-mobile-core', {
+                this.cmdTelemetryEmitter.emitTelemetry(this.getTelemetryEventName(), {
                     commandName: this.commandName
                 });
             });
@@ -233,4 +233,6 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 return LoggerLevel.WARN;
         }
     }
+
+    protected abstract getTelemetryEventName(): string;
 }
