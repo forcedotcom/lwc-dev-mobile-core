@@ -152,4 +152,4 @@ Error collecting network hardware ports: %s
 
 # error:cli:unsupportedVersion
 
-This command requires @salesforce/cli version %s or later. You are running version %s. Please update by running: npm install -g @salesforce/cli@latest
+This command requires @salesforce/cli version %s or later. You are running version %s. Please update to a newer version.
