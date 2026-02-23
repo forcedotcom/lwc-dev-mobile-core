@@ -48,7 +48,7 @@ export class Setup extends BaseCommand {
 
     protected getTelemetryEventName(): string {
         // eslint-disable-next-line no-underscore-dangle
-        return `${this._commandName} executed`;
+        return `${this._commandName}.executed`;
     }
 
     protected populateCommandRequirements(): void {
