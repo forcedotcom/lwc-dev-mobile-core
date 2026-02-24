@@ -20,14 +20,17 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
     // PFT event sending feature was added in CLI version 2.123.1, so we set that
     // as the minimum required version for our commands to ensure telemetry is emitted properly.
     public static readonly MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED = '2.123.1';
-    private cmdName = 'BaseCommand';
     private cmdFlagValues: unknown;
     private cmdLogger!: Logger;
     private cmdRequirements: CommandRequirements = {};
     private cmdTelemetryEmitter: TelemetryEmitter = new SfCliTelemetryEmitter();
 
+    // eslint-disable-next-line no-underscore-dangle
+    protected abstract _commandName: string;
+
     public get commandName(): string {
-        return this.cmdName;
+        // eslint-disable-next-line no-underscore-dangle
+        return this._commandName;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,10 +48,6 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
 
     public get telemetryEmitter(): TelemetryEmitter {
         return this.cmdTelemetryEmitter;
-    }
-
-    public set commandName(value: string) {
-        this.cmdName = value;
     }
 
     public set flagValues(value: unknown) {
@@ -121,7 +120,7 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 this.cmdLogger = logger;
                 return this.populateCommandRequirements();
             })
-            .then(() => {
+            .finally(() => {
                 this.cmdTelemetryEmitter.emitTelemetry(this.getTelemetryEventName(), {
                     commandName: this.commandName
                 });
@@ -173,6 +172,11 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
     protected populateCommandRequirements(): void {
         // override in child classes and update _commandRequirements
         // to include whatever requirements the command has.
+    }
+
+    protected getTelemetryEventName(): string {
+        // eslint-disable-next-line no-underscore-dangle
+        return `${this._commandName}.executed`;
     }
 
     // Loops over all of the flags of a command and checks to see
@@ -233,6 +237,4 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 return LoggerLevel.WARN;
         }
     }
-
-    protected abstract getTelemetryEventName(): string;
 }
