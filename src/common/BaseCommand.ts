@@ -5,20 +5,32 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 import { SfCommand } from '@salesforce/sf-plugins-core';
-import { Logger, LoggerLevel } from '@salesforce/core';
+import { Logger, LoggerLevel, Messages } from '@salesforce/core';
 import { z, toJSONSchema } from 'zod/v4';
+import semver from 'semver';
 import { CommandLineUtils } from './CommandLineUtils.js';
 import { HasRequirements, CommandRequirements } from './Requirements.js';
 import { OutputFormat } from './Common.js';
+import { SfCliTelemetryEmitter, TelemetryEmitter } from './Telemetry.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export abstract class BaseCommand extends SfCommand<unknown> implements HasRequirements {
-    private cmdName = 'BaseCommand';
+    // PFT event sending feature was added in CLI version 2.126.0, so we set that
+    // as the minimum required version for our commands to ensure telemetry is emitted properly.
+    public static readonly MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED = '2.126.0';
     private cmdFlagValues: unknown;
     private cmdLogger!: Logger;
     private cmdRequirements: CommandRequirements = {};
+    private cmdTelemetryEmitter: TelemetryEmitter = new SfCliTelemetryEmitter();
+
+    // eslint-disable-next-line no-underscore-dangle
+    protected abstract _commandName: string;
 
     public get commandName(): string {
-        return this.cmdName;
+        // eslint-disable-next-line no-underscore-dangle
+        return this._commandName;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,8 +46,8 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
         return this.cmdRequirements;
     }
 
-    public set commandName(value: string) {
-        this.cmdName = value;
+    public get telemetryEmitter(): TelemetryEmitter {
+        return this.cmdTelemetryEmitter;
     }
 
     public set flagValues(value: unknown) {
@@ -48,6 +60,23 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
 
     public set commandRequirements(value: CommandRequirements) {
         this.cmdRequirements = value;
+    }
+
+    public set telemetryEmitter(value: TelemetryEmitter) {
+        this.cmdTelemetryEmitter = value;
+    }
+
+    /**
+     * Verifies that the current CLI version meets the minimum required version.
+     * Throws an error if the version is below the minimum.
+     */
+    public static verifyCliVersion(currentVersion: string): void {
+        if (semver.lt(currentVersion, BaseCommand.MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED)) {
+            throw messages.createError('error:cli:unsupportedVersion', [
+                BaseCommand.MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED,
+                currentVersion
+            ]);
+        }
     }
 
     protected static getOutputSchema(): z.ZodTypeAny | undefined {
@@ -74,7 +103,10 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
 
         return super
             .init()
-            .then(() => this.parse())
+            .then(() => {
+                BaseCommand.verifyCliVersion(this.config.version);
+                return this.parse();
+            })
             .then((parserOutput) => {
                 this.cmdFlagValues = parserOutput.flags;
                 return new Logger(this.commandName);
@@ -87,6 +119,11 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
                 logger.setLevel(logLevel);
                 this.cmdLogger = logger;
                 return this.populateCommandRequirements();
+            })
+            .finally(() => {
+                this.cmdTelemetryEmitter.emitTelemetry(this.getTelemetryEventName(), {
+                    commandName: this.commandName
+                });
             });
     }
 
@@ -135,6 +172,11 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
     protected populateCommandRequirements(): void {
         // override in child classes and update _commandRequirements
         // to include whatever requirements the command has.
+    }
+
+    protected getTelemetryEventName(): string {
+        // eslint-disable-next-line no-underscore-dangle
+        return `${this._commandName}.executed`;
     }
 
     // Loops over all of the flags of a command and checks to see
