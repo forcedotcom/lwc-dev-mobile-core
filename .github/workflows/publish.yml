@@ -6,6 +6,10 @@ on:
 jobs:
     publish:
         runs-on: ubuntu-latest
+        permissions:
+            id-token: write # Required for OIDC
+            contents: write
+            packages: write
 
         # Make sure you have created an environment named "npm-publish" in github under Settings > Environments
         environment:
@@ -50,8 +54,6 @@ jobs:
                   rm -f .yarnrc
 
             - name: Publish to NPM
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
               run: npm publish
 
             - name: Create and push git tag
