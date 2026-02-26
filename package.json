@@ -67,7 +67,7 @@
         "typescript": "^5.9.3"
     },
     "peerDependencies": {
-        "@salesforce/cli": ">=2.123.1"
+        "@salesforce/cli": ">=2.126.0"
     },
     "engines": {
         "node": ">=22"

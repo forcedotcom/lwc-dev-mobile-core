@@ -34,15 +34,15 @@ describe('BaseCommand Telemetry', () => {
 
 describe('BaseCommand CLI Version Check', () => {
     it('Should not throw when version equals minimum', () => {
-        expect(() => BaseCommand.verifyCliVersion('2.123.1')).to.not.throw();
+        expect(() => BaseCommand.verifyCliVersion('2.126.0')).to.not.throw();
     });
 
     it('Should not throw when patch version is higher', () => {
-        expect(() => BaseCommand.verifyCliVersion('2.123.5')).to.not.throw();
+        expect(() => BaseCommand.verifyCliVersion('2.126.1')).to.not.throw();
     });
 
     it('Should not throw when minor version is higher', () => {
-        expect(() => BaseCommand.verifyCliVersion('2.130.0')).to.not.throw();
+        expect(() => BaseCommand.verifyCliVersion('2.127.0')).to.not.throw();
     });
 
     it('Should not throw when major version is higher', () => {
@@ -50,8 +50,8 @@ describe('BaseCommand CLI Version Check', () => {
     });
 
     it('Should throw when version is below minimum', () => {
-        expect(() => BaseCommand.verifyCliVersion('2.122.0')).to.throw(
-            `This command requires @salesforce/cli version ${BaseCommand.MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED} or later. You are running version 2.122.0.`
+        expect(() => BaseCommand.verifyCliVersion('2.125.0')).to.throw(
+            `This command requires @salesforce/cli version ${BaseCommand.MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED} or later. You are running version 2.125.0.`
         );
     });
 
@@ -61,9 +61,9 @@ describe('BaseCommand CLI Version Check', () => {
         );
     });
 
-    it('Should throw when patch version is below minimum', () => {
-        expect(() => BaseCommand.verifyCliVersion('2.123.0')).to.throw(
-            `This command requires @salesforce/cli version ${BaseCommand.MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED} or later. You are running version 2.123.0.`
+    it('Should throw when minor version is below minimum', () => {
+        expect(() => BaseCommand.verifyCliVersion('2.125.9')).to.throw(
+            `This command requires @salesforce/cli version ${BaseCommand.MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED} or later. You are running version 2.125.9.`
         );
     });
 });

@@ -17,9 +17,9 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
 export abstract class BaseCommand extends SfCommand<unknown> implements HasRequirements {
-    // PFT event sending feature was added in CLI version 2.123.1, so we set that
+    // PFT event sending feature was added in CLI version 2.126.0, so we set that
     // as the minimum required version for our commands to ensure telemetry is emitted properly.
-    public static readonly MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED = '2.123.1';
+    public static readonly MINIMUM_SALESFORCE_CLI_VERSION_REQUIRED = '2.126.0';
     private cmdFlagValues: unknown;
     private cmdLogger!: Logger;
     private cmdRequirements: CommandRequirements = {};
