@@ -3,13 +3,14 @@ run-name: Publish to NPM and Create Git Tag
 on:
     workflow_dispatch:
 
+permissions:
+    id-token: write # Required for OIDC
+    contents: write
+    packages: write
+
 jobs:
     publish:
         runs-on: ubuntu-latest
-        permissions:
-            id-token: write # Required for OIDC
-            contents: write
-            packages: write
 
         # Make sure you have created an environment named "npm-publish" in github under Settings > Environments
         environment:
@@ -22,7 +23,7 @@ jobs:
             - name: Use Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '22'
+                  node-version: '24'
                   registry-url: 'https://registry.npmjs.org/'
 
             - name: Get package version
