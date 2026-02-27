@@ -54,8 +54,11 @@ jobs:
                   rm -f .npmrc
                   rm -f .yarnrc
 
+            # NB: We explicitly publish to 'latest', because we don't yet have support for
+            # tag-specific publishing in this action, and Node 24+ will not allow you to
+            # publish prerelease versions without an explicit tag.
             - name: Publish to NPM
-              run: npm publish
+              run: npm publish --tag latest
 
             - name: Create and push git tag
               run: |
