@@ -29,3 +29,4 @@ export * from './common/PlatformConfig.js';
 export * from './common/PreviewConfigFile.js';
 export * from './common/PreviewUtils.js';
 export * from './common/Requirements.js';
+export * from './common/Telemetry.js';
