@@ -4,17 +4,12 @@
         "outDir": "dist",
         "rootDir": "src",
         "resolveJsonModule": true,
+        "baseUrl": ".",
         "experimentalDecorators": true,
         "pretty": true,
         "declarationMap": true,
         "removeComments": true,
         "skipLibCheck": true
     },
-    "include": ["./src/**/*.ts"],
-    "ts-node": {
-        "esm": true,
-        "compilerOptions": {
-            "types": ["mocha", "node"]
-        }
-    }
+    "include": ["./src/**/*.ts"]
 }

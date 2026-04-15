@@ -64,7 +64,7 @@
         "oclif": "^4.22.61",
         "shx": "0.4.0",
         "ts-node": "^10.9.2",
-        "typescript": "^6.0.2"
+        "typescript": "^5.9.3"
     },
     "peerDependencies": {
         "@salesforce/cli": ">=2.126.0"
