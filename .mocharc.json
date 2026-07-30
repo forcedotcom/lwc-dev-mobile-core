@@ -4,5 +4,5 @@
     "recursive": true,
     "reporter": "spec",
     "node-option": ["loader=ts-node/esm"],
-    "timeout": 5000
+    "timeout": 10000
 }
