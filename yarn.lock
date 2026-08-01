@@ -1049,10 +1049,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@oclif/core@^4", "@oclif/core@^4.11.11", "@oclif/core@^4.11.14", "@oclif/core@^4.11.4", "@oclif/core@^4.11.7":
-  version "4.11.14"
-  resolved "https://registry.yarnpkg.com/@oclif/core/-/core-4.11.14.tgz#45cc28d78a5ea2ac9d1586c57e537771394da44c"
-  integrity sha512-cZ5Ktd+rT0PO+o7KBH4vRFTgg+xMLf8F41WK39p8MkXEViZA/Qqe+4lzZT6102zgUxMORET1HtF9t5w8CB3tnQ==
+"@oclif/core@^4", "@oclif/core@^4.11.11", "@oclif/core@^4.11.4", "@oclif/core@^4.11.7", "@oclif/core@^4.13.2":
+  version "4.13.2"
+  resolved "https://registry.yarnpkg.com/@oclif/core/-/core-4.13.2.tgz#3a716b90f40becdf25f6b9d9b63ec05dec3dce94"
+  integrity sha512-YWQs0JvESCliWopKtCZqPLgEB1e3oqR+KYecMReseYWbo7E73Rz2tFwQDFQtAp48VLMiAsiTPKKQaZAo+ghzLw==
   dependencies:
     ansi-escapes "^4.3.2"
     ansis "^3.17.0"
@@ -1073,10 +1073,10 @@
     wordwrap "^1.0.0"
     wrap-ansi "^7.0.0"
 
-"@oclif/plugin-command-snapshot@^5.3.31":
-  version "5.3.31"
-  resolved "https://registry.yarnpkg.com/@oclif/plugin-command-snapshot/-/plugin-command-snapshot-5.3.31.tgz#1064f54273cead813d90c07604c16c3e99f07850"
-  integrity sha512-jDfwOlgIK+p8Q/YZcBsExZPGeFArtFZ5tqWV+tkW/fKLMMAIbKcrW/NPFFTGsaS3tL8nJfeqyT0f4e5ODd+vDA==
+"@oclif/plugin-command-snapshot@^5.3.33":
+  version "5.3.33"
+  resolved "https://registry.yarnpkg.com/@oclif/plugin-command-snapshot/-/plugin-command-snapshot-5.3.33.tgz#36f6cc1b8b9154e6087f9f7f8a3a83b0c089198f"
+  integrity sha512-Djtpaf6tO73cWMLXY+i7SZgfkVz3zRFZ1rwTKrAQZ55gN22zjHn0QXc181dtEGYcVb+laYJGHo/epvDntySi3g==
   dependencies:
     "@oclif/core" "^4"
     ansis "^3.17.0"
@@ -1169,10 +1169,10 @@
   resolved "https://registry.yarnpkg.com/@rtsao/scc/-/scc-1.1.0.tgz#927dd2fae9bc3361403ac2c7a00c32ddce9ad7e8"
   integrity sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==
 
-"@salesforce/cli-plugins-testkit@^5.3.62":
-  version "5.3.62"
-  resolved "https://registry.yarnpkg.com/@salesforce/cli-plugins-testkit/-/cli-plugins-testkit-5.3.62.tgz#05fef477ef8804c8c4ae4144d22bcf59ace3a129"
-  integrity sha512-f6Kj64IqOhT5LhmtwEidx8riftVPorOiSdKRqOOQRiFCJR1lfmAZEKiZc3yo0xRT7RmavRUKupBwklT7+rsIbg==
+"@salesforce/cli-plugins-testkit@^5.3.64":
+  version "5.3.64"
+  resolved "https://registry.yarnpkg.com/@salesforce/cli-plugins-testkit/-/cli-plugins-testkit-5.3.64.tgz#6c28fefc787f83096cb274e38fc855727ffa13f3"
+  integrity sha512-4jUPow+oOr2Jp3s3QKCS1Aw9qs9AV2sIuk3YvWz9gMd7Y3/wVROG4C5OelfnrClGocxDAOVaCgJrTSoF0VQzUg==
   dependencies:
     "@salesforce/core" "^8.31.2"
     "@salesforce/kit" "^3.2.6"
@@ -5659,10 +5659,10 @@ object.values@^1.2.1:
     define-properties "^1.2.1"
     es-object-atoms "^1.0.0"
 
-oclif@^4.23.28:
-  version "4.23.28"
-  resolved "https://registry.yarnpkg.com/oclif/-/oclif-4.23.28.tgz#866ac0cbf2f1fbe3d484b4919b5721dea47e14b5"
-  integrity sha512-u0Jo1RAo5zrZUhrTTxGGicjZ606L7dYV+L1VoFstA5RfV7pktEE6lVs3ueELQcNUgkUvofAiZqleocZCBA/Hqg==
+oclif@^4.23.29:
+  version "4.23.29"
+  resolved "https://registry.yarnpkg.com/oclif/-/oclif-4.23.29.tgz#3b62399a0ce68370c9a6bebc6fb9eea776729f62"
+  integrity sha512-pUekmMh+wwIbFq3xX1EfkgZ7RuYuuSbdhJiB+20zqSfGE8Tt9T+K9br1/vmsaIOxfDo0Dw3jxLBk4JZOMFEMeQ==
   dependencies:
     "@aws-sdk/client-cloudfront" "^3.1079.0"
     "@aws-sdk/client-s3" "^3.1079.0"
@@ -6926,15 +6926,7 @@ string-width@^7.0.0:
     get-east-asian-width "^1.0.0"
     strip-ansi "^7.1.0"
 
-string-width@^8.2.0:
-  version "8.2.0"
-  resolved "https://registry.yarnpkg.com/string-width/-/string-width-8.2.0.tgz#bdb6a9bd6d7800db635adae96cdb0443fec56c42"
-  integrity sha512-6hJPQ8N0V0P3SNmP6h2J99RLuzrWz2gvT7VnK5tKvrNqJoyS9W4/Fb8mo31UiPvy00z7DQXkP2hnKBVav76thw==
-  dependencies:
-    get-east-asian-width "^1.5.0"
-    strip-ansi "^7.1.2"
-
-string-width@^8.2.1:
+string-width@^8.2.0, string-width@^8.2.1:
   version "8.2.2"
   resolved "https://registry.yarnpkg.com/string-width/-/string-width-8.2.2.tgz#7310516493df575742fe98af6fae87d85d5ed0ac"
   integrity sha512-GaPUh5gfdrYzqeVNZvUfT23vYYxXzKYidUcnMtJg/3rxRV63EFZy3k6xfKlmfeJD0176lnUV/Usr3XcwSvFzpg==

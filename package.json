@@ -39,7 +39,7 @@
     "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
     "productFeatureId": "aJCEE0000000mGf4AI",
     "dependencies": {
-        "@oclif/core": "^4.11.14",
+        "@oclif/core": "^4.13.2",
         "@salesforce/core": "^8.32.4",
         "@salesforce/sf-plugins-core": "^12.2.26",
         "@salesforce/ts-types": "^2.0.12",
@@ -51,8 +51,8 @@
         "zod": "^4.4.3"
     },
     "devDependencies": {
-        "@oclif/plugin-command-snapshot": "^5.3.31",
-        "@salesforce/cli-plugins-testkit": "^5.3.62",
+        "@oclif/plugin-command-snapshot": "^5.3.33",
+        "@salesforce/cli-plugins-testkit": "^5.3.64",
         "@salesforce/dev-scripts": "^11.0.2",
         "@salesforce/ts-sinon": "1.4.36",
         "@types/node": "^25.6.0",
@@ -61,7 +61,7 @@
         "c8": "^11.0.0",
         "eslint": "^8.57.1",
         "eslint-plugin-sf-plugin": "^1.20.33",
-        "oclif": "^4.23.28",
+        "oclif": "^4.23.29",
         "shx": "0.4.0",
         "ts-node": "^10.9.2",
         "typescript": "^5.9.3"
