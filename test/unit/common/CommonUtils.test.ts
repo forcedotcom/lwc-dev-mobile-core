@@ -339,6 +339,47 @@ describe('CommonUtils', () => {
         expect(errorLoggerMock.getCall(0).args[0]).to.contain('somecommand arg1 arg2');
     });
 
+    it('spawnCommandAsync rejects when the process emits an error event', async () => {
+        // With shell:false a failure to launch the executable (ENOENT/EACCES) emits 'error'
+        // rather than a non-zero 'close'. The promise must still settle (reject), not hang.
+        const fakeProcess = new childProcess.ChildProcess();
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnWrapper').returns(fakeProcess);
+
+        const launchError = new Error('spawn ENOENT');
+        setTimeout(() => {
+            fakeProcess.emit('error', launchError);
+        }, 100);
+
+        let caught: unknown;
+        try {
+            await CommonUtils.spawnCommandAsync('missing-binary', []);
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(caught).to.equal(launchError);
+    });
+
+    it('spawnCommandAsync reassembles multi-chunk stdout verbatim (no comma separator)', async () => {
+        // Large outputs (e.g. `xcrun simctl list --json`) arrive across multiple 'data' events.
+        // The captured chunks must be joined with '' so JSON is not corrupted by comma separators.
+        const fakeProcess = new childProcess.ChildProcess();
+        const fakeStdout = new stream.PassThrough();
+        (fakeProcess as unknown as { stdout: stream.PassThrough }).stdout = fakeStdout;
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnWrapper').returns(fakeProcess);
+
+        setTimeout(() => {
+            fakeStdout.emit('data', Buffer.from('{"a":'));
+            fakeStdout.emit('data', Buffer.from('1}'));
+            fakeProcess.emit('close', 0);
+        }, 100);
+
+        const { stdout } = await CommonUtils.spawnCommandAsync('somecommand', []);
+
+        expect(stdout).to.equal('{"a":1}');
+        expect(() => JSON.parse(stdout)).to.not.throw();
+    });
+
     it('spawnWrapper does not route arguments through a shell', async () => {
         // Spawn a real process that prints its own argv. If a shell were involved, the
         // command-substitution argument would be evaluated by the shell instead of arriving

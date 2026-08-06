@@ -505,6 +505,26 @@ describe('Android utils', () => {
         expect(args).to.include('system-images;android-33;google_apis;x86_64');
     });
 
+    it('spawnChild passes a malicious argv element inertly (no shell interpretation)', async () => {
+        // Spawn a real process on the current platform. If a shell were involved, the
+        // command-substitution argument would be evaluated instead of arriving verbatim.
+        // On Windows this exercises the cmd.exe /c path (which is required to launch the
+        // avdmanager .bat); on POSIX it exercises the detached path. Either way the untrusted
+        // value must be handed to the program as a single, literal argument.
+        const script = 'process.stdout.write(process.argv[process.argv.length - 1])';
+        const malicious = '$(echo INJECTED)';
+        const child = AndroidUtils.spawnChild(process.execPath, ['-e', script, malicious]);
+
+        const output: string[] = [];
+        child.stdout.on('data', (d: Buffer) => output.push(d.toString()));
+        await new Promise<void>((resolve, reject) => {
+            child.on('close', () => resolve());
+            child.on('error', reject);
+        });
+
+        expect(output.join('')).to.equal(malicious);
+    });
+
     it('Gets the latest version of cmdline tools', async () => {
         $$.restore();
         stubMethod($$.SANDBOX, AndroidUtils, 'getAndroidSdkRoot').returns({

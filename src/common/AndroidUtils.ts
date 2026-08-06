@@ -869,15 +869,27 @@ export class AndroidUtils {
     // used in Windows OS for special handling of some commands (adb).
     //
     // The command is passed as an executable + argv array with shell:false so that no
-    // argument is re-parsed by a shell (structurally removes OS command injection). The
-    // Windows/non-Windows branch exists solely for the `detached` behavior described above.
+    // argument is re-parsed by a shell (structurally removes OS command injection).
+    //
+    // On Windows the sole caller (createNewVirtualDevice) launches `avdmanager`, which ships as a
+    // `.bat`. `shell:false` cannot launch a `.bat` directly: Windows CreateProcess auto-appends
+    // `.exe` but not `.bat`/`.cmd` (ENOENT), and post-CVE-2024-27980 Node refuses to spawn a
+    // `.bat`/`.cmd` unless `shell:true` (EINVAL). We therefore launch it through `cmd.exe /c` with
+    // shell:false — the same pattern launchUrlInDesktopBrowser uses for `start`. cmd.exe resolves
+    // `avdmanager` to `avdmanager.bat` via PATHEXT, and because spawn still runs with shell:false
+    // Node quotes each argv element; cmd.exe honors those double quotes for the RCE metacharacters
+    // (`& | ; < >`), so untrusted values are not re-interpreted as commands. We do NOT use
+    // shell:true here: shell:true does not escape argv (it joins with spaces), which would
+    // reintroduce the injection this PR removes.
     //
     // Public (rather than private) solely to act as a substitution seam for unit tests, mirroring
     // CommonUtils.spawnWrapper. Tests stub this to assert that untrusted values are handed over as
     // single, inert argv elements and never reach a shell.
     public static spawnChild(command: string, args: string[] = []): childProcess.ChildProcessWithoutNullStreams {
         if (process.platform === WINDOWS_OS) {
-            const child = childProcess.spawn(command, args, { shell: false });
+            const child = childProcess.spawn(process.env.comspec ?? 'cmd.exe', ['/d', '/s', '/c', command, ...args], {
+                shell: false
+            });
             return child;
         } else {
             const child = childProcess.spawn(command, args, {

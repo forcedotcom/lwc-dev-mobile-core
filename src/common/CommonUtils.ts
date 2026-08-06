@@ -281,20 +281,28 @@ export class CommonUtils {
                     logger?.error(`Error executing command '${fullCommand}':`);
 
                     // also include stderr & stdout for more detailed error
-                    let msg = `stderr:\n${capturedStderr.join()}`;
+                    let msg = `stderr:\n${capturedStderr.join('')}`;
                     if (capturedStdout.length > 0) {
                         msg = `${msg}\nstdout:\n${capturedStdout.join('\n')}`;
                     }
 
                     logger?.error(msg);
-                    reject(new Error(capturedStderr.join()));
+                    reject(new Error(capturedStderr.join('')));
                 } else {
+                    // Join with '' (not the default ',') so multi-chunk stdout/stderr is
+                    // reassembled verbatim. Large outputs (e.g. `xcrun simctl list --json`)
+                    // arrive across several 'data' events; a comma separator would corrupt them.
                     resolve({
-                        stdout: capturedStdout.join(),
-                        stderr: capturedStderr.join()
+                        stdout: capturedStdout.join(''),
+                        stderr: capturedStderr.join('')
                     });
                 }
             });
+
+            // With shell:false, a failure to launch the executable itself (ENOENT, EACCES,
+            // Windows .bat EINVAL) surfaces as an 'error' event rather than a non-zero 'close'.
+            // An 'error' with no listener throws, so without this the promise would never settle.
+            prc.on('error', (err) => reject(err));
         });
     }
 
@@ -328,8 +336,14 @@ export class CommonUtils {
      * pipes; prefer passing an argv array to spawnCommandAsync where no shell is needed.
      *
      * On POSIX platforms the value is wrapped in single quotes (which disable all shell
-     * interpretation), with any embedded single quote escaped as '\''. On Windows the value
-     * is wrapped in double quotes with embedded double quotes doubled.
+     * interpretation), with any embedded single quote escaped as '\''. This is safe against
+     * the full set of POSIX shell metacharacters and is the intended use of this helper —
+     * every current caller is a POSIX-only sink (an `awk`/`grep` pipe).
+     *
+     * The Windows branch only wraps in double quotes and doubles embedded double quotes; it does
+     * NOT neutralize cmd.exe metacharacters (`& | < > ^ %`), so it is not sufficient to sanitize
+     * untrusted input for a cmd.exe command string. Do not add a Windows shell sink that relies on
+     * this for security — pass an argv array to spawnCommandAsync (shell:false) instead.
      *
      * @param value The value to quote.
      * @returns The shell-quoted value.
