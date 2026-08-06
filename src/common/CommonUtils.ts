@@ -312,9 +312,33 @@ export class CommonUtils {
         stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
     ): childProcess.ChildProcess {
         return childProcess.spawn(command, args, {
-            shell: true,
+            // shell:false so that the OS performs no shell parsing of the command or its
+            // arguments. This structurally removes the OS command-injection class: any value
+            // passed as an argv element is treated as an inert argument, never re-interpreted
+            // as shell syntax (`;`, `$()`, backticks, `&&`, `|`, etc.).
+            shell: false,
             stdio: stdioOptions
         });
+    }
+
+    /**
+     * Quotes a value so that it can be safely interpolated into a command string that is
+     * executed through a shell (i.e. executeCommandAsync / executeCommandSync). This should
+     * only be used for the handful of sinks that genuinely require shell features such as
+     * pipes; prefer passing an argv array to spawnCommandAsync where no shell is needed.
+     *
+     * On POSIX platforms the value is wrapped in single quotes (which disable all shell
+     * interpretation), with any embedded single quote escaped as '\''. On Windows the value
+     * is wrapped in double quotes with embedded double quotes doubled.
+     *
+     * @param value The value to quote.
+     * @returns The shell-quoted value.
+     */
+    public static shellQuote(value: string): string {
+        if (process.platform === 'win32') {
+            return `"${value.replace(/"/g, '""')}"`;
+        }
+        return `'${value.replace(/'/g, "'\\''")}'`;
     }
 
     /**
@@ -323,13 +347,28 @@ export class CommonUtils {
      * @returns A Promise that launches the desktop browser and navigates to the provided URL.
      */
     public static async launchUrlInDesktopBrowser(url: string, logger?: Logger): Promise<void> {
-        const openCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+        // Pass the URL as a single argv element (shell:false) so it can never be re-parsed by a
+        // shell. On Windows the opener is the cmd.exe builtin `start`, which must be invoked via
+        // `cmd /c` (the empty "" is start's title argument); on macOS/Linux `open`/`xdg-open` are
+        // real executables.
+        let command: string;
+        let args: string[];
+        if (process.platform === 'darwin') {
+            command = 'open';
+            args = [url];
+        } else if (process.platform === 'win32') {
+            command = 'cmd';
+            args = ['/c', 'start', '', url];
+        } else {
+            command = 'xdg-open';
+            args = [url];
+        }
 
         CommonUtils.startCliAction(
             messages.getMessage('launchBrowserAction'),
             messages.getMessage('openBrowserWithUrlStatus', [url])
         );
-        return CommonUtils.executeCommandAsync(`${openCmd} ${url}`, logger).then(() => {
+        return CommonUtils.spawnCommandAsync(command, args, undefined, logger).then(() => {
             CommonUtils.stopCliAction();
             return Promise.resolve();
         });
