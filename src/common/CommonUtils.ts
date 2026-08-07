@@ -14,6 +14,7 @@ import os from 'node:os';
 import { Logger, Messages, SfError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { ux } from '@oclif/core';
+import { OSPlatform } from './Common.js';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -349,7 +350,7 @@ export class CommonUtils {
      * @returns The shell-quoted value.
      */
     public static shellQuote(value: string): string {
-        if (process.platform === 'win32') {
+        if (process.platform === OSPlatform.windows) {
             return `"${value.replace(/"/g, '""')}"`;
         }
         return `'${value.replace(/'/g, "'\\''")}'`;
@@ -367,10 +368,10 @@ export class CommonUtils {
         // real executables.
         let command: string;
         let args: string[];
-        if (process.platform === 'darwin') {
+        if (process.platform === OSPlatform.macos) {
             command = 'open';
             args = [url];
-        } else if (process.platform === 'win32') {
+        } else if (process.platform === OSPlatform.windows) {
             // `start` is a cmd.exe builtin, so it must run via cmd.exe. libuv only quotes argv
             // elements containing space/tab/`"`, and cmd.exe treats `& | < > ^ ( )` as
             // metacharacters and expands `%VAR%` even inside quotes. A normal URL (`?a=1&b=2`) has
@@ -415,7 +416,7 @@ export class CommonUtils {
      */
     public static async getLwcServerPort(logger?: Logger): Promise<string | undefined> {
         const getProcessCommand =
-            process.platform === 'win32'
+            process.platform === OSPlatform.windows
                 ? 'wmic process where "CommandLine Like \'%force:lightning:lwc:start%\'" get CommandLine  | findstr -v "wmic"'
                 : 'ps -ax | grep force:lightning:lwc:start | grep -v grep';
 
@@ -533,7 +534,7 @@ export class CommonUtils {
         outDir = CommonUtils.convertToUnixPath(outDir);
 
         const cmd =
-            process.platform === 'win32'
+            process.platform === OSPlatform.windows
                 ? `powershell -Command "$ProgressPreference = 'SilentlyContinue'; Expand-Archive -Path \\"${archive}\\" -DestinationPath \\"${outDir}\\" -Force"`
                 : `unzip -o -qq ${archive} -d ${outDir}`;
 

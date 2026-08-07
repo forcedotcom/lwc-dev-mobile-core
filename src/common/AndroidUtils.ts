@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Logger, Messages, SfError } from '@salesforce/core';
 import { AndroidPackage, AndroidPackages } from './AndroidTypes.js';
-import { Version } from './Common.js';
+import { OSPlatform, Version } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { LaunchArgument } from './device/BaseDevice.js';
@@ -17,7 +17,6 @@ import { LaunchArgument } from './device/BaseDevice.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
-const WINDOWS_OS = 'win32';
 const ANDROID_SDK_MANAGER_NAME = 'sdkmanager';
 const ANDROID_AVD_MANAGER_NAME = 'avdmanager';
 const ANDROID_ADB_NAME = 'adb';
@@ -477,7 +476,7 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the Android virtual device.
      */
     public static async waitUntilDeviceIsReady(portNumber: number, logger?: Logger): Promise<void> {
-        const quote = process.platform === WINDOWS_OS ? '"' : "'";
+        const quote = process.platform === OSPlatform.windows ? '"' : "'";
         const command = `wait-for-device shell ${quote}while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;${quote}`;
         const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
 
@@ -498,7 +497,7 @@ export class AndroidUtils {
      */
     public static async waitUntilDeviceIsPoweredOff(portNumber: number, logger?: Logger): Promise<void> {
         const command =
-            process.platform === WINDOWS_OS
+            process.platform === OSPlatform.windows
                 ? `powershell -Command "while($(adb devices | findstr emulator-${portNumber})){ Start-Sleep -s 1 }"`
                 : `while [[ -n $(adb devices | grep emulator-${portNumber}) ]]; do sleep 1; done;`;
         const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
@@ -597,7 +596,7 @@ export class AndroidUtils {
      * @returns " on Windows and ' on other platforms
      */
     public static platformSpecificPathQuote(): string {
-        return process.platform === WINDOWS_OS ? '"' : "'";
+        return process.platform === OSPlatform.windows ? '"' : "'";
     }
 
     /**
@@ -901,7 +900,7 @@ export class AndroidUtils {
     // CommonUtils.spawnWrapper. Tests stub this to assert that untrusted values are handed over as
     // single, inert argv elements and never reach a shell.
     public static spawnChild(command: string, args: string[] = []): childProcess.ChildProcessWithoutNullStreams {
-        if (process.platform === WINDOWS_OS) {
+        if (process.platform === OSPlatform.windows) {
             // Validate each untrusted argv element against a strict allowlist before it reaches
             // cmd.exe (see method comment). We deliberately do not validate `command`: it is a
             // trusted, code-derived SDK path (avdmanager), not user input.

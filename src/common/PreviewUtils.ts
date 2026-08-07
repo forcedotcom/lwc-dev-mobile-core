@@ -8,6 +8,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
 import { Logger } from '@salesforce/core';
+import { OSPlatform } from './Common.js';
 import { CommandLineUtils } from './CommandLineUtils.js';
 import { CommonUtils } from './CommonUtils.js';
 import { AndroidAppPreviewConfig, IOSAppPreviewConfig, PreviewConfigFile } from './PreviewConfigFile.js';
@@ -159,7 +160,7 @@ export class PreviewUtils {
             return `wss://10.0.2.2:${ports.httpsPort}`;
         }
 
-        if (process.platform !== 'darwin') {
+        if (process.platform !== OSPlatform.macos) {
             return `ws://localhost:${ports.httpPort}`; // cannot be Safari since it is only available on Mac
         }
 
