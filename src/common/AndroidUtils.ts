@@ -42,6 +42,15 @@ export class AndroidUtils {
     private static sdkManagerCommand: string | undefined;
     private static sdkRoot: AndroidSDKRoot | undefined;
 
+    // Characters safe to pass to cmd.exe as (Node-quoted) argv elements. Allowlist rather than
+    // denylist: the values that reach the Windows cmd.exe path are structured (an already
+    // space-normalized emulator name, a device id, a `system-images;api;image;abi` path, an abi),
+    // so a strict allowlist rejects anything unexpected instead of trying to enumerate every cmd
+    // metacharacter. `;` and `=` are permitted because the system-image path uses `;` separators
+    // and name=value args exist elsewhere; space is permitted because callers other than AVD-name
+    // normalization may include it. Every cmd metacharacter (`& | < > ^ ( ) " % !`) is excluded.
+    private static readonly CMD_SAFE_ARG = /^[A-Za-z0-9 ._:;@\\/=+-]+$/;
+
     /**
      * Indicates whether Android packages are cached or not.
      *
@@ -876,17 +885,27 @@ export class AndroidUtils {
     // `.exe` but not `.bat`/`.cmd` (ENOENT), and post-CVE-2024-27980 Node refuses to spawn a
     // `.bat`/`.cmd` unless `shell:true` (EINVAL). We therefore launch it through `cmd.exe /c` with
     // shell:false — the same pattern launchUrlInDesktopBrowser uses for `start`. cmd.exe resolves
-    // `avdmanager` to `avdmanager.bat` via PATHEXT, and because spawn still runs with shell:false
-    // Node quotes each argv element; cmd.exe honors those double quotes for the RCE metacharacters
-    // (`& | ; < >`), so untrusted values are not re-interpreted as commands. We do NOT use
-    // shell:true here: shell:true does not escape argv (it joins with spaces), which would
-    // reintroduce the injection this PR removes.
+    // `avdmanager` to `avdmanager.bat` via PATHEXT.
+    //
+    // shell:false alone is NOT sufficient to make argv inert on this cmd.exe path: libuv still
+    // flattens argv into one CreateProcess command line that cmd.exe re-parses with its own grammar,
+    // and libuv only quotes elements containing space/tab/`"`. A bare metacharacter (e.g. an emulator
+    // name `a&calc`) therefore arrives unquoted and cmd.exe splits on `&`; and even a quoted element
+    // can break out via an embedded `"` (cmd.exe does not honor the CRT `\"` escape — the BatBadBut /
+    // CVE-2024-1874 class), plus `%VAR%` is expanded even inside quotes. Double-quoting does not
+    // reliably neutralize any of these, so we validate each argv element against a strict allowlist
+    // before handing it to cmd.exe. We do NOT use shell:true either: shell:true does not escape argv
+    // (it joins with spaces), which would reintroduce the injection this PR removes.
     //
     // Public (rather than private) solely to act as a substitution seam for unit tests, mirroring
     // CommonUtils.spawnWrapper. Tests stub this to assert that untrusted values are handed over as
     // single, inert argv elements and never reach a shell.
     public static spawnChild(command: string, args: string[] = []): childProcess.ChildProcessWithoutNullStreams {
         if (process.platform === WINDOWS_OS) {
+            // Validate each untrusted argv element against a strict allowlist before it reaches
+            // cmd.exe (see method comment). We deliberately do not validate `command`: it is a
+            // trusted, code-derived SDK path (avdmanager), not user input.
+            args.forEach((arg) => AndroidUtils.assertSafeForCmd(arg));
             const child = childProcess.spawn(process.env.comspec ?? 'cmd.exe', ['/d', '/s', '/c', command, ...args], {
                 shell: false
             });
@@ -898,6 +917,15 @@ export class AndroidUtils {
             });
             child.unref();
             return child;
+        }
+    }
+
+    private static assertSafeForCmd(value: string): void {
+        if (!AndroidUtils.CMD_SAFE_ARG.test(value)) {
+            throw new SfError(
+                `Value cannot be safely passed to cmd.exe: ${JSON.stringify(value)}`,
+                'UnsafeCmdArgument'
+            );
         }
     }
 

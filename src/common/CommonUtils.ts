@@ -371,8 +371,17 @@ export class CommonUtils {
             command = 'open';
             args = [url];
         } else if (process.platform === 'win32') {
+            // `start` is a cmd.exe builtin, so it must run via cmd.exe. libuv only quotes argv
+            // elements containing space/tab/`"`, and cmd.exe treats `& | < > ^ ( )` as
+            // metacharacters and expands `%VAR%` even inside quotes. A normal URL (`?a=1&b=2`) has
+            // no space, so libuv would leave it unquoted and cmd.exe would split it on `&`. Wrap the
+            // URL in double quotes ourselves, and refuse the two things quoting cannot make safe: an
+            // embedded `"` (which closes cmd's quote context) and `%VAR%` expansion (plus CR/LF).
+            if (/["%\r\n]/.test(url)) {
+                throw new SfError(`URL cannot be safely opened on Windows: ${JSON.stringify(url)}`, 'UnsafeUrl');
+            }
             command = 'cmd';
-            args = ['/c', 'start', '', url];
+            args = ['/c', 'start', '', `"${url}"`];
         } else {
             command = 'xdg-open';
             args = [url];
