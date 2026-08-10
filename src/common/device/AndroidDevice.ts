@@ -341,12 +341,28 @@ export class AndroidDevice implements BaseDevice {
         // spit out a bunch of output to stderr where they are not really errors. This
         // is especially true on the Windows platform. So instead we spawn the process to launch
         // the emulator and later attempt at polling the emulator to see if it failed to boot.
-        const writableFlag = writable ? '-writable-system' : '';
-        const coldFlag = coldBoot ? '-no-snapshot-load' : '';
-        const child = childProcess.spawn(
-            `${AndroidUtils.getEmulatorCommand()} @${this.id} -port ${resolvedPortNumber} ${writableFlag} ${coldFlag}`,
-            { detached: true, shell: true, stdio: 'ignore' }
-        );
+        // Build as executable + argv array with shell:false so that the emulator name (this.id)
+        // and the other values are passed as single, inert arguments and never re-parsed by a
+        // shell (structurally removes OS command injection). Empty flags are omitted rather than
+        // passed as empty strings.
+        const emulatorArgs = [`@${this.id}`, '-port', `${resolvedPortNumber}`];
+        if (writable) {
+            emulatorArgs.push('-writable-system');
+        }
+        if (coldBoot) {
+            emulatorArgs.push('-no-snapshot-load');
+        }
+        const child = childProcess.spawn(AndroidUtils.getEmulatorCommand(), emulatorArgs, {
+            detached: true,
+            shell: false,
+            stdio: 'ignore'
+        });
+        // With shell:false, failure to launch the executable (e.g. ENOENT) surfaces as an 'error'
+        // event rather than a shell exit code. Handle it so it does not become an uncaught
+        // exception; the boot outcome is still verified below via waitUntilDeviceIsReady.
+        child.on('error', (err) => {
+            this.logger?.warn(`Failed to launch emulator process: ${err.message}`);
+        });
         child.unref();
 
         if (waitForBoot) {

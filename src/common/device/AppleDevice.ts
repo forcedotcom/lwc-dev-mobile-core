@@ -125,11 +125,12 @@ export class AppleDevice implements BaseDevice {
     public async isAppInstalled(target: string): Promise<boolean> {
         let result = '';
         try {
-            result = CommonUtils.executeCommandSync(
-                `xcrun simctl listapps ${this.id} | grep "${target}"`,
-                undefined,
-                this.logger
-            );
+            // This sink genuinely needs a shell (pipe to grep). Both interpolated values are
+            // shell-quoted so that no metacharacter can break out of the command string.
+            const command = `xcrun simctl listapps ${CommonUtils.shellQuote(this.id)} | grep ${CommonUtils.shellQuote(
+                target
+            )}`;
+            result = CommonUtils.executeCommandSync(command, undefined, this.logger);
         } catch {
             // ignore and continue
         }
@@ -143,8 +144,12 @@ export class AppleDevice implements BaseDevice {
      * @param appBundlePath Path to the app bundle of the native app.
      */
     public async installApp(appBundlePath: string): Promise<void> {
-        const installCommand = `/usr/bin/xcrun simctl install ${this.id} '${appBundlePath.trim()}'`;
-        await CommonUtils.executeCommandAsync(installCommand, this.logger);
+        await CommonUtils.spawnCommandAsync(
+            '/usr/bin/xcrun',
+            ['simctl', 'install', this.id, appBundlePath.trim()],
+            undefined,
+            this.logger
+        );
     }
 
     /**
@@ -188,7 +193,11 @@ export class AppleDevice implements BaseDevice {
         const certFilePath = path.join(os.tmpdir(), 'localhost.der');
         fs.writeFileSync(certFilePath, derContent);
 
-        const cmd = `/usr/bin/xcrun simctl keychain ${this.id} add-root-cert ${certFilePath}`;
-        await CommonUtils.executeCommandAsync(cmd, this.logger);
+        await CommonUtils.spawnCommandAsync(
+            '/usr/bin/xcrun',
+            ['simctl', 'keychain', this.id, 'add-root-cert', certFilePath],
+            undefined,
+            this.logger
+        );
     }
 }

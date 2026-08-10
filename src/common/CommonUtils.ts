@@ -14,6 +14,7 @@ import os from 'node:os';
 import { Logger, Messages, SfError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { ux } from '@oclif/core';
+import { OSPlatform } from './Common.js';
 
 type StdioOptions = childProcess.StdioOptions;
 
@@ -281,20 +282,28 @@ export class CommonUtils {
                     logger?.error(`Error executing command '${fullCommand}':`);
 
                     // also include stderr & stdout for more detailed error
-                    let msg = `stderr:\n${capturedStderr.join()}`;
+                    let msg = `stderr:\n${capturedStderr.join('')}`;
                     if (capturedStdout.length > 0) {
                         msg = `${msg}\nstdout:\n${capturedStdout.join('\n')}`;
                     }
 
                     logger?.error(msg);
-                    reject(new Error(capturedStderr.join()));
+                    reject(new Error(capturedStderr.join('')));
                 } else {
+                    // Join with '' (not the default ',') so multi-chunk stdout/stderr is
+                    // reassembled verbatim. Large outputs (e.g. `xcrun simctl list --json`)
+                    // arrive across several 'data' events; a comma separator would corrupt them.
                     resolve({
-                        stdout: capturedStdout.join(),
-                        stderr: capturedStderr.join()
+                        stdout: capturedStdout.join(''),
+                        stderr: capturedStderr.join('')
                     });
                 }
             });
+
+            // With shell:false, a failure to launch the executable itself (ENOENT, EACCES,
+            // Windows .bat EINVAL) surfaces as an 'error' event rather than a non-zero 'close'.
+            // An 'error' with no listener throws, so without this the promise would never settle.
+            prc.on('error', (err) => reject(err));
         });
     }
 
@@ -312,9 +321,39 @@ export class CommonUtils {
         stdioOptions: StdioOptions = ['ignore', 'pipe', 'ignore']
     ): childProcess.ChildProcess {
         return childProcess.spawn(command, args, {
-            shell: true,
+            // shell:false so that the OS performs no shell parsing of the command or its
+            // arguments. This structurally removes the OS command-injection class: any value
+            // passed as an argv element is treated as an inert argument, never re-interpreted
+            // as shell syntax (`;`, `$()`, backticks, `&&`, `|`, etc.).
+            shell: false,
             stdio: stdioOptions
         });
+    }
+
+    /**
+     * Quotes a value so that it can be safely interpolated into a command string that is
+     * executed through a shell (i.e. executeCommandAsync / executeCommandSync). This should
+     * only be used for the handful of sinks that genuinely require shell features such as
+     * pipes; prefer passing an argv array to spawnCommandAsync where no shell is needed.
+     *
+     * On POSIX platforms the value is wrapped in single quotes (which disable all shell
+     * interpretation), with any embedded single quote escaped as '\''. This is safe against
+     * the full set of POSIX shell metacharacters and is the intended use of this helper —
+     * every current caller is a POSIX-only sink (an `awk`/`grep` pipe).
+     *
+     * The Windows branch only wraps in double quotes and doubles embedded double quotes; it does
+     * NOT neutralize cmd.exe metacharacters (`& | < > ^ %`), so it is not sufficient to sanitize
+     * untrusted input for a cmd.exe command string. Do not add a Windows shell sink that relies on
+     * this for security — pass an argv array to spawnCommandAsync (shell:false) instead.
+     *
+     * @param value The value to quote.
+     * @returns The shell-quoted value.
+     */
+    public static shellQuote(value: string): string {
+        if (process.platform === OSPlatform.windows) {
+            return `"${value.replace(/"/g, '""')}"`;
+        }
+        return `'${value.replace(/'/g, "'\\''")}'`;
     }
 
     /**
@@ -323,13 +362,37 @@ export class CommonUtils {
      * @returns A Promise that launches the desktop browser and navigates to the provided URL.
      */
     public static async launchUrlInDesktopBrowser(url: string, logger?: Logger): Promise<void> {
-        const openCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+        // Pass the URL as a single argv element (shell:false) so it can never be re-parsed by a
+        // shell. On Windows the opener is the cmd.exe builtin `start`, which must be invoked via
+        // `cmd /c` (the empty "" is start's title argument); on macOS/Linux `open`/`xdg-open` are
+        // real executables.
+        let command: string;
+        let args: string[];
+        if (process.platform === OSPlatform.macos) {
+            command = 'open';
+            args = [url];
+        } else if (process.platform === OSPlatform.windows) {
+            // `start` is a cmd.exe builtin, so it must run via cmd.exe. libuv only quotes argv
+            // elements containing space/tab/`"`, and cmd.exe treats `& | < > ^ ( )` as
+            // metacharacters and expands `%VAR%` even inside quotes. A normal URL (`?a=1&b=2`) has
+            // no space, so libuv would leave it unquoted and cmd.exe would split it on `&`. Wrap the
+            // URL in double quotes ourselves, and refuse the two things quoting cannot make safe: an
+            // embedded `"` (which closes cmd's quote context) and `%VAR%` expansion (plus CR/LF).
+            if (/["%\r\n]/.test(url)) {
+                throw new SfError(`URL cannot be safely opened on Windows: ${JSON.stringify(url)}`, 'UnsafeUrl');
+            }
+            command = 'cmd';
+            args = ['/c', 'start', '', `"${url}"`];
+        } else {
+            command = 'xdg-open';
+            args = [url];
+        }
 
         CommonUtils.startCliAction(
             messages.getMessage('launchBrowserAction'),
             messages.getMessage('openBrowserWithUrlStatus', [url])
         );
-        return CommonUtils.executeCommandAsync(`${openCmd} ${url}`, logger).then(() => {
+        return CommonUtils.spawnCommandAsync(command, args, undefined, logger).then(() => {
             CommonUtils.stopCliAction();
             return Promise.resolve();
         });
@@ -353,7 +416,7 @@ export class CommonUtils {
      */
     public static async getLwcServerPort(logger?: Logger): Promise<string | undefined> {
         const getProcessCommand =
-            process.platform === 'win32'
+            process.platform === OSPlatform.windows
                 ? 'wmic process where "CommandLine Like \'%force:lightning:lwc:start%\'" get CommandLine  | findstr -v "wmic"'
                 : 'ps -ax | grep force:lightning:lwc:start | grep -v grep';
 
@@ -471,7 +534,7 @@ export class CommonUtils {
         outDir = CommonUtils.convertToUnixPath(outDir);
 
         const cmd =
-            process.platform === 'win32'
+            process.platform === OSPlatform.windows
                 ? `powershell -Command "$ProgressPreference = 'SilentlyContinue'; Expand-Archive -Path \\"${archive}\\" -DestinationPath \\"${outDir}\\" -Force"`
                 : `unzip -o -qq ${archive} -d ${outDir}`;
 

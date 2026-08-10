@@ -103,6 +103,15 @@ export enum Platform {
     android = 'android'
 }
 
+// Node's `process.platform` OS identifiers. Defined as `as const` literals rather than a string
+// enum so that `process.platform === OSPlatform.windows` type-checks against Node's `NodeJS.Platform`
+// union (a string enum member is a distinct type and triggers a TS "no overlap" error).
+export const OSPlatform = {
+    windows: 'win32',
+    macos: 'darwin',
+    linux: 'linux'
+} as const;
+
 export enum OutputFormat {
     cli = 'cli',
     api = 'api'

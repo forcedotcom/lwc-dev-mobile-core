@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Logger, Messages, SfError } from '@salesforce/core';
 import { AndroidPackage, AndroidPackages } from './AndroidTypes.js';
-import { Version } from './Common.js';
+import { OSPlatform, Version } from './Common.js';
 import { CommonUtils } from './CommonUtils.js';
 import { PlatformConfig } from './PlatformConfig.js';
 import { LaunchArgument } from './device/BaseDevice.js';
@@ -17,7 +17,6 @@ import { LaunchArgument } from './device/BaseDevice.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'common');
 
-const WINDOWS_OS = 'win32';
 const ANDROID_SDK_MANAGER_NAME = 'sdkmanager';
 const ANDROID_AVD_MANAGER_NAME = 'avdmanager';
 const ANDROID_ADB_NAME = 'adb';
@@ -41,6 +40,15 @@ export class AndroidUtils {
     private static adbShellCommand: string | undefined;
     private static sdkManagerCommand: string | undefined;
     private static sdkRoot: AndroidSDKRoot | undefined;
+
+    // Characters safe to pass to cmd.exe as (Node-quoted) argv elements. Allowlist rather than
+    // denylist: the values that reach the Windows cmd.exe path are structured (an already
+    // space-normalized emulator name, a device id, a `system-images;api;image;abi` path, an abi),
+    // so a strict allowlist rejects anything unexpected instead of trying to enumerate every cmd
+    // metacharacter. `;` and `=` are permitted because the system-image path uses `;` separators
+    // and name=value args exist elsewhere; space is permitted because callers other than AVD-name
+    // normalization may include it. Every cmd metacharacter (`& | < > ^ ( ) " % !`) is excluded.
+    private static readonly CMD_SAFE_ARG = /^[A-Za-z0-9 ._:;@\\/=+-]+$/;
 
     /**
      * Indicates whether Android packages are cached or not.
@@ -367,15 +375,29 @@ export class AndroidUtils {
         // to generate user friendly display names.
         const resolvedName = emulatorName.replace(/ /gi, '_');
 
-        const createAvdCommand = `${AndroidUtils.getAvdManagerCommand()} create avd -n ${resolvedName} --force -k ${AndroidUtils.systemImagePath(
-            platformAPI,
-            emulatorImage,
+        // Build the command as an argv array so that no value (device name, image path,
+        // device type, abi) is ever re-parsed by a shell. spawnChild runs with shell:false,
+        // so each element below is passed to the OS as a single, inert argument.
+        const avdManagerCommand = AndroidUtils.getAvdManagerCommand();
+        const createAvdArgs = [
+            'create',
+            'avd',
+            '-n',
+            resolvedName,
+            '--force',
+            '-k',
+            AndroidUtils.systemImagePath(platformAPI, emulatorImage, abi),
+            '--device',
+            device,
+            '--abi',
             abi
-        )} --device ${device} --abi ${abi}`;
+        ];
+        // Human-readable form used only for error messages/logging (never executed).
+        const createAvdCommand = `${avdManagerCommand} ${createAvdArgs.join(' ')}`;
 
         return new Promise((resolve, reject) => {
             try {
-                const child = AndroidUtils.spawnChild(createAvdCommand);
+                const child = AndroidUtils.spawnChild(avdManagerCommand, createAvdArgs);
                 if (child) {
                     child.stdin.setDefaultEncoding('utf8');
                     child.stdin.write('no');
@@ -454,7 +476,7 @@ export class AndroidUtils {
      * @param portNumber The ADB port of the Android virtual device.
      */
     public static async waitUntilDeviceIsReady(portNumber: number, logger?: Logger): Promise<void> {
-        const quote = process.platform === WINDOWS_OS ? '"' : "'";
+        const quote = process.platform === OSPlatform.windows ? '"' : "'";
         const command = `wait-for-device shell ${quote}while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;${quote}`;
         const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
 
@@ -475,7 +497,7 @@ export class AndroidUtils {
      */
     public static async waitUntilDeviceIsPoweredOff(portNumber: number, logger?: Logger): Promise<void> {
         const command =
-            process.platform === WINDOWS_OS
+            process.platform === OSPlatform.windows
                 ? `powershell -Command "while($(adb devices | findstr emulator-${portNumber})){ Start-Sleep -s 1 }"`
                 : `while [[ -n $(adb devices | grep emulator-${portNumber}) ]]; do sleep 1; done;`;
         const timeout = PlatformConfig.androidConfig().deviceReadinessWaitTime;
@@ -574,7 +596,7 @@ export class AndroidUtils {
      * @returns " on Windows and ' on other platforms
      */
     public static platformSpecificPathQuote(): string {
-        return process.platform === WINDOWS_OS ? '"' : "'";
+        return process.platform === OSPlatform.windows ? '"' : "'";
     }
 
     /**
@@ -851,6 +873,61 @@ export class AndroidUtils {
         });
     }
 
+    // NOTE: detaching a process in windows seems to detach the streams. Prevent spawn from detaching when
+    // used in Windows OS for special handling of some commands (adb).
+    //
+    // The command is passed as an executable + argv array with shell:false so that no
+    // argument is re-parsed by a shell (structurally removes OS command injection).
+    //
+    // On Windows the sole caller (createNewVirtualDevice) launches `avdmanager`, which ships as a
+    // `.bat`. `shell:false` cannot launch a `.bat` directly: Windows CreateProcess auto-appends
+    // `.exe` but not `.bat`/`.cmd` (ENOENT), and post-CVE-2024-27980 Node refuses to spawn a
+    // `.bat`/`.cmd` unless `shell:true` (EINVAL). We therefore launch it through `cmd.exe /c` with
+    // shell:false — the same pattern launchUrlInDesktopBrowser uses for `start`. cmd.exe resolves
+    // `avdmanager` to `avdmanager.bat` via PATHEXT.
+    //
+    // shell:false alone is NOT sufficient to make argv inert on this cmd.exe path: libuv still
+    // flattens argv into one CreateProcess command line that cmd.exe re-parses with its own grammar,
+    // and libuv only quotes elements containing space/tab/`"`. A bare metacharacter (e.g. an emulator
+    // name `a&calc`) therefore arrives unquoted and cmd.exe splits on `&`; and even a quoted element
+    // can break out via an embedded `"` (cmd.exe does not honor the CRT `\"` escape — the BatBadBut /
+    // CVE-2024-1874 class), plus `%VAR%` is expanded even inside quotes. Double-quoting does not
+    // reliably neutralize any of these, so we validate each argv element against a strict allowlist
+    // before handing it to cmd.exe. We do NOT use shell:true either: shell:true does not escape argv
+    // (it joins with spaces), which would reintroduce the injection this PR removes.
+    //
+    // Public (rather than private) solely to act as a substitution seam for unit tests, mirroring
+    // CommonUtils.spawnWrapper. Tests stub this to assert that untrusted values are handed over as
+    // single, inert argv elements and never reach a shell.
+    public static spawnChild(command: string, args: string[] = []): childProcess.ChildProcessWithoutNullStreams {
+        if (process.platform === OSPlatform.windows) {
+            // Validate each untrusted argv element against a strict allowlist before it reaches
+            // cmd.exe (see method comment). We deliberately do not validate `command`: it is a
+            // trusted, code-derived SDK path (avdmanager), not user input.
+            args.forEach((arg) => AndroidUtils.assertSafeForCmd(arg));
+            const child = childProcess.spawn(process.env.comspec ?? 'cmd.exe', ['/d', '/s', '/c', command, ...args], {
+                shell: false
+            });
+            return child;
+        } else {
+            const child = childProcess.spawn(command, args, {
+                shell: false,
+                detached: true
+            });
+            child.unref();
+            return child;
+        }
+    }
+
+    private static assertSafeForCmd(value: string): void {
+        if (!AndroidUtils.CMD_SAFE_ARG.test(value)) {
+            throw new SfError(
+                `Value cannot be safely passed to cmd.exe: ${JSON.stringify(value)}`,
+                'UnsafeCmdArgument'
+            );
+        }
+    }
+
     private static async getAllCurrentlyUsedAdbPorts(logger?: Logger): Promise<number[]> {
         let ports: number[] = [];
         const command = `${AndroidUtils.getAdbShellCommand()} devices`;
@@ -889,31 +966,13 @@ export class AndroidUtils {
     }
 
     private static systemImagePath(platformAPI: string, emuImage: string, abi: string): string {
-        const pathName = `system-images;${platformAPI};${emuImage};${abi}`;
-        if (process.platform === WINDOWS_OS) {
-            return pathName;
-        }
-        return `'${pathName}'`;
+        // No shell quoting here: this value is passed as a single argv element to a
+        // shell:false spawn, so the `;` separators are safe and must remain unquoted.
+        return `system-images;${platformAPI};${emuImage};${abi}`;
     }
 
     private static async fetchInstalledSystemImages(logger?: Logger): Promise<AndroidPackage[]> {
         return AndroidUtils.fetchInstalledPackages(logger).then((packages) => packages.systemImages);
-    }
-
-    // NOTE: detaching a process in windows seems to detach the streams. Prevent spawn from detaching when
-    // used in Windows OS for special handling of some commands (adb).
-    private static spawnChild(command: string): childProcess.ChildProcessWithoutNullStreams {
-        if (process.platform === WINDOWS_OS) {
-            const child = childProcess.spawn(command, { shell: true });
-            return child;
-        } else {
-            const child = childProcess.spawn(command, {
-                shell: true,
-                detached: true
-            });
-            child.unref();
-            return child;
-        }
     }
 
     private static readEmulatorConfig(emulatorName: string, logger?: Logger): Promise<Map<string, string>> {

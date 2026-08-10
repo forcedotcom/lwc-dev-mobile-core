@@ -74,7 +74,12 @@ export class MacNetworkUtils {
                     //     status: active
                     // '''
 
-                    const ifconfigCmd = `ifconfig ${parsedLines[i + 1]} | awk '$1 == "inet" {print $2}'`;
+                    // This sink genuinely needs a shell (pipe to awk). The device name comes from
+                    // OS tool output, but it is shell-quoted as defense-in-depth so it can never
+                    // break out of the command string.
+                    const ifconfigCmd = `ifconfig ${CommonUtils.shellQuote(
+                        parsedLines[i + 1]
+                    )} | awk '$1 == "inet" {print $2}'`;
 
                     let ipAddress = CommonUtils.executeCommandSync(ifconfigCmd, undefined, logger);
                     if (ipAddress) {

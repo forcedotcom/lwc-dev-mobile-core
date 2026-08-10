@@ -24,8 +24,9 @@ export class IOSUtils {
      * @param waitForBoot Optional boolean indicating whether it should wait for the device to boot up. Defaults to true.
      */
     public static async bootDevice(udid: string, waitForBoot = true, logger?: Logger): Promise<void> {
-        const command = `${XCRUN_CMD} simctl boot ${udid}`;
-        return CommonUtils.executeCommandAsync(command, logger)
+        const args = ['simctl', 'boot', udid];
+        const command = `${XCRUN_CMD} ${args.join(' ')}`;
+        return CommonUtils.spawnCommandAsync(XCRUN_CMD, args, undefined, logger)
             .then(() => {
                 if (waitForBoot) {
                     return IOSUtils.waitUntilDeviceIsReady(udid, logger);
@@ -48,9 +49,8 @@ export class IOSUtils {
      * @param udid The UDID of the simulator to shut down.
      */
     public static async shutdownDevice(udid: string, logger?: Logger): Promise<void> {
-        const command = `${XCRUN_CMD} simctl shutdown ${udid}`;
         try {
-            await CommonUtils.executeCommandAsync(command, logger);
+            await CommonUtils.spawnCommandAsync(XCRUN_CMD, ['simctl', 'shutdown', udid], undefined, logger);
         } catch (error) {
             logger?.warn(error);
         }
@@ -69,8 +69,15 @@ export class IOSUtils {
         runtime: string,
         logger?: Logger
     ): Promise<string> {
-        const command = `${XCRUN_CMD} simctl create '${simulatorName}' ${DEVICE_TYPE_PREFIX}.${deviceType} ${RUNTIME_TYPE_PREFIX}.${runtime}`;
-        return CommonUtils.executeCommandAsync(command, logger)
+        const args = [
+            'simctl',
+            'create',
+            simulatorName,
+            `${DEVICE_TYPE_PREFIX}.${deviceType}`,
+            `${RUNTIME_TYPE_PREFIX}.${runtime}`
+        ];
+        const command = `${XCRUN_CMD} ${args.join(' ')}`;
+        return CommonUtils.spawnCommandAsync(XCRUN_CMD, args, undefined, logger)
             .then((result) => Promise.resolve(result.stdout.trim()))
             .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
     }
@@ -79,8 +86,9 @@ export class IOSUtils {
      * Attempts to wait for a simulator to finish booting up.
      */
     public static async waitUntilDeviceIsReady(udid: string, logger?: Logger): Promise<void> {
-        const command = `${XCRUN_CMD} simctl bootstatus "${udid}"`;
-        return CommonUtils.executeCommandAsync(command, logger)
+        const args = ['simctl', 'bootstatus', udid];
+        const command = `${XCRUN_CMD} ${args.join(' ')}`;
+        return CommonUtils.spawnCommandAsync(XCRUN_CMD, args, undefined, logger)
             .then(() => Promise.resolve())
             .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
     }
@@ -102,12 +110,13 @@ export class IOSUtils {
      * @param url The URL to navigate to.
      */
     public static async launchURLInBootedSimulator(udid: string, url: string, logger?: Logger): Promise<void> {
-        const command = `${XCRUN_CMD} simctl openurl "${udid}" ${url}`;
+        const args = ['simctl', 'openurl', udid, url];
+        const command = `${XCRUN_CMD} ${args.join(' ')}`;
         CommonUtils.startCliAction(
             messages.getMessage('launchBrowserAction'),
             messages.getMessage('openBrowserWithUrlStatus', [url])
         );
-        return CommonUtils.executeCommandAsync(command, logger)
+        return CommonUtils.spawnCommandAsync(XCRUN_CMD, args, undefined, logger)
             .then(() => Promise.resolve())
             .catch((error) => Promise.reject(new SfError(`The command '${command}' failed to execute ${error}`)));
     }
@@ -133,17 +142,16 @@ export class IOSUtils {
             const installMsg = messages.getMessage('installAppStatus', [appBundlePath.trim()]);
             logger?.info(installMsg);
             CommonUtils.updateCliAction(installMsg);
-            const installCommand = `${XCRUN_CMD} simctl install ${udid} '${appBundlePath.trim()}'`;
-            await CommonUtils.executeCommandAsync(installCommand, logger);
+            await CommonUtils.spawnCommandAsync(
+                XCRUN_CMD,
+                ['simctl', 'install', udid, appBundlePath.trim()],
+                undefined,
+                logger
+            );
         }
 
-        let launchArgs = '';
-        targetAppArguments?.forEach((arg) => {
-            launchArgs += `${arg.name}=${arg.value} `;
-        });
-
-        const terminateCommand = `${XCRUN_CMD} simctl terminate "${udid}" ${targetApp}`;
-        const launchCommand = `${XCRUN_CMD} simctl launch "${udid}" ${targetApp} ${launchArgs}`;
+        // Each launch argument is passed as a single "name=value" argv element; no shell parsing.
+        const launchArgs = (targetAppArguments ?? []).map((arg) => `${arg.name}=${arg.value}`);
 
         // attempt at terminating the app first (in case it is already running) and then try to launch it again with new arguments.
         // if we hit issues with terminating, just ignore and continue.
@@ -151,7 +159,7 @@ export class IOSUtils {
             const terminateMsg = messages.getMessage('terminateAppStatus', [targetApp]);
             logger?.info(terminateMsg);
             CommonUtils.updateCliAction(terminateMsg);
-            await CommonUtils.executeCommandAsync(terminateCommand, logger);
+            await CommonUtils.spawnCommandAsync(XCRUN_CMD, ['simctl', 'terminate', udid, targetApp], undefined, logger);
         } catch {
             // ignore and continue
         }
@@ -159,7 +167,12 @@ export class IOSUtils {
         const launchMsg = messages.getMessage('launchAppStatus', [targetApp]);
         logger?.info(launchMsg);
         CommonUtils.updateCliAction(launchMsg);
-        await CommonUtils.executeCommandAsync(launchCommand, logger);
+        await CommonUtils.spawnCommandAsync(
+            XCRUN_CMD,
+            ['simctl', 'launch', udid, targetApp, ...launchArgs],
+            undefined,
+            logger
+        );
 
         CommonUtils.stopCliAction();
     }
@@ -170,8 +183,12 @@ export class IOSUtils {
      * @returns The supported iOS device types.
      */
     public static async getSupportedDeviceTypes(logger?: Logger): Promise<string[]> {
-        const command = `${XCRUN_CMD} simctl list devicetypes --json`;
-        const { stdout } = await CommonUtils.executeCommandAsync(command, logger);
+        const { stdout } = await CommonUtils.spawnCommandAsync(
+            XCRUN_CMD,
+            ['simctl', 'list', 'devicetypes', '--json'],
+            undefined,
+            logger
+        );
         const json = JSON.parse(stdout) as { devicetypes: Array<{ identifier: string }> };
         return json.devicetypes.flatMap((item) => item.identifier.split('.').pop() ?? item.identifier);
     }

