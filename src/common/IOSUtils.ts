@@ -69,6 +69,12 @@ export class IOSUtils {
         runtime: string,
         logger?: Logger
     ): Promise<string> {
+        // Defense-in-depth: reject names/identifiers carrying shell metacharacters before building
+        // the command (the sink runs shell:false, but this fails fast on malformed input).
+        CommonUtils.assertSafeDeviceName(simulatorName);
+        CommonUtils.assertSafeDeviceIdentifier(deviceType);
+        CommonUtils.assertSafeDeviceIdentifier(runtime);
+
         const args = [
             'simctl',
             'create',

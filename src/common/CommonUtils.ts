@@ -24,6 +24,17 @@ const messages = Messages.loadMessages('@salesforce/lwc-dev-mobile-core', 'commo
 export class CommonUtils {
     public static DEFAULT_LWC_SERVER_PORT = '3333';
 
+    // Allowlist for user-facing device/emulator names: letters, digits, space, and the few
+    // punctuation characters that legitimately appear (`.`, `_`, `-`). Defense-in-depth on top of
+    // the shell:false argv execution — it fails fast on unexpected input and excludes every shell
+    // metacharacter (`; & | $ ( ) \` < > * ? ! # ' " \\` etc.) so a name can never be repurposed
+    // even if a future caller reintroduces a shell sink.
+    private static readonly SAFE_DEVICE_NAME = /^[A-Za-z0-9 ._-]+$/;
+
+    // Allowlist for structured device identifiers (deviceType, runtime, abi). Same as a name but
+    // with no spaces, since these are token-like values (e.g. `iPhone-8`, `iOS-17-2`, `x86_64`).
+    private static readonly SAFE_DEVICE_IDENTIFIER = /^[A-Za-z0-9._-]+$/;
+
     /**
      * Converts a path to UNIX style path.
      *
@@ -357,6 +368,51 @@ export class CommonUtils {
     }
 
     /**
+     * Quotes a value as a PowerShell single-quoted string literal for safe interpolation into a
+     * `powershell -Command` script. Inside a single-quoted PowerShell literal no expansion or
+     * command substitution occurs; the only escape needed is doubling an embedded single quote
+     * (`'` -> `''`). Use this — not {@link shellQuote} — for PowerShell sinks.
+     *
+     * @param value The value to quote.
+     * @returns The PowerShell single-quoted value.
+     */
+    public static powerShellSingleQuote(value: string): string {
+        return `'${value.replace(/'/g, "''")}'`;
+    }
+
+    /**
+     * Validates a user-facing device/emulator name against a strict allowlist, throwing an
+     * SfError if it contains anything other than letters, digits, spaces, `.`, `_`, or `-`.
+     *
+     * Defense-in-depth: device creation already runs via spawn with shell:false (argv arrays),
+     * so this is not the sole barrier — but it rejects malformed input up front and guarantees a
+     * name can never carry a shell metacharacter into any current or future sink.
+     *
+     * @param name The device/emulator name to validate.
+     */
+    public static assertSafeDeviceName(name: string): void {
+        if (!CommonUtils.SAFE_DEVICE_NAME.test(name)) {
+            throw new SfError(`Device name cannot be safely used: ${JSON.stringify(name)}`, 'UnsafeDeviceName');
+        }
+    }
+
+    /**
+     * Validates a structured device identifier (deviceType, runtime, abi) against a strict
+     * allowlist, throwing an SfError if it contains anything other than letters, digits, `.`,
+     * `_`, or `-` (no spaces). See {@link assertSafeDeviceName} for the defense-in-depth rationale.
+     *
+     * @param identifier The device identifier to validate.
+     */
+    public static assertSafeDeviceIdentifier(identifier: string): void {
+        if (!CommonUtils.SAFE_DEVICE_IDENTIFIER.test(identifier)) {
+            throw new SfError(
+                `Device identifier cannot be safely used: ${JSON.stringify(identifier)}`,
+                'UnsafeDeviceIdentifier'
+            );
+        }
+    }
+
+    /**
      * Launches the desktop browser and navigates to the provided URL.
      *
      * @returns A Promise that launches the desktop browser and navigates to the provided URL.
@@ -533,13 +589,24 @@ export class CommonUtils {
         archive = CommonUtils.convertToUnixPath(archive);
         outDir = CommonUtils.convertToUnixPath(outDir);
 
-        const cmd =
-            process.platform === OSPlatform.windows
-                ? `powershell -Command "$ProgressPreference = 'SilentlyContinue'; Expand-Archive -Path \\"${archive}\\" -DestinationPath \\"${outDir}\\" -Force"`
-                : `unzip -o -qq ${archive} -d ${outDir}`;
-
         logger?.debug(`Extracting archive ${zipFilePath}`);
-        await CommonUtils.executeCommandAsync(cmd, logger);
+
+        if (process.platform === OSPlatform.windows) {
+            // Expand-Archive is a PowerShell cmdlet, so this must run through powershell.exe (a real
+            // executable, invoked here via spawn with shell:false — no cmd.exe, no shell parsing of
+            // the argv). The paths are still interpolated into the -Command script that PowerShell
+            // itself parses, so each is wrapped in a PowerShell single-quoted literal (with embedded
+            // `'` doubled to `''`), inside which PowerShell performs no expansion or command
+            // substitution. That neutralizes the metacharacters cmd.exe-style double-quoting could not.
+            const psArchive = CommonUtils.powerShellSingleQuote(archive);
+            const psOutDir = CommonUtils.powerShellSingleQuote(outDir);
+            const script = `$ProgressPreference = 'SilentlyContinue'; Expand-Archive -Path ${psArchive} -DestinationPath ${psOutDir} -Force`;
+            await CommonUtils.spawnCommandAsync('powershell', ['-Command', script], undefined, logger);
+        } else {
+            // Pass each path as a single, inert argv element (spawn with shell:false) so no
+            // metacharacter in the path is ever re-parsed by a shell.
+            await CommonUtils.spawnCommandAsync('unzip', ['-o', '-qq', archive, '-d', outDir], undefined, logger);
+        }
     }
 
     /**

