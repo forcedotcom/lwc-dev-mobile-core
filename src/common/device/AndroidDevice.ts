@@ -308,7 +308,7 @@ export class AndroidDevice implements BaseDevice {
      */
     private async startEmulator(bootMode = BootMode.normal, coldBoot = false, waitForBoot = true): Promise<void> {
         const port = await AndroidUtils.emulatorHasPort(this.id, this.logger);
-        const resolvedPortNumber = port ? port : await AndroidUtils.getNextAvailableAdbPort(this.logger);
+        const resolvedPortNumber = port ?? (await AndroidUtils.getNextAvailableAdbPort(this.logger));
         const isAlreadyBooted = resolvedPortNumber === port;
 
         if (isAlreadyBooted) {
@@ -327,7 +327,7 @@ export class AndroidDevice implements BaseDevice {
             }
         }
 
-        let msgKey = '';
+        let msgKey: string;
         const writable = bootMode !== BootMode.normal;
         if (resolvedPortNumber === port) {
             msgKey = writable ? 'emulatorRelaunchWritableStatus' : 'emulatorRelaunchNotWritableStatus';

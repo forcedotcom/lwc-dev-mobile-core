@@ -110,7 +110,7 @@ export class CommonUtils {
      */
     public static updateCliAction(status: string): void {
         const task = ux.action.task;
-        if (!task || !task.active) {
+        if (!task?.active) {
             CommonUtils.startCliAction(status);
         } else if (process.stdout?.isTTY === true) {
             task.status = status;
@@ -538,7 +538,7 @@ export class CommonUtils {
                     });
                 })
                 .on('error)', (error) => {
-                    reject(error);
+                    reject(error instanceof Error ? error : new Error(String(error)));
                 });
         });
     }

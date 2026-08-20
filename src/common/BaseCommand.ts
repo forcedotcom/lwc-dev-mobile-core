@@ -25,7 +25,6 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
     private cmdRequirements: CommandRequirements = {};
     private cmdTelemetryEmitter: TelemetryEmitter = new SfCliTelemetryEmitter();
 
-    // eslint-disable-next-line no-underscore-dangle
     protected abstract _commandName: string;
 
     public get commandName(): string {
@@ -164,7 +163,6 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const outputFlag = this.flagValues?.outputFormat as string | undefined;
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return super.jsonEnabled() || outputFlag === OutputFormat.api;
     }
 
@@ -198,7 +196,7 @@ export abstract class BaseCommand extends SfCommand<unknown> implements HasRequi
             const configEntries = Object.entries(flag[1]);
             const hasValidate = configEntries.find((keyValuePair) => keyValuePair[0] === 'validate');
             if (hasValidate) {
-                // eslint-disable-next-line @typescript-eslint/unbound-method, no-param-reassign
+                // eslint-disable-next-line @typescript-eslint/unbound-method
                 flag[1].parse = CommandLineUtils.flagParser;
             }
         });

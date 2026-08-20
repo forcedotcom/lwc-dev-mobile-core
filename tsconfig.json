@@ -4,12 +4,12 @@
         "outDir": "dist",
         "rootDir": "src",
         "resolveJsonModule": true,
-        "baseUrl": ".",
         "experimentalDecorators": true,
         "pretty": true,
         "declarationMap": true,
         "removeComments": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "types": ["mocha", "node"]
     },
     "include": ["./src/**/*.ts"]
 }
