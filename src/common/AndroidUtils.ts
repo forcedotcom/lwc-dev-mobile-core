@@ -931,7 +931,9 @@ export class AndroidUtils {
     private static assertSafeForCmd(value: string): void {
         if (!AndroidUtils.CMD_SAFE_ARG.test(value)) {
             throw new SfError(
-                `Value cannot be safely passed to cmd.exe: ${JSON.stringify(value)}`,
+                `Invalid value ${JSON.stringify(
+                    value
+                )}: only letters, numbers, spaces, and . _ - : ; @ \\ / = + are allowed when launching this command on Windows.`,
                 'UnsafeCmdArgument'
             );
         }

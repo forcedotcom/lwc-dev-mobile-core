@@ -515,7 +515,7 @@ describe('Android utils', () => {
         }
 
         expect(caught).to.be.an('error');
-        expect((caught as Error).message).to.match(/cannot be safely used/i);
+        expect((caught as Error).message).to.match(/only letters, numbers, spaces, and \. _ - are allowed/i);
         // Must fail fast: no attempt to build or spawn the command.
         expect(spawnChildStub.called).to.be.false;
     });
@@ -550,11 +550,13 @@ describe('Android utils', () => {
         // `a&calc` has no space/tab/" so libuv would leave it unquoted and cmd.exe would split on &.
         // An embedded quote (`a"&calc`) breaks out of cmd's quote context (BatBadBut / CVE-2024-1874).
         // Both must be rejected before reaching cmd.exe.
+        const expectedMessage =
+            /only letters, numbers, spaces, and \. _ - : ; @ \\ \/ = \+ are allowed when launching this command on Windows/;
         expect(() => AndroidUtils.spawnChild('avdmanager', ['create', 'avd', '-n', 'a&calc'])).to.throw(
-            /cannot be safely passed to cmd\.exe/
+            expectedMessage
         );
         expect(() => AndroidUtils.spawnChild('avdmanager', ['create', 'avd', '-n', 'a"&calc'])).to.throw(
-            /cannot be safely passed to cmd\.exe/
+            expectedMessage
         );
     });
 

@@ -392,7 +392,10 @@ export class CommonUtils {
      */
     public static assertSafeDeviceName(name: string): void {
         if (!CommonUtils.SAFE_DEVICE_NAME.test(name)) {
-            throw new SfError(`Device name cannot be safely used: ${JSON.stringify(name)}`, 'UnsafeDeviceName');
+            throw new SfError(
+                `Invalid value ${JSON.stringify(name)}: only letters, numbers, spaces, and . _ - are allowed.`,
+                'UnsafeDeviceName'
+            );
         }
     }
 
@@ -406,7 +409,9 @@ export class CommonUtils {
     public static assertSafeDeviceIdentifier(identifier: string): void {
         if (!CommonUtils.SAFE_DEVICE_IDENTIFIER.test(identifier)) {
             throw new SfError(
-                `Device identifier cannot be safely used: ${JSON.stringify(identifier)}`,
+                `Invalid value ${JSON.stringify(
+                    identifier
+                )}: only letters, numbers, and . _ - are allowed (no spaces).`,
                 'UnsafeDeviceIdentifier'
             );
         }
@@ -435,7 +440,12 @@ export class CommonUtils {
             // URL in double quotes ourselves, and refuse the two things quoting cannot make safe: an
             // embedded `"` (which closes cmd's quote context) and `%VAR%` expansion (plus CR/LF).
             if (/["%\r\n]/.test(url)) {
-                throw new SfError(`URL cannot be safely opened on Windows: ${JSON.stringify(url)}`, 'UnsafeUrl');
+                throw new SfError(
+                    `Invalid value ${JSON.stringify(
+                        url
+                    )}: URLs containing a double quote, a percent sign, or a newline cannot be opened safely on Windows.`,
+                    'UnsafeUrl'
+                );
             }
             command = 'cmd';
             args = ['/c', 'start', '', `"${url}"`];

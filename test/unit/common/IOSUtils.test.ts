@@ -71,7 +71,7 @@ describe('IOS utils tests', () => {
         }
 
         expect(caught).to.be.an('error');
-        expect((caught as Error).message).to.match(/cannot be safely used/i);
+        expect((caught as Error).message).to.match(/only letters, numbers, spaces, and \. _ - are allowed/i);
         // Must fail fast: the command is never built or spawned.
         expect(stub.called).to.be.false;
     });
@@ -90,7 +90,7 @@ describe('IOS utils tests', () => {
         }
 
         expect(caught).to.be.an('error');
-        expect((caught as Error).message).to.match(/cannot be safely used/i);
+        expect((caught as Error).message).to.match(/only letters, numbers, and \. _ - are allowed \(no spaces\)/i);
         expect(stub.called).to.be.false;
     });
 
