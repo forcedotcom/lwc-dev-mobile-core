@@ -96,9 +96,7 @@ export async function WrappedPromise(requirement: Requirement): Promise<Requirem
         .then((fulfilledMessage) => {
             performance.mark(end);
             performance.measure(step, start, end);
-            const msg = `${fulfilledMessage ? fulfilledMessage : ''} ${
-                requirement.supplementalMessage ? requirement.supplementalMessage : ''
-            }`;
+            const msg = `${fulfilledMessage ?? ''} ${requirement.supplementalMessage ?? ''}`;
             return {
                 duration: stepDuration,
                 hasPassed: true,
@@ -109,9 +107,7 @@ export async function WrappedPromise(requirement: Requirement): Promise<Requirem
         .catch((unfulfilledMessage) => {
             performance.mark(end);
             performance.measure(step, start, end);
-            const msg = `${unfulfilledMessage ? unfulfilledMessage : ''} ${
-                requirement.supplementalMessage ? requirement.supplementalMessage : ''
-            }`;
+            const msg = `${unfulfilledMessage ?? ''} ${requirement.supplementalMessage ?? ''}`;
             return {
                 duration: stepDuration,
                 hasPassed: false,
@@ -209,13 +205,10 @@ export class RequirementProcessor {
                                         testResult.hasMetAllRequirements = false;
                                     }
 
-                                    // eslint-disable-next-line no-param-reassign
                                     subTask.title = RequirementProcessor.getFormattedTitle(result);
-                                    // eslint-disable-next-line no-param-reassign
                                     subTask.output = result.message;
 
                                     totalDuration += result.duration;
-                                    // eslint-disable-next-line no-param-reassign
                                     rootTask.title = `${rootTaskTitle} (${RequirementProcessor.formatDurationAsSeconds(
                                         totalDuration
                                     )})`;

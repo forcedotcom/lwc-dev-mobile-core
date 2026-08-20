@@ -48,10 +48,7 @@ export class PreviewUtils {
         targetApp: string,
         appConfig: IOSAppPreviewConfig | AndroidAppPreviewConfig | undefined
     ): boolean {
-        return (
-            PreviewUtils.isTargetingBrowser(targetApp) ||
-            (appConfig !== undefined && appConfig.preview_server_enabled === true)
-        );
+        return PreviewUtils.isTargetingBrowser(targetApp) || appConfig?.preview_server_enabled === true;
     }
 
     /**

@@ -51,15 +51,14 @@ export class Setup extends BaseCommand {
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const platform = this.flagValues.platform;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const apiLevel = this.flagValues.apilevel as string | undefined;
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         requirements.setup = CommandLineUtils.platformFlagIsAndroid(platform)
             ? new AndroidEnvironmentRequirements(this.logger, apiLevel)
             : new IOSEnvironmentRequirements(this.logger, apiLevel);
 
-        // eslint-disable-next-line no-underscore-dangle
         this.commandRequirements = requirements;
     }
 }

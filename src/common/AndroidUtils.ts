@@ -106,7 +106,7 @@ export class AndroidUtils {
                         new SfError(`SDK Manager not found. Expected at ${AndroidUtils.getSdkManagerCommand()}`)
                     );
                 } else {
-                    return Promise.reject(error);
+                    return Promise.reject(error instanceof Error ? error : new SfError(String(error)));
                 }
             });
     }
@@ -566,7 +566,7 @@ export class AndroidUtils {
             // For example if you run the command 'adb shell reboot -p' to power down a device, when done it prints the success
             // message 'Done\n' to stderr. And sometimes ADB prints error messages to stdout instead of stderr. So we first gether
             // all outputs into one and then explicitly check to see if an error has occurred or not.
-            if (allOutput && allOutput.toLowerCase().includes('error:')) {
+            if (allOutput?.toLowerCase().includes('error:')) {
                 logger?.warn(
                     `ADB command '${adbCmd}' failed. Retrying ${numRetries - i} more times.\n${result.stderr}\n${
                         result.stdout
@@ -815,12 +815,10 @@ export class AndroidUtils {
      * @returns The path to the AVD manager command executable.
      */
     public static getAvdManagerCommand(): string {
-        if (!AndroidUtils.avdManagerCommand) {
-            AndroidUtils.avdManagerCommand = path.join(
-                AndroidUtils.getAndroidCmdLineToolsBin(),
-                ANDROID_AVD_MANAGER_NAME
-            );
-        }
+        AndroidUtils.avdManagerCommand ??= path.join(
+            AndroidUtils.getAndroidCmdLineToolsBin(),
+            ANDROID_AVD_MANAGER_NAME
+        );
 
         return AndroidUtils.avdManagerCommand;
     }
@@ -831,9 +829,7 @@ export class AndroidUtils {
      * @returns The path to the ADB command executable.
      */
     public static getAdbShellCommand(): string {
-        if (!AndroidUtils.adbShellCommand) {
-            AndroidUtils.adbShellCommand = path.join(AndroidUtils.getAndroidPlatformTools(), ANDROID_ADB_NAME);
-        }
+        AndroidUtils.adbShellCommand ??= path.join(AndroidUtils.getAndroidPlatformTools(), ANDROID_ADB_NAME);
 
         return AndroidUtils.adbShellCommand;
     }
@@ -844,12 +840,10 @@ export class AndroidUtils {
      * @returns The path to the SDKMANAGER command executable.
      */
     public static getSdkManagerCommand(): string {
-        if (!AndroidUtils.sdkManagerCommand) {
-            AndroidUtils.sdkManagerCommand = path.join(
-                AndroidUtils.getAndroidCmdLineToolsBin(),
-                ANDROID_SDK_MANAGER_NAME
-            );
-        }
+        AndroidUtils.sdkManagerCommand ??= path.join(
+            AndroidUtils.getAndroidCmdLineToolsBin(),
+            ANDROID_SDK_MANAGER_NAME
+        );
 
         return AndroidUtils.sdkManagerCommand;
     }

@@ -160,9 +160,7 @@ export class AndroidDeviceManager {
                 (configINIContent?.get('PlayStore.enabled')?.toLowerCase().trim() ?? 'false') === 'true';
 
             let targetType = configINIContent?.get('tag.id');
-            if (!targetType) {
-                targetType = avd.get('Target')?.replace(/\([^)]*\)/g, '');
-            }
+            targetType ??= avd.get('Target')?.replace(/\([^)]*\)/g, '');
             targetType = targetType?.replace(/[_-]/gi, ' ')?.toLowerCase()?.trim();
 
             // To get the API level, we can first take a look at config INI and look for `image.sysdir.1`
