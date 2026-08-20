@@ -29,8 +29,6 @@ class BaseAppPreviewConfig {
     public id!: string;
     public name!: string;
     // eslint-disable-next-line camelcase
-    public get_app_bundle?: string;
-    // eslint-disable-next-line camelcase
     public launch_arguments?: LaunchArgument[];
     // eslint-disable-next-line camelcase
     public preview_server_enabled?: boolean;

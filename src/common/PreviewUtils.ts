@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import path from 'node:path';
-import { createRequire } from 'node:module';
 import Ajv from 'ajv';
 import { Logger } from '@salesforce/core';
 import { OSPlatform } from './Common.js';
@@ -105,28 +103,6 @@ export class PreviewUtils {
         const json = CommonUtils.loadJsonFromFile(file);
         const configFile = Object.assign(new PreviewConfigFile(), json);
         return configFile;
-    }
-
-    /**
-     * Attempts to obtain the app bundle path from an app preview config.
-     *
-     * @param basePath Path to the directory that contains the preview configuration file.
-     * @param appConfig An app preview configuration.
-     * @returns A string representing the app bundle path.
-     */
-    public static getAppBundlePath(
-        basePath: string,
-        appConfig: IOSAppPreviewConfig | AndroidAppPreviewConfig
-    ): string | undefined {
-        if (appConfig.get_app_bundle) {
-            const require = createRequire(import.meta.url);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            const module = require(path.resolve(basePath, appConfig.get_app_bundle));
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            return module.run();
-        } else {
-            return undefined;
-        }
     }
 
     /**
