@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { TestContext } from '@salesforce/core/testSetup';
 import { stubMethod } from '@salesforce/ts-sinon';
 import { expect } from 'chai';
@@ -169,19 +167,6 @@ describe('Preview utils tests', () => {
         const appConfig = configFile.getAppConfig('android', 'com.salesforce.Test') as AndroidAppPreviewConfig;
 
         expect(appConfig.activity).to.be.equal('.MyActivity');
-    });
-
-    it('Checks for obtaining app bundle path', async () => {
-        const iOSAppConfig = new IOSAppPreviewConfig();
-        iOSAppConfig.get_app_bundle = undefined;
-        expect(PreviewUtils.getAppBundlePath('', iOSAppConfig)).to.be.undefined;
-
-        iOSAppConfig.get_app_bundle = 'testGetAppBundleScript';
-        const bundlePath = PreviewUtils.getAppBundlePath(
-            path.dirname(path.resolve(fileURLToPath(import.meta.url))),
-            iOSAppConfig
-        );
-        expect(bundlePath).to.be.equal('sample/path/to/app/bundle');
     });
 
     it('Generates correct websocket url', async () => {

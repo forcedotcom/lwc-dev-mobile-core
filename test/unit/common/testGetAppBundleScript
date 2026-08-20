@@ -1,3 +1,0 @@
-exports.run = function () {
-  return 'sample/path/to/app/bundle';
-};

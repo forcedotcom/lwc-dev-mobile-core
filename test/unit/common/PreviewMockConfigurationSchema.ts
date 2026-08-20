@@ -40,10 +40,6 @@ export const mockSchema = `
           "type": "string",
           "description": "A friendly name describing the app."
         },
-        "get_app_bundle": {
-          "type": "string",
-          "description": "Module to get the app bundle to install. Executed from the directory of the configuration file."
-        },
         "launch_arguments": {
           "type": "array",
           "description": "Collection of additional name or name/value arguments to pass when launching the app.",
