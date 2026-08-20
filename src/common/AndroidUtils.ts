@@ -370,6 +370,15 @@ export class AndroidUtils {
         abi: string,
         logger?: Logger
     ): Promise<void> {
+        // Defense-in-depth: reject the emulator name and structured identifiers if they carry shell
+        // metacharacters, before building the command (spawnChild runs shell:false, but this fails
+        // fast on malformed input and closes off any future shell sink).
+        CommonUtils.assertSafeDeviceName(emulatorName);
+        CommonUtils.assertSafeDeviceIdentifier(emulatorImage);
+        CommonUtils.assertSafeDeviceIdentifier(platformAPI);
+        CommonUtils.assertSafeDeviceIdentifier(device);
+        CommonUtils.assertSafeDeviceIdentifier(abi);
+
         // Just like Android Studio AVD Manager GUI interface, replace blank spaces with _ so that the ID of this AVD
         // doesn't have blanks (since that's not allowed). AVD Manager will automatically replace _ back with blank
         // to generate user friendly display names.
@@ -922,7 +931,9 @@ export class AndroidUtils {
     private static assertSafeForCmd(value: string): void {
         if (!AndroidUtils.CMD_SAFE_ARG.test(value)) {
             throw new SfError(
-                `Value cannot be safely passed to cmd.exe: ${JSON.stringify(value)}`,
+                `Invalid value ${JSON.stringify(
+                    value
+                )}: only letters, numbers, spaces, and . _ - : ; @ \\ / = + are allowed when launching this command on Windows.`,
                 'UnsafeCmdArgument'
             );
         }
