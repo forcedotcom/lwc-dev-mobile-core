@@ -2061,7 +2061,7 @@ ansi-escapes@^5.0.0:
   dependencies:
     type-fest "^1.0.2"
 
-ansi-escapes@^7.0.0:
+ansi-escapes@^7.0.0, ansi-escapes@^7.3.0:
   version "7.3.0"
   resolved "https://registry.yarnpkg.com/ansi-escapes/-/ansi-escapes-7.3.0.tgz#5395bb74b2150a4a1d6e3c2565f4aeca78d28627"
   integrity sha512-BvU8nYgGQBxcmMuEeUEmNTvrMVjJNSH7RgW24vXexN4Ven6qCvy4TntnvlnwnMLTVlcRQQdbRY8NKnaIoeWDNg==
@@ -2564,12 +2564,12 @@ cli-truncate@^4.0.0:
     slice-ansi "^5.0.0"
     string-width "^7.0.0"
 
-cli-truncate@^5.2.0:
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/cli-truncate/-/cli-truncate-5.2.0.tgz#c8e72aaca8339c773d128c36e0a17c6315b694eb"
-  integrity sha512-xRwvIOMGrfOAnM1JYtqQImuaNtDEv9v6oIYAs4LIHwTiKee8uwvIi363igssOC0O5U04i4AlENs79LQLu9tEMw==
+cli-truncate@^6.1.1:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/cli-truncate/-/cli-truncate-6.1.1.tgz#35ae66a040eef357aedcfffd6149d847bf7a2eb1"
+  integrity sha512-06p9vyLahLa4zkGcgsGxU6iEkSOiuI4fhCH6Emhe2lPAcoUv73n72DnODsnHA+5wwXGnV0n9M9/qOQJSjYhFhw==
   dependencies:
-    slice-ansi "^8.0.0"
+    slice-ansi "^9.0.0"
     string-width "^8.2.0"
 
 cli-width@^4.1.0:
@@ -3299,11 +3299,6 @@ event-target-shim@^5.0.0:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/event-target-shim/-/event-target-shim-5.0.1.tgz#5d4d3ebdf9583d63a5333ce2deb7480ab2b05789"
   integrity sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==
-
-eventemitter3@^5.0.4:
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.4.tgz#a86d66170433712dde814707ac52b5271ceb1feb"
-  integrity sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==
 
 events@^3.3.0:
   version "3.3.0"
@@ -4593,16 +4588,14 @@ linkinator@^6.3.0:
     server-destroy "^1.0.1"
     srcset "^5.0.0"
 
-listr2@^10.2.2:
-  version "10.2.2"
-  resolved "https://registry.yarnpkg.com/listr2/-/listr2-10.2.2.tgz#01d987a6e3fb03b17612968617366f28fdeaf4d3"
-  integrity sha512-JtNtbZj8q5BnDMR7trpwvwk3RIrANtIVzEUm8w7amp6xelLgyuq+4WZoTH913XaQAoH/cNdYhaNzBPA2U3xbDw==
+listr2@^11.0.1:
+  version "11.0.1"
+  resolved "https://registry.yarnpkg.com/listr2/-/listr2-11.0.1.tgz#b4a6dee0f998dc5a3e8fdcfbb937029211357247"
+  integrity sha512-TzOB/8yb2KIW/hb7DCLfloZi0j01xhIqqvvHuXhPVEprbebjPtxWzBmUC4jZoQv6imUfxYk6tbAudCb/m//DPQ==
   dependencies:
-    cli-truncate "^5.2.0"
-    eventemitter3 "^5.0.4"
-    log-update "^6.1.0"
-    rfdc "^1.4.1"
-    wrap-ansi "^10.0.0"
+    cli-truncate "^6.1.1"
+    log-update "^8.0.0"
+    wrap-ansi "^10.0.1"
 
 locate-path@^5.0.0:
   version "5.0.0"
@@ -4731,16 +4724,17 @@ log-symbols@^4.1.0:
     chalk "^4.1.0"
     is-unicode-supported "^0.1.0"
 
-log-update@^6.1.0:
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/log-update/-/log-update-6.1.0.tgz#1a04ff38166f94647ae1af562f4bd6a15b1b7cd4"
-  integrity sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==
+log-update@^8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/log-update/-/log-update-8.0.0.tgz#07d7bde6320dda8cf6fb12619e9d30695525b141"
+  integrity sha512-lddSgOt3bPASrylL54ZSpy8nBHns+vBVSoILlVOx+dei300pnLRN958rj/EdlVLKuWlSESU3qdnDZdAI7FXYGg==
   dependencies:
-    ansi-escapes "^7.0.0"
+    ansi-escapes "^7.3.0"
     cli-cursor "^5.0.0"
-    slice-ansi "^7.1.0"
-    strip-ansi "^7.1.0"
-    wrap-ansi "^9.0.0"
+    slice-ansi "^9.0.0"
+    string-width "^8.2.0"
+    strip-ansi "^7.2.0"
+    wrap-ansi "^10.0.0"
 
 lolex@^2.4.2:
   version "2.7.5"
@@ -6042,11 +6036,6 @@ reusify@^1.0.4:
   resolved "https://registry.yarnpkg.com/reusify/-/reusify-1.1.0.tgz#0fe13b9522e1473f51b558ee796e08f11f9b489f"
   integrity sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==
 
-rfdc@^1.4.1:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/rfdc/-/rfdc-1.4.1.tgz#778f76c4fb731d93414e8f925fbecf64cce7f6ca"
-  integrity sha512-q1b3N5QkRUWUl7iyylaaj3kOpIT0N2i9MqIEQXP73GVsN9cw3fdx8X63cEmWhJGi2PPCF23Ijp7ktmd39rawIA==
-
 rimraf@^3.0.0:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-3.0.2.tgz#f1a5402ba6220ad52cc1282bac1ae3aa49fd061a"
@@ -6293,10 +6282,10 @@ slice-ansi@^7.1.0:
     ansi-styles "^6.2.1"
     is-fullwidth-code-point "^5.0.0"
 
-slice-ansi@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/slice-ansi/-/slice-ansi-8.0.0.tgz#22d0b66d18bc5c57f488bfcf36cbde3bef731537"
-  integrity sha512-stxByr12oeeOyY2BlviTNQlYV5xOj47GirPr4yA1hE9JCtxfQN0+tVbkxwCtYDQWhEKWFHsEK48ORg5jrouCAg==
+slice-ansi@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/slice-ansi/-/slice-ansi-9.0.0.tgz#8ed38fdc31f16b607a56cf86c3160d2684f1b61b"
+  integrity sha512-SO/3iYL5S3W57LLEniscOGPZgOqZUPCx6d3dB+52B80yJ0XstzsC/eV8gnA4tM3MHDrKz+OCFSLNjswdSC+/bA==
   dependencies:
     ansi-styles "^6.2.3"
     is-fullwidth-code-point "^5.1.0"
@@ -7163,14 +7152,13 @@ workerpool@^6.5.1:
     string-width "^4.1.0"
     strip-ansi "^6.0.0"
 
-wrap-ansi@^10.0.0:
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-10.0.0.tgz#b83ddcc14dbc5596f1b07e153bf6f863c1acbb57"
-  integrity sha512-SGcvg80f0wUy2/fXES19feHMz8E0JoXv2uNgHOu4Dgi2OrCy1lqwFYEJz1BLbDI0exjPMe/ZdzZ/YpGECBG/aQ==
+wrap-ansi@^10.0.0, wrap-ansi@^10.0.1:
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-10.0.1.tgz#59b821b7987d36a87a367bc9517284ff974086ea"
+  integrity sha512-M0N4xzyzosiIok3svYlEo1sdLZts/8FPgYH/GPC3wvlmPoRvnoManGMrE54waYj3tISA8w6lsdesfVv67qSr8Q==
   dependencies:
     ansi-styles "^6.2.3"
     string-width "^8.2.0"
-    strip-ansi "^7.1.2"
 
 wrap-ansi@^6.2.0:
   version "6.2.0"
