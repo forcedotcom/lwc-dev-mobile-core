@@ -248,7 +248,7 @@ export class CommonUtils {
                     }
 
                     logger?.error(msg);
-                    reject(error);
+                    reject(new Error(msg));
                 } else {
                     resolve({ stdout, stderr });
                 }
