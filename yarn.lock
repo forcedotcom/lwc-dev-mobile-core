@@ -3124,6 +3124,20 @@ eslint-config-salesforce-typescript@^6.0.0:
     globals "^15.14.0"
     typescript-eslint "^8.66.0"
 
+eslint-config-salesforce-typescript@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/eslint-config-salesforce-typescript/-/eslint-config-salesforce-typescript-7.0.0.tgz#63f1e4f97bc1746cbf222f2a0a3446ae2fb724ba"
+  integrity sha512-uxYafaxZiUoqE32I5hwnYhYaZ4s24J+YyjSa3xQ5Aw9frS7H0tcXxe2egFDsIOig4JZ3HmDeWesMMaFeawYRXw==
+  dependencies:
+    "@eslint/js" "^10.0.0"
+    "@tony.ganchev/eslint-plugin-header" "^3.4.4"
+    eslint-config-prettier "^10.1.5"
+    eslint-plugin-import-x "^4.17.1"
+    eslint-plugin-jsdoc "^63.3.2"
+    eslint-plugin-unicorn "^72.0.0"
+    globals "^15.14.0"
+    typescript-eslint "^8.66.0"
+
 eslint-import-context@^0.1.9:
   version "0.1.9"
   resolved "https://registry.yarnpkg.com/eslint-import-context/-/eslint-import-context-0.1.9.tgz#967b0b2f0a90ef4b689125e088f790f0b7756dbe"
