@@ -48,7 +48,7 @@
         "listr2": "^11.0.1",
         "node-forge": "^1.4.3",
         "semver": "^7.7.4",
-        "zod": "^4.5.4"
+        "zod": "^4.6.6"
     },
     "devDependencies": {
         "@oclif/plugin-command-snapshot": "^5.4.0",
